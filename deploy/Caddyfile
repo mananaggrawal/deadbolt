@@ -1,0 +1,26 @@
+# Cloudflare sits in front of this server (DNS proxied, SSL mode "Full (strict)").
+# certs/origin.pem and certs/origin.key are a Cloudflare Origin Certificate for <domain> and *.<domain>.
+# No access log is kept, so visitor IP addresses aren't stored.
+
+{$DOMAIN} {
+	tls /certs/origin.pem /certs/origin.key
+	encode zstd gzip
+	reverse_proxy app:3000
+}
+
+www.{$DOMAIN} {
+	tls /certs/origin.pem /certs/origin.key
+	redir https://{$DOMAIN}{uri} permanent
+}
+
+staging.{$DOMAIN} {
+	tls /certs/origin.pem /certs/origin.key
+	encode zstd gzip
+	reverse_proxy app-staging:3000
+}
+
+stats.{$DOMAIN} {
+	tls /certs/origin.pem /certs/origin.key
+	encode zstd gzip
+	reverse_proxy umami:3000
+}

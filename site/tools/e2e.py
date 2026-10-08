@@ -62,7 +62,7 @@ with sync_playwright() as p:
     while pg2.is_disabled('#bNew') and time.time() - t0 < 180: pg2.wait_for_timeout(1000)
     check(not pg2.is_disabled('#bNew'), f'room built and ready ({time.time() - t0:.0f}s)')
     pg2.screenshot(path=f'{SHOTS}/04-game-title.png')
-    pg2.click('#bNew'); pg2.wait_for_timeout(4000)
+    pg2.click('#bNew', no_wait_after=True, timeout=90000); pg2.wait_for_timeout(4000)
     pg2.evaluate('MR.flush()'); pg2.wait_for_timeout(800)
     errs = [l for l in logs2 if 'Content Security Policy' in l or 'pageerror' in l]
     check(not errs, 'game page: no script errors or CSP blocks' + (f': {errs[:3]}' if errs else ''))

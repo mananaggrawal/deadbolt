@@ -47,8 +47,9 @@
     room = room || data.room || pageRoom || null;
     const { step, ...rest } = data; delete rest.room;
     Q.push({ name, room, play: room ? plays[room] || null : null, step: Number.isInteger(step) ? step : null, data: rest, t: Date.now() });
-    if (Q.length >= 25) flush();
+    if (Q.length >= 25 || URGENT.has(name)) flush();
   }
+  const URGENT = new Set(['room_start', 'room_escape', 'room_quit', 'share_click', 'feedback_sent', 'signin_start', 'client_error']);
   function flush(beacon) {
     if (!Q.length) return;
     const body = JSON.stringify({ anon, v: CFG.version, page: CFG.page, events: Q.splice(0, 50) });

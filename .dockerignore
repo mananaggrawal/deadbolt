@@ -1,0 +1,12 @@
+.git
+**/node_modules
+game/live
+game/dist
+game/tools
+landing-src
+site/tools
+deploy
+skills
+film-engine
+project
+*.md

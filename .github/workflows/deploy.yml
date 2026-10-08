@@ -1,0 +1,135 @@
+# Every push to main deploys the live site; every push to staging deploys staging.<domain>.
+# Builds the image (game + server), pushes it to GitHub's container registry, then copies
+# deploy/ to the server, writes its .env from this repo's secrets, and restarts.
+name: deploy
+
+on:
+  push:
+    branches: [main, staging]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.names.outputs.image }}
+      tag: ${{ steps.names.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Check the game builds and the server parses
+        run: |
+          python3 game/build.py site
+          cd site && npm ci && for f in src/*.js public/mr.js; do node --check "$f"; done
+      - id: names
+        run: |
+          echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+          if [ "$GITHUB_REF_NAME" = "main" ]; then echo "tag=latest" >> "$GITHUB_OUTPUT"; else echo "tag=staging" >> "$GITHUB_OUTPUT"; fi
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: site/Dockerfile
+          push: true
+          build-args: APP_VERSION=${{ github.sha }}
+          tags: |
+            ${{ steps.names.outputs.image }}:${{ steps.names.outputs.tag }}
+            ${{ steps.names.outputs.image }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Write the server's .env and certificate from secrets
+        env:
+          DOMAIN: ${{ secrets.DOMAIN }}
+          SITE_NAME: ${{ secrets.SITE_NAME }}
+          CONTACT_EMAIL: ${{ secrets.CONTACT_EMAIL }}
+          ADMIN_EMAILS: ${{ secrets.ADMIN_EMAILS }}
+          REQUIRE_LOGIN: ${{ secrets.REQUIRE_LOGIN }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          UMAMI_APP_SECRET: ${{ secrets.UMAMI_APP_SECRET }}
+          UMAMI_WEBSITE_ID: ${{ secrets.UMAMI_WEBSITE_ID }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+          CF_ORIGIN_CERT: ${{ secrets.CF_ORIGIN_CERT }}
+          CF_ORIGIN_KEY: ${{ secrets.CF_ORIGIN_KEY }}
+        run: |
+          for k in DOMAIN ADMIN_EMAILS GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET BETTER_AUTH_SECRET POSTGRES_PASSWORD UMAMI_APP_SECRET CF_ORIGIN_CERT CF_ORIGIN_KEY; do
+            [ -n "${!k}" ] || { echo "::error::secret $k is not set (see DEPLOY.md)"; exit 1; }
+          done
+          umask 077
+          {
+            for k in DOMAIN SITE_NAME CONTACT_EMAIL ADMIN_EMAILS REQUIRE_LOGIN GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET BETTER_AUTH_SECRET POSTGRES_PASSWORD \
+                     UMAMI_APP_SECRET UMAMI_WEBSITE_ID R2_ACCOUNT_ID R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BUCKET BACKUP_PASSPHRASE; do
+              v="$(printf '%s' "${!k}" | tr -d '\r\n')"; v="${v//\$/\$\$}"   # compose reads $ as a variable: escape it
+              [ -n "$v" ] && printf '%s=%s\n' "$k" "$v"
+            done
+            echo "SITE_TZ=Asia/Kolkata"
+            echo "APP_IMAGE=${{ needs.build.outputs.image }}"
+            echo "APP_VERSION=${GITHUB_SHA::7}"
+            echo "COMPOSE_PROFILES=staging"
+          } > deploy/.env
+          mkdir -p deploy/certs
+          printf '%s\n' "$CF_ORIGIN_CERT" > deploy/certs/origin.pem
+          printf '%s\n' "$CF_ORIGIN_KEY" > deploy/certs/origin.key
+          chmod +x deploy/backup.sh
+      - name: Copy to the server and restart
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          GH_ACTOR: ${{ github.actor }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SERVICE: ${{ github.ref_name == 'main' && 'app' || 'app-staging' }}
+          IMAGE: ${{ needs.build.outputs.image }}
+          TAG: ${{ needs.build.outputs.tag }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy && chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -T 20 -H "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          SSH="ssh -i $HOME/.ssh/id_deploy -o BatchMode=yes deploy@$HOST"
+          rsync -az --delete --exclude backup.log --exclude maintenance.log -e "ssh -i $HOME/.ssh/id_deploy -o BatchMode=yes" deploy/ "deploy@$HOST:/opt/mystery-rooms/"
+          $SSH "GH_TOKEN='$GH_TOKEN' GH_ACTOR='$GH_ACTOR' SERVICE='$SERVICE' IMAGE='$IMAGE' TAG='$TAG' bash -s" <<'REMOTE'
+          set -euo pipefail
+          cd /opt/mystery-rooms
+          echo "$GH_TOKEN" | docker login ghcr.io -u "$GH_ACTOR" --password-stdin >/dev/null
+          prev=$(docker image inspect --format '{{.Id}}' "$IMAGE:$TAG" 2>/dev/null || true)
+          docker compose pull "$SERVICE"
+          docker compose up -d --remove-orphans
+          docker logout ghcr.io >/dev/null
+          ok=""
+          for i in $(seq 1 30); do
+            if docker compose exec -T "$SERVICE" node -e "fetch('http://127.0.0.1:3000/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))" 2>/dev/null; then ok=1; break; fi
+            sleep 3
+          done
+          if [ -z "$ok" ]; then
+            echo "::error::$SERVICE did not come up healthy"; docker compose logs --tail 80 "$SERVICE"
+            if [ -n "$prev" ]; then echo "rolling back to the previous image"; docker tag "$prev" "$IMAGE:$TAG"; docker compose up -d "$SERVICE"; fi
+            exit 1
+          fi
+          docker image prune -f >/dev/null
+          echo "$SERVICE is up: $(docker compose exec -T "$SERVICE" node -e "fetch('http://127.0.0.1:3000/healthz').then(r => r.text()).then(console.log)")"
+          REMOTE

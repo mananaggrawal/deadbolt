@@ -1,0 +1,77 @@
+# The whole site on one server. Lives in /opt/mystery-rooms on the server, next to .env and certs/.
+# GitHub Actions copies this folder there and restarts what changed (see .github/workflows/deploy.yml).
+name: mystery-rooms
+
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./certs:/certs:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [app]
+
+  app:
+    image: ${APP_IMAGE}:${APP_TAG:-latest}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      PUBLIC_URL: https://${DOMAIN}
+      DATABASE_URL: postgres://mr:${POSTGRES_PASSWORD}@db:5432/mysteryrooms
+      UMAMI_SCRIPT_URL: https://stats.${DOMAIN}/script.js
+    depends_on:
+      db: { condition: service_healthy }
+
+  # staging.<domain>: the next version, open only to ADMIN_EMAILS, with its own database
+  app-staging:
+    image: ${APP_IMAGE}:${STAGING_TAG:-staging}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      STAGING: "true"
+      PUBLIC_URL: https://staging.${DOMAIN}
+      DATABASE_URL: postgres://mr:${POSTGRES_PASSWORD}@db:5432/mysteryrooms_staging
+      UMAMI_WEBSITE_ID: ""
+    depends_on:
+      db: { condition: service_healthy }
+    profiles: [staging]
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: mr
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: mysteryrooms
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mr -d mysteryrooms"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    shm_size: 128mb
+
+  # stats.<domain>: visitor analytics (cookie-free)
+  umami:
+    image: ghcr.io/umami-software/umami:latest
+    restart: unless-stopped
+    init: true
+    environment:
+      DATABASE_URL: postgresql://mr:${POSTGRES_PASSWORD}@db:5432/umami
+      APP_SECRET: ${UMAMI_APP_SECRET}
+    depends_on:
+      db: { condition: service_healthy }
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

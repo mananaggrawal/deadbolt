@@ -1,7 +1,15 @@
+__pycache__/
+*.pyc
 node_modules/
 game/dist/dev.html
-game/dist/dead-air.html
+game/dist/site/
 game/tools/home.png
+skill-zips/
+film-engine/models/
+film-engine/fonts/
+film-engine/vo/
+film-engine/seg/
+film-engine/stills/
 site/tools/shots/
 deploy/.env
 deploy/certs/
