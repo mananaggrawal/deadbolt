@@ -41,7 +41,7 @@ function movePlayer(dt) {
 
 let autoT = 10;
 function update(dt) {
-  if (UI.kind === 'pause') return;
+  if (G.paused) return;   // pause (and hints or the notebook opened from it): game time stops
   G.time += dt; G.play = (G.play || 0) + dt; S.elapsed += dt;
   stepTweens(dt); stepTimers(dt);
   movePlayer(dt);
@@ -173,7 +173,7 @@ boot();
 /*DEBUG*/
 // test handle for headless runs (dev build only; build.py prod and site strip this block)
 window.__lethe = {
-  G, P, ROOMS, scene, camera, render, update, UI, INTER, probe, act, results, enterMystery, reloadInto, finishRoom, envFromScene, hostState,
+  G, P, ROOMS, scene, camera, render, update, UI, INTER, probe, act, results, enterMystery, reloadInto, finishRoom, envFromScene, hostState, A, PZ, openPause,
   get S() { return S; }, set S(v) { S = v; },
   get ROOM() { return ROOM; },
   get renderer() { return renderer; },

@@ -710,8 +710,8 @@ function toneStart(kind) {
   const os = fr.map(f => { const o = ctx.createOscillator(); o.frequency.value = f; o.connect(g); o.start(); return o; });
   let iv = null;
   if (kind === 'dial') g.gain.value = 0.07;
-  else { const on = kind === 'busy' ? 0.5 : 2, off = kind === 'busy' ? 0.5 : 4; let s = true; const tick = () => { g.gain.setTargetAtTime(s ? 0.07 : 0, now(), 0.01); iv = setTimeout(tick, (s ? on : off) * 1000); s = !s; }; tick(); }
-  PH.tone = { stop: () => { clearTimeout(iv); os.forEach(o => { try { o.stop(); } catch (e) {} }); g.disconnect(); } };
+  else { const on = kind === 'busy' ? 0.5 : 2, off = kind === 'busy' ? 0.5 : 4; let s = true; const tick = () => { g.gain.setTargetAtTime(s ? 0.07 : 0, now(), 0.01); iv = pTimeout(tick, (s ? on : off) * 1000); s = !s; }; tick(); }
+  PH.tone = { stop: () => { pClear(iv); os.forEach(o => { try { o.stop(); } catch (e) {} }); g.disconnect(); } };
 }
 function toneStop() { if (PH.tone) { PH.tone.stop(); PH.tone = null; } }
 let lineHiss = null;
@@ -755,13 +755,13 @@ function openPhone() {
 }
 function pstate(t) { const e = $('#pstate'); if (e) e.textContent = t; }
 function hangUp() {
-  PH.tok++; toneStop(); hiss(false); stopSpeech(); clearTimeout(PH.idle); PH.busy = false; PH.digits = ''; PH.dialing = false;
+  PH.tok++; toneStop(); hiss(false); stopSpeech(); pClear(PH.idle); PH.busy = false; PH.digits = ''; PH.dialing = false;
   sThunk(POS.phone, 0.4, 200); clearSubs();
-  if (PH.afterHang) { const f = PH.afterHang; PH.afterHang = null; setTimeout(f, 50); }
+  if (PH.afterHang) { const f = PH.afterHang; PH.afterHang = null; pTimeout(f, 50); }
 }
 function dial(d) {
   if (PH.busy || PH.dialing || UI.kind !== 'phone') return;
-  const k = d === '0' ? 10 : +d; PH.dialing = true; toneStop(); clearTimeout(PH.idle);
+  const k = d === '0' ? 10 : +d; PH.dialing = true; toneStop(); pClear(PH.idle);
   const rot = 60 - holeAngle(k), plate = $('#plate'); const tok = PH.tok;
   const t0 = performance.now(), fwd = rot / 360 * 700, back = k * 95 + 120;
   let pulses = 0;
@@ -772,7 +772,7 @@ function dial(d) {
     else { const b = (e - fwd) / back; a = rot * (1 - Math.min(1, b)); const p = Math.floor(Math.min(1, b) * k); while (pulses < p) { pulses++; sClick(null, 0.35, 1800); } }
     plate.setAttribute('transform', `rotate(${a.toFixed(1)} 150 150)`);
     if (e < fwd + back) requestAnimationFrame(step);
-    else { PH.dialing = false; PH.digits += d; const el = $('#dialed'); if (el) el.textContent = PH.digits.replace(/(\d)(?=\d)/g, '$1 '); PH.idle = setTimeout(() => evalNumber(), 2600); }
+    else { PH.dialing = false; PH.digits += d; const el = $('#dialed'); if (el) el.textContent = PH.digits.replace(/(\d)(?=\d)/g, '$1 '); PH.idle = pTimeout(() => evalNumber(), 2600); }
   };
   requestAnimationFrame(step);
 }
@@ -793,10 +793,10 @@ function evalNumber() {
 function ringPhone(times, onAnswer) {
   if (PH.ringing || UI.kind === 'phone') return;
   PH.ringing = true; PH.onAnswer = onAnswer; PH.ringLeft = times;
-  const ring = () => { if (!PH.ringing) return; if (PH.ringLeft-- <= 0) { stopRing(); return; } sBell(POS.phone, 1.8); PH.ringTimer = setTimeout(ring, 4200); };
+  const ring = () => { if (!PH.ringing) return; if (PH.ringLeft-- <= 0) { stopRing(); return; } sBell(POS.phone, 1.8); PH.ringTimer = pTimeout(ring, 4200); };
   ring();
 }
-function stopRing() { PH.ringing = false; clearTimeout(PH.ringTimer); }
+function stopRing() { PH.ringing = false; pClear(PH.ringTimer); }
 
 
 /* =====================================================================
@@ -1144,7 +1144,7 @@ function playMemo() {
     await say('Elias, on tape', 'I\'m sitting on the bed. I am not going to touch the chair.', { voice: 'm', rate: 0.82, pitch: 0.85, clip: 'memo3', fx: 'tape', pos }); await wait(1800);
     await say('Elias, on tape', 'I\'m not going to touch the chair.', { voice: 'm', rate: 0.75, pitch: 0.8, volume: 0.75, clip: 'memo4', fx: 'tape', pos, speed: 0.97 }); await wait(600);
     sScrape(pos, 2.4, 0.35); subtitle('', '<i>A slow scrape of wood across carpet. The tape runs out.</i>', 4000); await wait(2600);
-    if (tape) { setGain(tape, 0, 0.1); setTimeout(() => { try { tape.src.stop(); } catch (e) {} }, 600); }
+    if (tape) { setGain(tape, 0, 0.1); pTimeout(() => { try { tape.src.stop(); } catch (e) {} }, 600); }
     sClick(pos, 0.5, 1300); heard('memo'); G.memo = false;
   })();
 }

@@ -7,7 +7,7 @@ const A = { ctx: null, master: null, rev: null, noise: null, vol: 0.85, voices: 
 function setVolume(v) { A.vol = v; store.set('lethe.vol', v); if (A.master) A.master.gain.value = v; }
 
 function initAudio() {
-  if (A.ctx) { A.ctx.resume && A.ctx.resume(); return; }
+  if (A.ctx) { if (!G.paused) A.ctx.resume && A.ctx.resume(); return; }
   const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
   // iPhones mute web audio with the silent switch unless the page says it's playing media
   try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
@@ -80,8 +80,9 @@ function playVO(who, text, buf, opts) {
     voChain(src, buf, opts);
     voSrc = src;
     let done = false;
-    const fin = () => { if (done) return; done = true; clearTimeout(to); if (voSrc === src) voSrc = null; if (tok === sayToken) setTimeout(() => { if (tok === sayToken) clearSubs(); }, 500); res(tok === sayToken); };
-    src.onended = fin; const to = setTimeout(fin, buf.duration / speed * 1000 + 1500);
+    // the safety timeout counts only unpaused time: a paused line (audio suspended) must not "finish" behind the pause screen
+    const fin = () => { if (done) return; done = true; pClear(to); if (voSrc === src) voSrc = null; if (tok === sayToken) pTimeout(() => { if (tok === sayToken) clearSubs(); }, 500); res(tok === sayToken); };
+    src.onended = fin; const to = pTimeout(fin, buf.duration / speed * 1000 + 1500);
     src.start();
   });
 }
@@ -259,15 +260,16 @@ function say(who, text, opts = {}) {
   subtitle(who, text, 0);
   const tok = ++sayToken;
   return new Promise(res => {
-    let done = false; const fin = () => { if (done) return; done = true; clearTimeout(to); if (tok === sayToken) setTimeout(() => { if (tok === sayToken) clearSubs(); }, 600); res(tok === sayToken); };
+    let done = false; const fin = () => { if (done) return; done = true; pClear(to); if (tok === sayToken) pTimeout(() => { if (tok === sayToken) clearSubs(); }, 600); res(tok === sayToken); };
     const speak = A.voices && 'speechSynthesis' in window && VOICES.length > 0 && plain;
-    const to = setTimeout(fin, speak ? est + 5000 : est);
+    const to = pTimeout(fin, speak ? est + 5000 : est);
     if (!speak) return;
     try {
       const u = new SpeechSynthesisUtterance(plain);
       u.rate = opts.rate || 0.92; u.pitch = opts.pitch ?? 1; u.volume = (opts.volume ?? 0.95) * A.vol;
       const v = voiceFor(opts.voice); if (v) u.voice = v;
-      u.onend = fin; u.onerror = fin; speechSynthesis.speak(u);
+      // through pTimeout so a line that comes up while paused waits for the pause to end
+      u.onend = fin; u.onerror = fin; pTimeout(() => { if (!done && tok === sayToken) speechSynthesis.speak(u); }, 0);
     } catch (e) { }
   });
 }
