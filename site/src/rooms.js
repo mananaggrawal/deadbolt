@@ -16,6 +16,7 @@ export const newest = () => { const r = released(); return r[r.length - 1] || al
 
 export const fmtTime = sec => { sec = Math.max(0, Math.floor(sec || 0)); return `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`; };
 export function wrongWords(room, n) {
+  if (room && Array.isArray(room.wrongWords)) return `${n} ${room.wrongWords[n === 1 ? 0 : 1]}`;
   if (room && room.wrongLabel) return `${n} time${n === 1 ? '' : 's'} caught`;
   return `${n} wrong guess${n === 1 ? '' : 'es'}`;
 }

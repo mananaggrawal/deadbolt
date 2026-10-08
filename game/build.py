@@ -52,6 +52,8 @@ ROOMS = [
     'orloj.js',     # 7  The Blind Hour
     'tik.js',       # 8  Tik-Tik
     'tio.js',       # 9  El Tío
+    dict(var='ROOM_DED', files=['ded_a.js', 'ded_b.js', 'ded_c.js', 'ded_d.js', 'ded_e.js'],
+         css='ded.css', vo='vo_ded.json'),   # 10 Dedushka
 ]
 
 TAIL = ['series.js', 'main.js']
@@ -129,7 +131,7 @@ def mysteries_json():
     arr = js[i:j + 1]
     out = subprocess.run(['node', '-e', f'process.stdout.write(JSON.stringify({arr}))'],
                          capture_output=True, text=True, check=True).stdout
-    keep = ('n', 'id', 'title', 'date', 'place', 'era', 'hook', 'tagline', 'start', 'loading', 'theme', 'endTitle', 'wrongLabel')
+    keep = ('n', 'id', 'title', 'date', 'place', 'era', 'hook', 'tagline', 'start', 'loading', 'theme', 'endTitle', 'wrongLabel', 'wrongWords')
     return [{k: m[k] for k in keep if k in m} for m in json.loads(out)]
 
 def build_site():
