@@ -21,8 +21,9 @@ export const cfg = {
   databaseUrl: (env.MIGRATE && env.DATABASE_URL_UNPOOLED) || env.DATABASE_URL || env.POSTGRES_URL || 'postgres://localhost/deadbolt',
   authSecret: env.BETTER_AUTH_SECRET || (production ? '' : 'dev-secret-change-me-dev-secret-change-me'),
   google: { clientId: env.GOOGLE_CLIENT_ID || '', clientSecret: env.GOOGLE_CLIENT_SECRET || '' },
-  admins: list(env.ADMIN_EMAILS),
-  requireLogin: env.REQUIRE_LOGIN === 'true',      // true: the game itself needs a Google sign-in
+  // the dashboard (/admin) and staging open for this account only. Fixed in code on purpose, not read from a setting.
+  admins: ['manan190303@gmail.com'],
+  requireLogin: env.REQUIRE_LOGIN !== 'false',     // a Google sign-in is needed to play; REQUIRE_LOGIN=false lets guests in
   // true: the whole site is only for admin emails (always on for Vercel preview deployments, e.g. staging)
   staging: env.STAGING === 'true' || env.VERCEL_ENV === 'preview',
   version: env.APP_VERSION || (env.VERCEL_GIT_COMMIT_SHA || 'dev').slice(0, 7),

@@ -34,7 +34,7 @@ const CSS = `
 --sq0:#4d8a4a;--sq1:#c9a13b;--sq2:#a83a30;--sans:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"Geist Mono",ui-monospace,Menlo,monospace;color-scheme:dark}
 *{box-sizing:border-box}html{background:var(--bg)}body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/24px var(--sans);-webkit-font-smoothing:antialiased}
 a{color:inherit}p{margin:0 0 14px}h1,h2,h3{font-weight:400;margin:0;text-wrap:balance}
-.wrap{max-width:1080px;margin:0 auto;padding:0 40px}@media(max-width:768px){.wrap{padding:0 16px}}
+.wrap{max-width:1080px;margin:0 auto;padding:0 40px}.wide .wrap{max-width:1320px}@media(max-width:768px){.wrap{padding:0 16px}}
 .nav{display:flex;align-items:center;justify-content:space-between;min-height:76px;gap:16px}
 .logo{display:inline-flex;align-items:center;gap:10px;text-decoration:none;font-size:16px}
 .mark{width:22px;height:22px}
@@ -49,11 +49,11 @@ footer{border-top:1px solid var(--line);padding:32px 0 48px;color:var(--muted);f
 
 const LOGO = `<svg class="mark" viewBox="0 0 22 22" aria-hidden="true"><rect x="4" y="2" width="14" height="19" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="5.6" y="3.6" width="10.8" height="17.4" fill="#f0c27a" opacity=".85"/><rect x="5.6" y="3.6" width="5" height="17.4" fill="currentColor"/></svg>`;
 
-export function layout(head, body, { nav = true } = {}) {
+export function layout(head, body, { nav = true, wide = false } = {}) {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..600&family=Geist+Mono:wght@400;500&display=swap">
-${head}<style>${CSS}</style></head><body>
+${head}<style>${CSS}</style></head><body${wide ? ' class="wide"' : ''}>
 ${nav ? `<div class="wrap nav"><a class="logo" href="/">${LOGO}<span>${esc(cfg.siteName)}</span></a><span id="mrAccount"></span></div>` : ''}
 ${body}
 <footer><div class="wrap"><span><a href="/">All the rooms</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a>${cfg.contactEmail ? `<a href="mailto:${esc(cfg.contactEmail)}">Contact</a>` : ''}</span><span>Horror escape rooms you play in your browser.</span></div></footer>
@@ -99,17 +99,14 @@ export function privacyPage() {
 <p class="eyebrow">Privacy</p><h1>What we keep, and why</h1>
 <p class="muted">Last updated 8 October 2026.</p>
 <p>${esc(cfg.siteName)} is a set of horror escape rooms you play in your browser. We collect as little as we can, we never sell it, and there are no ads.</p>
-<h2>If you play without signing in</h2>
+<h2>What we keep</h2>
 <ul>
-<li>Your progress and results are saved in your own browser (local storage), not on our server.</li>
-<li>Your browser gets a random ID so we can count plays. It isn't linked to your name or email.</li>
-<li>While you play we record what happens in each room: when you start, which puzzles you finish, hints you take, wrong guesses, your time, and whether you escaped. We also record your type of device (phone or computer, and its browser) and your country. We don't store your IP address.</li>
-<li>We count page visits and which site a visitor came from ourselves. There are no third-party trackers or advertising cookies.</li>
-</ul>
-<h2>If you sign in with Google</h2>
-<ul>
-<li>Google tells us your name, email address and profile picture. We don't get access to your Gmail, Drive, contacts or anything else, and we don't keep Google's access tokens.</li>
+<li>You sign in with Google to play. Google tells us your name, email address and profile picture. We don't get access to your Gmail, Drive, contacts or anything else, and we don't keep Google's access tokens.</li>
+<li>While you play we record what happens in each room: when you start, which puzzles you finish, hints you take, wrong guesses, your time, and whether you escaped. This is linked to your account.</li>
 <li>We keep your first escape from each room (time, squares, hints and wrong guesses) so it appears on every device you sign in on, plus your share links, and the date you confirmed you're 18 or older.</li>
+<li>We record your type of device (phone or computer, and its browser) and your country. We don't store your IP address.</li>
+<li>Your browser gets a random ID so we can count visits before you sign in. Once you sign in on that browser, it's linked to your account.</li>
+<li>We count page visits and which site a visitor came from ourselves. There are no third-party trackers or advertising cookies.</li>
 <li>We set one cookie to keep you signed in. It's needed for signing in to work.</li>
 </ul>
 <h2>Feedback</h2>

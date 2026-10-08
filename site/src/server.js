@@ -13,7 +13,7 @@ import { landingHtml as LANDING, playHtml as PLAY } from './generated/assets.js'
 import * as R from './rooms.js';
 import * as og from './og.js';
 import { headTags, resultPage, privacyPage, termsPage, gatePage, notFoundPage } from './pages.js';
-import { adminPage, exportCsv } from './admin.js';
+import { adminOptions, adminPage, livePanel, playerPage, exportCsv } from './admin.js';
 
 export const app = new Hono();
 
@@ -22,9 +22,11 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const CODE = /^[23456789abcdefghjkmnpqrstuvwxyz]{6}$/;
 const uuidOr = v => (typeof v === 'string' && UUID.test(v) ? v.toLowerCase() : null);
 const int = (v, lo, hi) => (v === null || v === undefined || v === '' || !Number.isFinite(+v) ? null : Math.min(hi, Math.max(lo, Math.round(+v))));
-const ipOf = c => c.req.header('cf-connecting-ip') || (c.req.header('x-forwarded-for') || '').split(',')[0].trim() || 'local';
-const countryOf = c => { const v = (c.req.header('cf-ipcountry') || '').toUpperCase(); return /^[A-Z]{2}$/.test(v) && v !== 'XX' && v !== 'T1' ? v : null; };
-const isBot = ua => /bot|crawl|spider|slurp|facebookexternalhit|whatsapp|telegram|slack|discord|twitter|linkedin|embedly|preview|headless|curl|wget|python/i.test(ua || '');
+const ipOf = c => c.req.header('x-real-ip') || (c.req.header('x-forwarded-for') || '').split(',')[0].trim() || c.req.header('cf-connecting-ip') || 'local';
+// Vercel names the visitor's country in x-vercel-ip-country (Cloudflare's header kept as a fallback)
+const countryOf = c => { const v = (c.req.header('x-vercel-ip-country') || c.req.header('cf-ipcountry') || '').toUpperCase(); return /^[A-Z]{2}$/.test(v) && v !== 'XX' && v !== 'T1' ? v : null; };
+// crawlers, link-preview fetchers and headless browsers; in-app browsers (LinkedIn, Instagram, X) are real people and pass
+const isBot = ua => !ua || /bot\b|bot\/|crawl|spider|slurp|facebookexternalhit|facebookcatalog|whatsapp\/|embedly|preview|headless|lighthouse|pagespeed|curl|wget|python|go-http|axios|node-fetch|phantom|selenium|puppeteer|playwright/i.test(ua);
 function deviceOf(ua = '') {
   const kind = /iPad|Tablet|Android(?!.*Mobile)/i.test(ua) ? 'tablet' : /Mobi|iPhone|iPod|Android/i.test(ua) ? 'phone' : 'desktop';
   const os = /iPhone|iPad|iPod/i.test(ua) ? 'iOS' : /Android/i.test(ua) ? 'Android' : /Windows/i.test(ua) ? 'Windows' : /Mac OS X|Macintosh/i.test(ua) ? 'macOS' : /CrOS/i.test(ua) ? 'ChromeOS' : /Linux/i.test(ua) ? 'Linux' : 'other';
@@ -275,7 +277,8 @@ app.post('/api/plays/start', async c => {
   const b = await c.req.json().catch(() => ({}));
   const play = uuidOr(b.play), anon = uuidOr(b.anon), room = R.roomById(b.room) ? b.room : null;
   if (!play || !room) return c.json({ error: 'bad request' }, 400);
-  const s = await session(c), uid = s ? s.user.id : null, from = typeof b.from === 'string' && CODE.test(b.from.toLowerCase()) ? b.from.toLowerCase() : null;
+  const s = await session(c); if (cfg.requireLogin && !s) return c.json({ error: 'sign in' }, 401);
+  const uid = s ? s.user.id : null, from = typeof b.from === 'string' && CODE.test(b.from.toLowerCase()) ? b.from.toLowerCase() : null;
   await touchPlayer(anon, uid, c);
   const r = await one(`insert into plays (id, room, anon_id, user_id, steps_total, from_share, device, country, app_version) values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
            on conflict (id) do update set resumed = true, last_seen = now(), user_id = coalesce(plays.user_id, excluded.user_id)
@@ -303,7 +306,8 @@ app.post('/api/plays/finish', async c => {
   const b = await c.req.json().catch(() => ({}));
   const play = uuidOr(b.play), anon = uuidOr(b.anon), room = R.roomById(b.room) ? b.room : null, secs = int(b.time, 0, 86400 * 7);
   if (!play || !room || secs === null) return c.json({ error: 'bad request' }, 400);
-  const s = await session(c), uid = s ? s.user.id : null;
+  const s = await session(c); if (cfg.requireLogin && !s) return c.json({ error: 'sign in' }, 401);
+  const uid = s ? s.user.id : null;
   const hints = int(b.hints, 0, 999) || 0, wrong = int(b.wrong, 0, 999) || 0, marks = marksStr(b.marks), first = b.first === true;
   await q(`insert into plays (id, room, anon_id, user_id, outcome, ended_at, seconds, hints, wrong, marks, steps_done, first_escape, device, country, app_version)
            values ($1, $2, $3, $4, 'escaped', now(), $5, $6, $7, $8, $9, $10, $11, $12, $13)
@@ -325,7 +329,8 @@ app.post('/api/share', async c => {
   const b = await c.req.json().catch(() => ({}));
   const anon = uuidOr(b.anon), room = R.roomById(b.room) ? b.room : null, secs = int(b.time, 0, 86400 * 7);
   if (!room || secs === null) return c.json({ error: 'bad request' }, 400);
-  const s = await session(c), uid = s ? s.user.id : null;
+  const s = await session(c); if (cfg.requireLogin && !s) return c.json({ error: 'sign in' }, 401);
+  const uid = s ? s.user.id : null;
   const code = (await existingShare(uid, anon, room)) || await makeShare({ play: null, uid, anon, room, secs, hints: int(b.hints, 0, 999) || 0, wrong: int(b.wrong, 0, 999) || 0, marks: marksStr(b.marks) });
   return c.json({ code });
 });
@@ -336,13 +341,20 @@ app.post('/api/events', async c => {
   if (limited(c, 'events', 240)) return c.json({ error: 'slow down' }, 429);
   let b; try { b = JSON.parse(await c.req.text()); } catch (e) { return c.json({ error: 'bad json' }, 400); }
   const anon = uuidOr(b.anon), list = Array.isArray(b.events) ? b.events.slice(0, 50) : [];
-  if (!anon || !list.length) return c.json({ ok: true });
+  if (!anon || !list.length || isBot(c.req.header('user-agent'))) return c.json({ ok: true });
   const s = await session(c), uid = s ? s.user.id : null, device = deviceOf(c.req.header('user-agent')), country = countryOf(c);
+  // presence pings: who is online, and how long a play has run. They update rows; they aren't stored as events.
+  const pings = list.filter(e => e && e.name === 'ping');
+  for (const e of pings.slice(-1)) {
+    const play = uuidOr(e.play), secs = int(e.data && e.data.seconds, 0, 86400 * 7);
+    if (play) await q(`update plays set last_seen = now(), seconds = greatest(coalesce(seconds, 0), coalesce($2, 0)) where id = $1 and outcome = 'in_progress'`, [play, secs]);
+  }
+  if (pings.length === list.length) { await touchPlayer(anon, uid, c); return c.json({ ok: true }); }
   const ver = typeof b.v === 'string' ? b.v.slice(0, 40) : null;
   const vals = [], params = [];
   const stepPlays = [], hintPlays = [], wrongPlays = [], seen = new Set(), clicks = [];
   for (const e of list) {
-    if (!e || !EVENT.test(e.name || '')) continue;
+    if (!e || !EVENT.test(e.name || '') || e.name === 'ping' || e.name === 'server_error') continue;
     const room = typeof e.room === 'string' && R.roomById(e.room) ? e.room : null, play = uuidOr(e.play), step = int(e.step, -1, 99);
     let data = e.data && typeof e.data === 'object' ? e.data : {};
     let json = JSON.stringify(data); if (json.length > 2000) json = JSON.stringify({ truncated: true });
@@ -379,20 +391,31 @@ app.post('/api/feedback', async c => {
   return c.json({ ok: true });
 });
 
-/* ---------- the dashboard ---------- */
-app.get('/admin', async c => {
+/* ---------- the dashboard (cfg.admins only; anyone else gets a 404) ---------- */
+async function admin(c) {
   const s = await session(c);
-  if (!s) return c.redirect('/?signin=1&next=/admin');
-  if (!isAdmin(s)) return c.html(notFoundPage(), 404);
-  const days = [7, 30, 90, 365].includes(+c.req.query('days')) ? +c.req.query('days') : 30;
-  c.header('Cache-Control', 'no-store');
-  return c.html(await adminPage(days));
+  c.header('Cache-Control', 'no-store'); c.header('X-Robots-Tag', 'noindex');
+  return isAdmin(s) ? s : null;
+}
+app.get('/admin', async c => {
+  if (!(await session(c))) return c.redirect('/?signin=1&next=/admin');
+  if (!(await admin(c))) return c.html(notFoundPage(), 404);
+  return c.html(await adminPage(adminOptions(c.req.query())));
+});
+app.get('/admin/live', async c => {
+  if (!(await admin(c))) return c.text('not found', 404);
+  return c.html(await livePanel(adminOptions(c.req.query())));
+});
+app.get('/admin/players/:id{[A-Za-z0-9_-]{1,64}}', async c => {
+  if (!(await admin(c))) return c.html(notFoundPage(), 404);
+  const html = await playerPage(c.req.param('id'), adminOptions(c.req.query()));
+  return html ? c.html(html) : c.html(notFoundPage(), 404);
 });
 app.get('/admin/export/:file{[a-z]+\\.csv}', async c => {
-  const s = await session(c); if (!isAdmin(s)) return c.html(notFoundPage(), 404);
-  const days = int(c.req.query('days'), 1, 3650) || 30, table = c.req.param('file').replace(/\.csv$/, '');
-  const csv = await exportCsv(table, days); if (csv === null) return c.html(notFoundPage(), 404);
-  c.header('Content-Type', 'text/csv; charset=utf-8'); c.header('Content-Disposition', `attachment; filename="${table}-${days}d.csv"`);
+  if (!(await admin(c))) return c.html(notFoundPage(), 404);
+  const opts = adminOptions(c.req.query()), table = c.req.param('file').replace(/\.csv$/, '');
+  const csv = await exportCsv(table, opts); if (csv === null) return c.html(notFoundPage(), 404);
+  c.header('Content-Type', 'text/csv; charset=utf-8'); c.header('Content-Disposition', `attachment; filename="deadbolt-${table}-${opts.range}.csv"`);
   return c.body(csv);
 });
 
@@ -403,6 +426,13 @@ app.get('/api/cron/maintenance', async c => {
 });
 
 app.notFound(c => c.html(notFoundPage(), 404));
-app.onError((e, c) => { console.error(c.req.method, c.req.path, e); return c.req.path.startsWith('/api/') ? c.json({ error: 'server error' }, 500) : c.html(notFoundPage(), 500); });
+app.onError((e, c) => {
+  console.error(c.req.method, c.req.path, e);
+  const frames = String((e && e.stack) || '').split('\n').slice(1).map(l => l.trim().replace(/^at /, ''));
+  const ours = frames.filter(l => /\/src\/[\w.-]+\.m?js/.test(l) && !/node_modules/.test(l));
+  const where = (ours.length ? ours : frames).slice(0, 2).map(l => l.replace(/^(async )?/, '').replace(/\(?(file:\/\/)?[^()\s]*\/(src\/[^)\s]*)\)?/, '$2')).join(' < ').slice(0, 300);
+  q(`insert into events (name, data, device, country, app_version) values ('server_error', $1, $2, $3, $4)`,
+    [JSON.stringify({ method: c.req.method, path: c.req.path.slice(0, 200), message: String((e && e.message) || e).slice(0, 300), where }), deviceOf(c.req.header('user-agent')), countryOf(c), cfg.version]).catch(() => {});
+  return c.req.path.startsWith('/api/') ? c.json({ error: 'server error' }, 500) : c.html(notFoundPage(), 500); });
 
 export default app;

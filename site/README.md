@@ -54,13 +54,15 @@ You need Node 22, Python 3 and a Postgres you can reach.
 ```
 cd site && npm install
 createdb deadbolt
-DATABASE_URL=postgres://localhost/deadbolt ADMIN_EMAILS=you@gmail.com MR_DEV_PASSWORD_LOGIN=true npm run dev
+DATABASE_URL=postgres://localhost/deadbolt MR_DEV_PASSWORD_LOGIN=true npm run dev
 # http://localhost:3000
 ```
 
 `npm run dev` builds the game and the site, then starts the server; `npm start` only starts it.
 
 Google sign-in works locally once your OAuth client lists `http://localhost:3000/api/auth/callback/google` as a redirect URI and you set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. Without it, `MR_DEV_PASSWORD_LOGIN=true` turns on email-and-password sign-in for testing. It is never on in production. To sign up, `POST /api/auth/sign-up/email` with `{"email","password","name"}`.
+
+The dashboard (`/admin`) opens only for the address in `admins` in `src/config.js` (manan190303@gmail.com), and only once that account's email is verified. To see it locally, sign up with that address, then `update "user" set "emailVerified" = true where email = 'manan190303@gmail.com'` and sign in.
 
 To check a running copy, run `python3 tools/e2e.py http://localhost:3000 [session-cookie]`.
 

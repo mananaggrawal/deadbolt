@@ -88,11 +88,10 @@ Open **Vercel > project > Settings > Environment Variables**. Add each of these 
 | `BETTER_AUTH_SECRET` | the output of `openssl rand -base64 32` |
 | `GOOGLE_CLIENT_ID` | from step 4.5 |
 | `GOOGLE_CLIENT_SECRET` | from step 4.5 |
-| `ADMIN_EMAILS` | your Gmail address. To add more, separate them with commas. These addresses can open `/admin` and staging. |
 | `CONTACT_EMAIL` | the address shown on the privacy page |
 | `PUBLIC_URL` | `https://yourdomain` |
 | `CRON_SECRET` | the output of `openssl rand -hex 24`. Vercel's nightly tidy-up job sends it, and nobody else can trigger the job without it. |
-| `REQUIRE_LOGIN` | optional. `true` makes a Google sign-in necessary to play, not just to save results. Leave it unset to let guests play. |
+| `REQUIRE_LOGIN` | optional. Sign-in is required to play by default; `false` lets guests play. |
 
 Then add these for **Preview** only, with **Git branch** set to `staging`:
 
@@ -101,10 +100,9 @@ Then add these for **Preview** only, with **Git branch** set to `staging`:
 | `BETTER_AUTH_SECRET` | a second `openssl rand -base64 32` |
 | `GOOGLE_CLIENT_ID` | the same as production |
 | `GOOGLE_CLIENT_SECRET` | the same as production |
-| `ADMIN_EMAILS` | the same as production |
 | `PUBLIC_URL` | `https://staging.yourdomain` |
 
-Every preview deployment, staging included, lets in only `ADMIN_EMAILS`. The code does this by itself, so there is no switch to forget.
+Every preview deployment, staging included, lets in only manan190303@gmail.com. The dashboard (`/admin`) opens for that account only too. The address is fixed in code (`admins` in `site/src/config.js`), not read from a setting, so there is no switch to forget. An old `ADMIN_EMAILS` variable in Vercel does nothing now and can be deleted.
 
 ## 6. The domain
 
@@ -123,7 +121,7 @@ Nothing to do: the Neon connection from step 3 gives every preview deployment it
 
 Then check that:
 - `https://yourdomain` shows the corridor of doors, and **Sign in** at the top right works;
-- `https://yourdomain/admin` shows the dashboard, for `ADMIN_EMAILS` only;
+- `https://yourdomain/admin` shows the dashboard, for manan190303@gmail.com only;
 - `https://yourdomain/healthz` says `{"ok":true,...}`;
 - `https://staging.yourdomain` asks you to sign in, and lets only you in. Vercel may ask you to log in to Vercel first; that's its own protection for preview deployments.
 - Pasting `https://yourdomain/m/tio` into WhatsApp shows the room's preview card.
@@ -146,9 +144,19 @@ It then runs every night at 2:30 a.m. India time. The files are encrypted, so th
   ```
   git checkout main && git merge staging && git push
   ```
-- **Logs:** Vercel > project > **Logs**. Filter by `/api/` or by errors.
+- **What's happening:** `/admin` (signed in as manan190303@gmail.com). It shows:
+  - who is on the site and in which room right now, refreshing every 15 seconds, and a feed of what just happened;
+  - visitors, new accounts, plays and escapes over 24 hours, 7, 30 or 90 days, or all time;
+  - the funnel from first visit to first escape, and whether new players come back;
+  - each room's numbers and where players stop;
+  - every player, each with a page of everything they did;
+  - browser and server errors, feedback, pages, referrers, countries and devices;
+  - CSV exports.
+
+  Your own activity is hidden unless you switch it on. Bots, link previews and headless browsers aren't counted.
+- **Logs:** Vercel > project > **Logs**. Filter by `/api/` or by errors. Server errors also show on the dashboard.
 - **Roll back:** Vercel > **Deployments**, pick an earlier production deployment, then **⋯ > Instant Rollback**. It takes seconds. Database changes are not rolled back; they only ever add tables and columns.
-- **Make sign-in necessary to play:** set `REQUIRE_LOGIN` to `true` for Production, then redeploy.
+- **Sign-in to play** is on by default. To let guests play, set `REQUIRE_LOGIN` to `false` for Production, then redeploy.
 - **Restore from the last 6 hours:** Neon > **Restore**, then pick the branch and the time.
 - **Restore an older backup:**
   1. Download the artifact from the backup run on GitHub and unzip it.

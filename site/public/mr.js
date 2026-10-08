@@ -68,6 +68,21 @@
     if (!e || !e.message || (track.errs = (track.errs || 0) + 1) > 5) return;
     track('client_error', { message: String(e.message).slice(0, 300), where: `${(e.filename || '').split('/').pop()}:${e.lineno || 0}` });
   });
+  addEventListener('unhandledrejection', e => {
+    if ((track.errs = (track.errs || 0) + 1) > 5) return;
+    const r = e && e.reason;
+    track('client_error', { message: String((r && r.message) || r || 'unhandled rejection').slice(0, 300), where: 'promise' });
+  });
+  const tracked = CFG.page !== 'admin';   // the dashboard itself isn't counted
+
+  /* presence: one ping a minute while the page is in front, so the dashboard knows who is here and how long a play has run */
+  function ping() {
+    if (!tracked || document.visibilityState !== 'visible') return;
+    const inPlay = last && last.mode === 'play';
+    track('ping', inPlay ? { step: last.solved.length, seconds: last.elapsed } : {}, inPlay ? last.room : null);
+    flush();
+  }
+  setInterval(ping, 60000);
 
   /* ---------- plays ---------- */
   function startPlay(room, cont) {
@@ -210,16 +225,17 @@
   }
   function closeModal() { if (openModal) { openModal.remove(); openModal = null; } }
 
-  function signInDialog(reason) {
+  function signInDialog(reason, next) {
     track('signin_prompt', { where: reason || CFG.page });
-    modal(`<h2>Sign in</h2>
-      <p>${esc(reason === 'required' ? 'Sign in to play. Your results and squares are kept on every device you use.' : 'Keep your escapes and squares on every device. You can still play without an account.')}</p>
+    const required = reason === 'required' || CFG.requireLogin;
+    modal(`<h2>${required ? 'Sign in to play' : 'Sign in'}</h2>
+      <p>${esc(required ? 'One step with Google and you’re in. Your escapes and squares are kept on every device you use.' : 'Keep your escapes and squares on every device. You can still play without an account.')}</p>
       <label class="chk"><input type="checkbox" id="mrAge"> <span>I'm 18 or older. These rooms have frightening scenes.</span></label>
       <button class="b" type="button" id="mrGo" disabled>${GOOGLE}<span>Continue with Google</span></button>
       <p class="fine">Google shares your name, email address and profile picture with us, nothing else. <a href="/privacy" target="_blank" rel="noopener">Privacy</a> &middot; <a href="/terms" target="_blank" rel="noopener">Terms</a></p>`, el => {
       const age = el.querySelector('#mrAge'), go = el.querySelector('#mrGo');
       age.onchange = () => { go.disabled = !age.checked; };
-      go.onclick = () => { go.disabled = true; const nx = new URLSearchParams(location.search).get('next'); signIn(nx && /^\/(?!\/)/.test(nx) ? nx : undefined).catch(() => { go.disabled = false; go.lastElementChild.textContent = 'Couldn’t reach Google. Try again'; }); };
+      go.onclick = () => { go.disabled = true; const nx = next || new URLSearchParams(location.search).get('next'); signIn(nx && /^\/(?!\/)/.test(nx) ? nx : undefined).catch(() => { go.disabled = false; go.lastElementChild.textContent = 'Couldn’t reach Google. Try again'; }); };
     });
   }
   function consentDialog() {
@@ -348,5 +364,5 @@
     const q = new URLSearchParams(location.search);
     if (q.get('signin')) ready.then(() => { if (!me) signInDialog(q.get('signin') === 'required' ? 'required' : 'nav'); });
   }
-  track('page_view', { path: location.pathname, ref: document.referrer ? new URL(document.referrer).host : null });
+  if (tracked) track('page_view', { path: location.pathname, ref: document.referrer ? (() => { try { return new URL(document.referrer).host; } catch (e) { return null; } })() : null });
 })();

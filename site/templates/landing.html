@@ -594,13 +594,13 @@ Escaped in 31:20 · 2 hints
       </div>
       <div>
         <div class="section-head"><p class="eyebrow">Questions</p><h2>Asked at the door.</h2></div>
-        <details class="faq"><summary>Is it free?</summary><p>Yes. There's nothing to install and you don't need an account. Open a door and you're in. Sign in with Google only if you want your results kept on every device.</p></details>
+        <details class="faq"><summary>Is it free?</summary><p>Yes. There's nothing to install. You sign in with Google once, then open a door and you're in. Your escapes and squares are kept on every device you sign in on.</p></details>
         <details class="faq"><summary>How scary is it?</summary><p>Scary enough to make you jump: sudden faces, things moving in the dark and some unsettling images. It isn't meant for young children.</p></details>
         <details class="faq"><summary>What if I get stuck?</summary><p>Press H, or tap Hints on a phone. Every puzzle has four hints, ending with the answer. Using them only changes the colour of that puzzle's square.</p></details>
         <details class="faq"><summary>Does it work on my phone?</summary><p>Yes, held sideways. You get a thumbstick to walk, drag to look around, and buttons for whatever you can do next.</p></details>
         <details class="faq"><summary>How often do new rooms open?</summary><p>New rooms open regularly, and the newest one is always the first door in the corridor.</p></details>
         <details class="faq"><summary>Can I continue on another device?</summary><p>Your results can. Sign in with Google on each device and your escapes and squares follow you. A room you leave halfway picks up again on the device you were playing on.</p></details>
-        <details class="faq"><summary>What do you keep about me?</summary><p>As a guest, only an anonymous record of how each room went, so we can see where people get stuck. Signed in, also your name, email and results. The <a href="/privacy" style="text-decoration:underline;text-underline-offset:3px">privacy page</a> has the details.</p></details>
+        <details class="faq"><summary>What do you keep about me?</summary><p>Your name, email address and results, and a record of how each room went, so we can see where people get stuck. The <a href="/privacy" style="text-decoration:underline;text-underline-offset:3px">privacy page</a> has the details.</p></details>
       </div>
     </div>
   </section>
@@ -901,8 +901,15 @@ function fillRoom(r) {
   const st = statusOf(r.id), signed = !!(window.MR && MR.me);
   $('#rNote').textContent = st.done ? `You escaped this one in ${mmss(st.time)}. You can play it again any time.`
     : st.prog ? 'You left this room halfway. It picks up where you stopped.'
-    : signed ? 'Signed in: your result will be kept on every device.' : 'Playing as a guest. Sign in from the top of the page to keep your results on every device.';
-  const s = $('#rStart'); s.href = `/play/${encodeURIComponent(r.id)}`; s.innerHTML = `${esc(st.prog ? 'Continue' : st.done ? 'Play again' : (r.start || 'Begin'))} <svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 6h8M6.5 2.5 10 6l-3.5 3.5"/></svg>`;
+    : signed ? 'Signed in: your result will be kept on every device.' : 'You’ll sign in with Google first. It takes one click, and your results follow you to every device.';
+  const s = $('#rStart'); s.href = `/play/${encodeURIComponent(r.id)}`;
+  // signed out: ask for Google sign-in right here instead of bouncing through the server's redirect
+  s.onclick = async e => {
+    if (!window.MR || !(window.MR_CFG || {}).requireLogin || MR.me) return;
+    e.preventDefault();
+    await MR.ready;
+    if (MR.me) location.href = s.href; else MR.signInDialog('required', s.getAttribute('href'));
+  }; s.innerHTML = `${esc(st.prog ? 'Continue' : st.done ? 'Play again' : (r.start || 'Begin'))} <svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 6h8M6.5 2.5 10 6l-3.5 3.5"/></svg>`;
   $('#rKeys').textContent = touch
     ? 'Hold your phone sideways · Thumbstick to walk · Drag to look · Headphones recommended'
     : 'WASD to move · Mouse to look · E to use · H for hints · Headphones recommended';

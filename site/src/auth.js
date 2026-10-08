@@ -26,7 +26,8 @@ export const auth = betterAuth({
   emailAndPassword: { enabled: !cfg.production && process.env.MR_DEV_PASSWORD_LOGIN === 'true' },
   advanced: {
     useSecureCookies: cfg.baseURL.startsWith('https://'),
-    ipAddress: { ipAddressHeaders: ['cf-connecting-ip', 'x-forwarded-for'] },
+    // sessions keep no IP address (the privacy page promises that); our own per-IP limits in server.js stay
+    ipAddress: { disableIpTracking: true },
   },
   // we only need Google to say who someone is: drop the access tokens it hands back
   databaseHooks: {
