@@ -134,7 +134,7 @@ with sync_playwright() as p:
         check('Download my data' not in pg.inner_text('#mrAccount'), 'the account menu has no data download')
         r = pg.goto(BASE + '/admin'); pg.wait_for_timeout(1200)
         if r.status == 200:
-            check(pg.locator('h1', has_text='Dashboard').count() == 1 and pg.locator('#live').count() == 1, 'dashboard opens for the admin account')
+            check(pg.locator('h1', has_text='Dashboard').count() == 1 and pg.locator('h2', has_text='Retention').count() == 1, 'dashboard opens for the admin account')
             pg.screenshot(path=f'{SHOTS}/09-admin.png', full_page=True)
         else:
             check(r.status == 403 and pg.locator('#go').count() == 1, f"anyone else gets the dashboard's sign-in page ({r.status})")
