@@ -90,7 +90,7 @@ app.use('*', async (c, next) => {
 app.use('/api/*', bodyLimit({ maxSize: 64 * 1024, onError: c => c.json({ error: 'too large' }, 413) }));
 
 /* ---------- staging: only admin emails get in ---------- */
-const OPEN_PATHS = /^\/(api\/auth\/|api\/me$|api\/cron\/|healthz$|mr\.js$|favicon\.svg$|icon-\d+\.png$|art\/|privacy$|terms$)/;
+const OPEN_PATHS = /^\/(api\/auth\/|api\/me$|api\/cron\/|healthz$|mr\.js$|favicon\.(svg|ico)$|icon-\d+\.png$|apple-touch-icon\.png$|art\/|privacy$|terms$)/;
 app.use('*', async (c, next) => {
   if (!cfg.staging || OPEN_PATHS.test(c.req.path)) return next();
   const s = await session(c);
@@ -109,7 +109,7 @@ app.on(['GET', 'POST'], '/api/auth/*', c => {
 /* ---------- static files ----------
    On Vercel, everything in public/ is served by the CDN before a request reaches this function
    (cache headers in vercel.json). These routes only answer when running locally. */
-const TYPES = { '.js': 'text/javascript; charset=utf-8', '.json': 'application/json', '.jpg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml', '.css': 'text/css; charset=utf-8', '.webmanifest': 'application/manifest+json' };
+const TYPES = { '.js': 'text/javascript; charset=utf-8', '.json': 'application/json', '.jpg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml', '.css': 'text/css; charset=utf-8', '.webmanifest': 'application/manifest+json', '.ico': 'image/x-icon' };
 function sendFile(c, file, cache) {
   if (!fs.existsSync(file)) return c.html(notFoundPage(), 404);
   const st = fs.statSync(file), etag = `"${st.size.toString(36)}-${Math.floor(st.mtimeMs).toString(36)}"`;
@@ -122,6 +122,8 @@ const YEAR = 'public, max-age=31536000, immutable';
 const pub = (...p) => path.join(cfg.publicDir, ...p);
 app.get('/mr.js', c => sendFile(c, pub('mr.js'), 'public, max-age=300'));
 app.get('/favicon.svg', c => sendFile(c, pub('favicon.svg'), 'public, max-age=86400'));
+app.get('/favicon.ico', c => sendFile(c, pub('favicon.ico'), 'public, max-age=86400'));
+app.get('/apple-touch-icon.png', c => sendFile(c, pub('apple-touch-icon.png'), 'public, max-age=86400'));
 app.get('/icon-192.png', c => sendFile(c, pub('icon-192.png'), 'public, max-age=86400'));
 app.get('/icon-512.png', c => sendFile(c, pub('icon-512.png'), 'public, max-age=86400'));
 app.get('/art/:file{[a-z0-9_-]+\\.jpg}', c => sendFile(c, pub('art', c.req.param('file')), 'public, max-age=2592000'));
@@ -150,8 +152,8 @@ const PREFETCH = () => [`/game/${R.appFile()}`, '/vendor/three-0.160.0.module.js
 function landingHtml(room, { canon = null } = {}) {
   const rel = R.released().map(m => m.id);
   const head = room
-    ? headTags({ title: `${room.title} · ${cfg.siteName}`, description: room.tagline || room.hook, path: `/m/${room.id}`, image: `/og/m/${room.id}.png`, page: 'site', room: room.id })
-    : headTags({ title: `${cfg.siteName} · Horror mystery rooms in your browser`, description: 'First-person horror mystery rooms you play alone in your browser. A real place on one night, something in it that follows a rule, and one way out. Free, no download.', path: '/' });
+    ? headTags({ title: `${room.title} · ${cfg.siteName}`, description: room.tagline || room.hook, path: `/m/${room.id}`, image: `/og/m/${room.id}.jpg`, imageAlt: `${room.title}, a horror mystery room on ${cfg.siteName}`, page: 'site', room: room.id })
+    : headTags({ title: `${cfg.siteName} · Horror mystery rooms`, description: 'First-person horror mystery rooms you play alone. A real place on one night, something in it that follows a rule, and one way out.', path: '/' });
   // the doors' words come from the game's own room list, so the corridor and the room never disagree
   const words = Object.fromEntries(R.allRooms().map(m => [m.id, { title: m.title, place: m.place, era: m.era, hook: m.hook, tagline: m.tagline, start: m.start }]));
   const vars = { MR_RELEASED: rel, MR_ROOMS: words, MR_PREFETCH: PREFETCH() };
@@ -187,7 +189,7 @@ app.get('/play/:id', async c => {
   const etag = `"p-${m.id}-${cfg.version}"`;
   c.header('ETag', etag); c.header('Cache-Control', 'no-cache');
   if (c.req.header('if-none-match') === etag) return c.body(null, 304);
-  const head = headTags({ title: `${m.title} · ${cfg.siteName}`, description: m.tagline || m.hook, path: `/m/${m.id}`, image: `/og/m/${m.id}.png`, page: 'game', room: m.id });
+  const head = headTags({ title: `${m.title} · ${cfg.siteName}`, description: m.tagline || m.hook, path: `/m/${m.id}`, image: `/og/m/${m.id}.jpg`, imageAlt: `${m.title}, a horror mystery room on ${cfg.siteName}`, page: 'game', room: m.id });
   return c.html(playPage(m, head).replace('<!--MR_BOOT-->', htmlEsc(m.title)));
 });
 // the room's screen is filled in on the server, so it shows the moment the page arrives (the game takes over once loaded)
@@ -215,21 +217,23 @@ app.get('/r/:code', async c => {
   c.header('Cache-Control', 'no-cache');   // visits are counted by the page itself (share_visit), so link previews don't count
   return c.html(resultPage(s));
 });
-async function sendPng(c, key, build, cache) {
-  const buf = await og.png(key, build);
+// preview cards: .jpg is what pages point at; .png answers links already shared in apps before the switch
+async function sendCard(c, key, build, cache, fmt) {
+  const buf = await og.image(key, build, fmt);
   if (!buf) return c.text('not found', 404);
-  c.header('Content-Type', 'image/png'); c.header('Cache-Control', cache);
+  c.header('Content-Type', fmt === 'png' ? 'image/png' : 'image/jpeg'); c.header('Cache-Control', cache);
   return c.body(buf);
 }
-app.get('/og/site.png', c => sendPng(c, `site:${R.released().length}`, () => og.siteCard(), 'public, max-age=3600'));
-app.get('/og/m/:file{[a-z0-9_-]+\\.png}', c => {
-  const id = c.req.param('file').replace(/\.png$/, '');
-  return sendPng(c, `m:${id}`, () => (R.isReleased(id) ? og.roomCard(id) : null), 'public, max-age=86400');
+const fmtOf = file => (file.endsWith('.png') ? 'png' : 'jpg');
+app.get('/og/:file{site\\.(jpg|png)}', c => sendCard(c, `site:${R.released().length}`, () => og.siteCard(), 'public, max-age=3600, s-maxage=3600', fmtOf(c.req.param('file'))));
+app.get('/og/m/:file{[a-z0-9_-]+\\.(jpg|png)}', c => {
+  const file = c.req.param('file'), id = file.replace(/\.(jpg|png)$/, '');
+  return sendCard(c, `m:${id}`, () => (R.isReleased(id) ? og.roomCard(id) : null), 'public, max-age=86400, s-maxage=86400', fmtOf(file));
 });
-app.get('/og/r/:file{[a-z0-9]{6}\\.png}', async c => {
-  const code = c.req.param('file').slice(0, 6);
+app.get('/og/r/:file{[a-z0-9]{6}\\.(jpg|png)}', async c => {
+  const file = c.req.param('file'), code = file.slice(0, 6);
   const s = CODE.test(code) ? await one('select * from shares where code = $1', [code]) : null;
-  return sendPng(c, `r:${code}`, () => (s ? og.resultCard(s) : null), YEAR);
+  return sendCard(c, `r:${code}`, () => (s ? og.resultCard(s) : null), `${YEAR}, s-maxage=31536000`, fmtOf(file));
 });
 
 /* ---------- legal ---------- */

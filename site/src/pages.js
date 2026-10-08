@@ -5,8 +5,13 @@ import { roomById, fmtTime, wrongWords } from './rooms.js';
 export const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 // meta tags, favicon, analytics and the site client, shared by every page
-export function headTags({ title, description, path = '/', image = '/og/site.png', page = 'site', room = null, noindex = false }) {
-  const url = cfg.baseURL + path, img = image.startsWith('http') ? image : cfg.baseURL + image;
+// image: a 1200x630 preview card (src/og.js). Its address carries the build version, so apps that keep
+// a picture per address (X, Facebook, Telegram) fetch the new card after a redesign.
+export function headTags({ title, description, path = '/', image = '/og/site.jpg', imageAlt = '', page = 'site', room = null, noindex = false }) {
+  const url = cfg.baseURL + path;
+  const img = (image.startsWith('http') ? image : cfg.baseURL + image) + (image.includes('?') ? '&' : '?') + 'v=' + encodeURIComponent(cfg.version);
+  const alt = imageAlt || `${cfg.siteName}: horror mystery rooms`;
+  const imgType = /\.png(\?|$)/.test(image) ? 'image/png' : 'image/jpeg';
   const mrCfg = { version: cfg.version, requireLogin: cfg.requireLogin, page, room, siteName: cfg.siteName };
   return `<title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
@@ -17,17 +22,26 @@ ${noindex ? '<meta name="robots" content="noindex">' : ''}
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:url" content="${esc(url)}">
+<meta property="og:locale" content="en_US">
 <meta property="og:image" content="${esc(img)}">
+<meta property="og:image:secure_url" content="${esc(img)}">
+<meta property="og:image:type" content="${imgType}">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="${esc(alt)}">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${esc(title)}">
+<meta name="twitter:description" content="${esc(description)}">
+<meta name="twitter:image" content="${esc(img)}">
+<meta name="twitter:image:alt" content="${esc(alt)}">
 <meta name="theme-color" content="#0b0a09">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="${esc(cfg.siteName)}">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.webmanifest">
 <script>window.MR_CFG=${JSON.stringify(mrCfg).replace(/</g, '\\u003c')};</script>
 <script src="/mr.js?v=${esc(cfg.version)}"></script>`;
@@ -70,7 +84,7 @@ export function resultPage(share) {
   const marks = String(share.marks || '').split('').map(Number);
   const title = `Escaped ${m.title} in ${fmtTime(share.seconds)}`;
   const desc = `Mystery #${m.n} · ${m.place}, ${m.era}. ${m.tagline || ''}`;
-  const head = headTags({ title: `${title} · ${cfg.siteName}`, description: desc, path: `/r/${share.code}`, image: `/og/r/${share.code}.png`, page: 'result', room: m.id, noindex: true });
+  const head = headTags({ title: `${title} · ${cfg.siteName}`, description: desc, path: `/r/${share.code}`, image: `/og/r/${share.code}.jpg`, imageAlt: `${title}: ${m.title} on ${cfg.siteName}`, page: 'result', room: m.id, noindex: true });
   const body = `
 <style>
 .res{position:relative;min-height:calc(100dvh - 76px - 120px);display:flex;align-items:center;overflow:hidden;isolation:isolate}

@@ -19,5 +19,7 @@ site/src/generated/
 site/public/game/
 site/public/vendor/
 site/public/icon-*.png
+site/public/apple-touch-icon.png
+site/public/favicon.ico
 .vercel/
 landing-src/
