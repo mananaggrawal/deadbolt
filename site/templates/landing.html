@@ -295,14 +295,14 @@ kbd { display: inline-block; min-width: 16px; padding: 0 5px; border: 1px solid 
 .doors li { display: flex; justify-content: center; min-width: 0; }
 .doors .dbtn { width: 100%; max-width: 180px; --dw: 100%; }
 .cap2 { display: flex; flex-direction: column; gap: 2px; margin-top: 64px; min-width: 0; }
-.cap2 .cn { font: 500 11px/16px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); display: flex; gap: 8px; align-items: center; }
-.cap2 .cn .pill { font-family: var(--sans); letter-spacing: 0; text-transform: none; }
+.cap2 .cn { font: 500 11px/16px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); display: flex; gap: 8px; align-items: center; height: 20px; }
+.cap2 .cn .pill { font-family: var(--sans); letter-spacing: 0; text-transform: none; line-height: 18px; padding: 0 8px; }
 .cap2 .cn .cm { margin-left: auto; letter-spacing: .04em; text-transform: none; color: var(--faint); }
-.cap2 .ct { font-size: 16px; line-height: 22px; font-weight: 450; margin-top: 4px; }
-.cap2 .cp { font-size: 13px; line-height: 18px; color: var(--muted); }
-.cap2 .cst { font-size: 13px; line-height: 18px; color: #8fbf8a; margin: 2px 0 2px; }
+.cap2 .ct { font-size: 16px; line-height: 22px; font-weight: 450; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cap2 .cp { font-size: 13px; line-height: 18px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cap2 .cst { font: 500 11px/16px var(--mono); letter-spacing: .06em; color: #8fbf8a; margin-top: 12px; }
 .cap2 .cst.prog { color: var(--lamp); }
-.cap2 .cg { font-size: 13px; line-height: 19px; color: var(--ink-2); margin-top: 8px; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.cap2 .cg { font-size: 13px; line-height: 19px; color: var(--ink-2); margin-top: 8px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; min-height: 57px; }
 .dbtn:hover .ct, .dbtn:focus-visible .ct { color: var(--lamp); }
 .swipe { display: none; margin-top: 18px; color: var(--muted); font-size: 13px; }
 .doors li[hidden] { display: none; }
@@ -635,13 +635,15 @@ function doorHTML(r, state = '') {
 
 /* corridor */
 const SOON = { n: newest.n + 1, id: 'soon', leaf: 'soon', glow: '#000000', pos: '50%' };
+/* a door's blurb is its tagline's first sentence: same length on every door, and no rules given away */
+const blurb = t => { const m = String(t || '').match(/^.+?[.!?](?=\s|$)/); return m ? m[0] : String(t || ''); };
 /* newest first: the locked door, then the open ones counting down */
 $('#doors').innerHTML = `<li><button class="dbtn" type="button" data-id="soon" aria-label="Door No. ${SOON.n} is locked. It opens soon.">
     ${doorHTML(SOON)}
-    <span class="cap2"><span class="cn">No. ${SOON.n}</span><span class="ct">Coming soon</span><span class="cp">Locked for now</span><span class="cg">The next room is still being built. It will be the first door here when it opens.</span></span>
+    <span class="cap2"><span class="cn">No. ${SOON.n}</span><span class="ct">Coming soon</span><span class="cp">Locked for now</span><span class="cg">The next room is still being built.</span></span>
   </button></li>` + order.map(r => `<li><button class="dbtn" type="button" data-id="${r.id}" aria-label="Go in: Mystery #${r.n}, ${esc(r.title)}">
     ${doorHTML(r)}
-    <span class="cap2"><span class="cn">No. ${r.n}${r === newest ? '<span class="pill new">New</span>' : ''}<span class="cm">${esc(r.mins)}</span></span><span class="ct">${esc(r.title)}</span><span class="cp">${esc(r.short)}</span><span class="cg">${esc(r.tagline)}</span></span>
+    <span class="cap2"><span class="cn">No. ${r.n}${r === newest ? '<span class="pill new">New</span>' : ''}<span class="cm">${esc(r.mins)}</span></span><span class="ct">${esc(r.title)}</span><span class="cp">${esc(r.short)}</span><span class="cg">${esc(blurb(r.tagline))}</span></span>
   </button></li>`).join('');
 
 /* corridor pages: five doors at a time */
@@ -738,10 +740,10 @@ feed.addEventListener('pointerover', e => {
 function paintStatus() {
   $$('#doors .dbtn[data-id]').forEach(b => {
     const r = byId[b.dataset.id]; if (!r) return;
-    const st = statusOf(r.id), ct = $('.ct', b); if (!ct) return;
+    const st = statusOf(r.id), cap = $('.cap2', b); if (!cap) return;
     let el = $('.cst', b);
     if (!st.done && !st.prog) { if (el) el.remove(); return; }
-    if (!el) { el = document.createElement('span'); el.className = 'cst'; ct.insertAdjacentElement('afterend', el); }
+    if (!el) { el = document.createElement('span'); el.className = 'cst'; cap.appendChild(el); }
     el.textContent = st.done ? `Escaped in ${mmss(st.time)}` : 'In progress';
     el.classList.toggle('prog', !st.done);
   });
