@@ -3,6 +3,7 @@ import { cfg } from './config.js';
 import { rooms } from './generated/assets.js';
 
 export const voFile = () => rooms.vo;
+export const appFile = () => rooms.app;
 export const allRooms = () => rooms.mysteries;
 export const roomById = id => allRooms().find(m => m.id === id) || null;
 

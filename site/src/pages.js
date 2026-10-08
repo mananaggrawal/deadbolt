@@ -22,6 +22,10 @@ ${noindex ? '<meta name="robots" content="noindex">' : ''}
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#0b0a09">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="${esc(cfg.siteName)}">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <link rel="manifest" href="/manifest.webmanifest">
@@ -103,10 +107,11 @@ export function privacyPage() {
 <ul>
 <li>You sign in with Google to play. Google tells us your name, email address and profile picture. We don't get access to your Gmail, Drive, contacts or anything else, and we don't keep Google's access tokens.</li>
 <li>While you play we record what happens in each room: when you start, which puzzles you finish, hints you take, wrong guesses, your time, and whether you escaped. This is linked to your account.</li>
-<li>We keep your first escape from each room (time, squares, hints and wrong guesses) so it appears on every device you sign in on, plus your share links, and the date you confirmed you're 18 or older.</li>
+<li>We keep your first escape from each room (time, squares, hints and wrong guesses) so it appears on every device you sign in on, plus your share links and how many people opened them, and the date you confirmed you're 18 or older.</li>
 <li>We record your type of device (phone or computer, and its browser) and your country. We don't store your IP address.</li>
 <li>Your browser gets a random ID so we can count visits before you sign in. Once you sign in on that browser, it's linked to your account.</li>
 <li>We count page visits and which site a visitor came from ourselves. There are no third-party trackers or advertising cookies.</li>
+<li>When you share a room, a result or the site, your link carries a short code and the app you chose (WhatsApp, email and so on), so we can count how many people opened it and went on to play. If you arrived through someone's link, we note that link against your browser's random ID.</li>
 <li>We set one cookie to keep you signed in. It's needed for signing in to work.</li>
 </ul>
 <h2>Feedback</h2>

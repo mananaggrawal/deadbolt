@@ -34,8 +34,10 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.shadowMap.autoUpdate = false;
 const IS_TOUCH = (() => { try { return matchMedia('(pointer: coarse)').matches && !matchMedia('(pointer: fine)').matches; } catch (e) { return false; } })();
-const PR = Math.min(window.devicePixelRatio || 1, IS_TOUCH ? 1.0 : 1.25);
+let PR = Math.min(window.devicePixelRatio || 1, IS_TOUCH ? 1.0 : 1.25);
 renderer.setPixelRatio(PR);
+// a phone that can't keep up drops to a lower resolution (see perfTick in main.js)
+function setRenderScale(s) { if (Math.abs(s - PR) < 0.01) return; PR = s; renderer.setPixelRatio(PR); onResize(); renderer.shadowMap.needsUpdate = true; }
 
 const scene = new THREE.Scene();
 scene.fog = new THREE.FogExp2(0x050506, 0.05);
@@ -488,8 +490,12 @@ function lockPointer(force) {
 }
 function onLockError(id) {
   if (!id || G.lockPending !== id) return;
+  const fromClick = G.lockFromClick;
   G.lockPending = 0; G.lockFromClick = false;
-  startFreeLook();
+  // Browsers only capture the mouse straight after a click, and Chrome refuses for about a second after
+  // Esc released it. Once capture has worked on this page, a refusal just means "click again" (the
+  // "Click to carry on" hint shows); free look is only for pages that never allow capture (some frames).
+  if (fromClick && !G.lockWorked) startFreeLook();
 }
 function startFreeLook() {
   if (G.touch) return;
@@ -501,14 +507,26 @@ document.addEventListener('pointerlockerror', () => onLockError(G.lockPending));
 document.addEventListener('pointerlockchange', () => {
   G.locked = document.pointerLockElement === canvas;
   if (G.locked) { G.lockPending = 0; G.lockWorked = true; G.freeLook = false; G.needClick = false; G.lockFromClick = false; $('#clickhint').hidden = true; }
-  else if (G.mode === 'play' && !G.uiOpen && !G.cutscene) openPause();
+  // the player let go of the mouse (Esc, switching windows): pause, even mid-cutscene (pausing stops game time).
+  // When the game let go itself (a panel, a scare), it isn't a pause.
+  else if (G.mode === 'play' && !G.uiOpen && !G.releasing) { G.escPauseAt = performance.now(); openPause(); }
+  G.releasing = false;
 });
-function releasePointer() { if (document.pointerLockElement) { try { document.exitPointerLock(); } catch (e) {} } FL.x = -1; FL.armed = false; }
-function resumeLook() {
+function releasePointer() { if (document.pointerLockElement) { G.releasing = true; try { document.exitPointerLock(); } catch (e) { G.releasing = false; } } FL.x = -1; FL.armed = false; }
+// after a panel closes. Esc never counts as a click for the browser, so closing with Esc leaves the
+// "Click to carry on" hint instead of asking for the mouse (the request would only be refused).
+function resumeLook(byEsc) {
   if (G.mode !== 'play' || G.touch) return;
   FL.x = -1; FL.armed = false;
-  if (G.freeLook) return;
+  if (G.freeLook || byEsc) return;
   lockPointer();
+}
+// "Click to carry on": shown whenever you're playing on a computer without the mouse captured
+function clickHintTick() {
+  const want = G.mode === 'play' && !G.touch && !G.freeLook && !G.locked && !G.uiOpen && !G.cutscene && !G.lockPending && !document.hidden;
+  const el = $('#clickhint');
+  if (el.hidden === want) el.hidden = !want;
+  G.needClick = want;
 }
 
 canvas.addEventListener('contextmenu', e => e.preventDefault());
@@ -562,13 +580,19 @@ addEventListener('keydown', e => {
   if (e.code === 'Tab') { e.preventDefault(); if (G.mode === 'play' && !G.cutscene) { if (UI.kind === 'notebook') UI.close(); else if (!UI.kind || UI.kind === 'hints') openNotebook(); } return; }
   if (G.mode !== 'play') return;
   if (UI.kind) {
-    if (e.code === 'Escape') { e.preventDefault(); UI.close(); return; }
+    if (e.code === 'Escape') {
+      e.preventDefault();
+      // the same Esc press that released the mouse (some browsers pass it on too) must not close the pause it opened
+      if (UI.kind === 'pause' && performance.now() - (G.escPauseAt || 0) < 450) return;
+      UI.close(false, false, true); return;
+    }
     if (e.code === 'KeyH' && UI.kind === 'hints') { UI.close(); return; }
     if (e.code === 'KeyE' && UI.closeOnE && !e.repeat) { UI.close(); return; }
     UI.onKey && UI.onKey(e);
     return;
   }
-  if (G.panelOpen) { if (e.code === 'Escape' || (e.code === 'KeyE' && !e.repeat)) { closePanel(); return; } }
+  if (G.panelOpen) { if (e.code === 'Escape' || (e.code === 'KeyE' && !e.repeat)) { closePanel(false, e.code === 'Escape'); return; } }
+  if (e.code === 'Escape') { if (!e.repeat && !G.locked) openPause(); return; }   // works during cutscenes too
   keys[e.code] = true;
   if (e.repeat || G.cutscene) return;
   if (G.panelOpen) return;
@@ -579,7 +603,6 @@ addEventListener('keydown', e => {
   else if (e.code === 'Space') { e.preventDefault(); ROOM.stepDown && ROOM.stepDown(); }
   else if (e.code === 'KeyQ') ROOM.dropHeld && ROOM.dropHeld();
   else if (e.code === 'KeyH') openHints();
-  else if (e.code === 'Escape') { if (!G.locked) openPause(); }
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
@@ -599,12 +622,13 @@ const UI = {
     const f = card.querySelector('[autofocus]'); card.tabIndex = -1; (f || card).focus({ preventScroll: true });
     updatePrompt(true);
   },
-  close(silent, replacing) {
+  close(silent, replacing, byEsc) {
     if (!UI.kind) return;
-    const cb = UI.onClose, always = UI.kind === 'phone'; UI.kind = null; UI.onClose = null; UI.onKey = null;
+    const cb = UI.onClose, always = UI.kind === 'phone', wasPause = UI.kind === 'pause'; UI.kind = null; UI.onClose = null; UI.onKey = null;
     $('#overlay').hidden = true; $('#card').innerHTML = ''; G.uiOpen = false;
     if (cb && (!replacing || always)) cb();
-    if (!silent && !UI.kind && !G.panelOpen) resumeLook();
+    if (wasPause) wakeAudio();
+    if (!silent && !UI.kind && !G.panelOpen) resumeLook(byEsc);
   },
 };
 $('#overlay').addEventListener('mousedown', e => { if (e.target.id === 'overlay' && UI.kind !== 'pause') UI.close(); });
@@ -615,11 +639,11 @@ function openPanel(html, bind) {
   for (const k in keys) keys[k] = false;
   releasePointer(); bind && bind(p); updatePrompt(true);
 }
-function closePanel(silent) {
+function closePanel(silent, byEsc) {
   if (!G.panelOpen) return;
   $('#panel').hidden = true; $('#panel').innerHTML = ''; G.panelOpen = false; G.uiOpen = false; $('#app').classList.remove('panel-open');
   ROOM.onPanelClose && ROOM.onPanelClose();
-  if (!silent) resumeLook();
+  if (!silent) resumeLook(byEsc);
 }
 
 function openPause() {
@@ -630,7 +654,9 @@ function openPause() {
     <div class="row"><button class="btn primary" id="pRes" autofocus>Resume</button><button class="btn" id="pHint">Hints</button><button class="btn" id="pNb">Notebook</button></div>
     ${G.touch ? `<div class="pkeys"><div><span>Walk</span><b>Left thumb</b></div><div><span>Look</span><b>Drag, right thumb</b></div><div><span>Use things</span><b>Buttons, bottom right</b></div><div><span>Hints &middot; notebook</span><b>Buttons, top right</b></div></div>` : `<div class="pkeys">${K.map(([a, k]) => `<div><span>${a}</span><b>${k}</b></div>`).join('')}</div>`}
     <label class="pvol">Volume <input type="range" id="pVol" min="0" max="1" step="0.05" value="${A.vol}"></label>
-    <div class="plinks"><button class="linkbtn" id="pQuit">${HOST.mr() ? 'Back to the corridor' : 'Quit to all mysteries'}</button><button class="linkbtn" id="pRestart">Start this room over</button>${HOST.mr() && HOST.mr().feedback ? '<button class="linkbtn" id="pFb">Send feedback</button>' : ''}</div>`, { cls: 'ui-card pz' });
+    <div class="plinks"><button class="linkbtn" id="pQuit">${HOST.mr() ? 'Back to the corridor' : 'Quit to all mysteries'}</button><button class="linkbtn" id="pRestart">Start this room over</button>${HOST.mr() && HOST.mr().openShare ? '<button class="linkbtn" id="pShare">Send this room to a friend</button>' : ''}${HOST.mr() && HOST.mr().feedback ? '<button class="linkbtn" id="pFb">Send feedback</button>' : ''}</div>`, { cls: 'ui-card pz' });
+  G.pauseAt = performance.now();
+  if ($('#pShare')) $('#pShare').onclick = () => shareRoom(ROOM.id, 'pause');
   $('#pQuit').onclick = () => { flushSave(); reloadInto(null); };
   $('#pRes').onclick = () => UI.close();
   $('#pNb').onclick = () => openNotebook();
@@ -693,7 +719,18 @@ function flag(k, v = true) { S.flags[k] = v; save(); }
 let saveT = 0;
 function save() { saveT = 0.4; }
 function flushSave() { if (!S || !ROOM) return; S.player = { x: P.x, z: P.z, yaw: G.yaw, pitch: G.pitch }; if (BODY.on) { S.player.y = BODY.ground ? BODY.y : (S.player.y || 0); S.player.cr = BODY.crouch; if (ROOM.savePlayer) ROOM.savePlayer(S.player); } store.set(ROOM.saveKey, S); }
+// phones rarely send beforeunload: also save when the page is hidden (app switch, lock screen, a call)
 addEventListener('beforeunload', () => { if (G.mode === 'play') flushSave(); });
+addEventListener('pagehide', () => { if (G.mode === 'play') flushSave(); });
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    if (G.mode === 'play') { flushSave(); if (!UI.kind) { if (typeof touchRelease === 'function') touchRelease(); openPause(); } }
+    // nothing should keep playing in the background
+    if (A.ctx && A.ctx.state === 'running') { A.hidPaused = true; A.ctx.suspend().catch(() => {}); }
+  } else if (A.hidPaused) { A.hidPaused = false; wakeAudio(); }
+});
+// the audio context can be suspended or "interrupted" (iOS after a call): wake it on the next chance
+function wakeAudio() { try { if (A.ctx && A.ctx.state !== 'running' && !document.hidden) A.ctx.resume().catch(() => {}); } catch (e) {} }
 
 /* ---------------- look-away helper ---------------- */
 const _v = new THREE.Vector3();

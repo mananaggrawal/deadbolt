@@ -158,6 +158,7 @@ function tickCountdowns() {
 /* ---------- finishing a room (called by the room with its final picture) ---------- */
 function finishRoom(frame) {
   G.mode = 'end'; releasePointer(); store.del(ROOM.saveKey);
+  document.body.classList.remove('playing'); wakeLock(false);
   $('#hud').classList.add('hide');
   if (A.ready) { Object.values(A.loops).forEach(l => l && l.gain && l.gain.gain && l.gain.gain.setTargetAtTime(0, now(), 0.8)); }
   const m = MYSTERIES.find(x => x.id === ROOM.id);
@@ -195,7 +196,7 @@ function showResult(m, replay) {
   // on the website, sharing adds a link to a result page and uses the phone's share sheet
   const mr = HOST.mr();
   if (mr && mr.share) {
-    $('#bShare').textContent = replay ? 'Share first result' : 'Share result';
+    $('#bShare').textContent = replay ? 'Share your first result' : 'Share your result';
     $('#bShare').onclick = () => {
       $('#shareMsg').textContent = '';
       Promise.resolve(mr.share({ room: m.id, n: m.n, title: m.title, text, marks: (first.marks || marks).map(x => x.lvl), time: Math.round(first.time), hints: first.hints, wrong: first.wrong }))
@@ -295,6 +296,14 @@ function renderLobby(m, startGame) {
     const ph = $('#tPhones'); if (ph) ph.hidden = true;
   }
   $('#tHome').onclick = () => renderHome();
+  // on the website: send this room to someone (their link opens its door, nothing given away)
+  const row = $('#tShareRow');
+  if (row) { row.hidden = !(mr && mr.openShare); $('#tShare').onclick = () => shareRoom(m.id, 'title'); }
+}
+// send a room to someone, through the website's share panel
+function shareRoom(id, surface) {
+  const mr = HOST.mr(), m = MYSTERIES.find(x => x.id === id);
+  if (mr && mr.openShare && m) mr.openShare({ kind: 'room', room: m.id, n: m.n, title: m.title, tagline: m.tagline, surface });
 }
 // called once the room is built and ready to play
 function lobbyReady() { const b = $('#bNew'); b.disabled = false; $('#bCont').disabled = false; if (b.dataset.label) b.textContent = b.dataset.label; }

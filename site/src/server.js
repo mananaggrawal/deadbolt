@@ -38,6 +38,11 @@ const marksJson = m => (Array.isArray(m) ? m.slice(0, 30).map(x => ({ title: Str
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const ALPHA = '23456789abcdefghjkmnpqrstuvwxyz';
 const newCode = () => Array.from(crypto.randomBytes(6), b => ALPHA[b % ALPHA.length]).join('');
+const VIA = /^(wa|tg|x|fb|em|cp|sh|li)$/;                 // the app a share link was sent through (?via=)
+const viaOr = v => (typeof v === 'string' && VIA.test(v) ? v : null);
+const codeOr = v => (typeof v === 'string' && CODE.test(v.toLowerCase()) ? v.toLowerCase() : null);
+const KINDS = ['result', 'room', 'site'];
+const htmlEsc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 // simple per-IP limits (one server, so memory is enough)
 const buckets = new Map();
@@ -125,10 +130,11 @@ app.get('/game/:file{(vo\\.[0-9a-f]{12}\\.json|app\\.[0-9a-f]{12}\\.js)}', c => 
 
 app.get('/manifest.webmanifest', c => {
   c.header('Content-Type', 'application/manifest+json'); c.header('Cache-Control', 'public, max-age=86400');
-  return c.body(JSON.stringify({ name: cfg.siteName, short_name: cfg.siteName, start_url: '/', display: 'fullscreen', orientation: 'landscape',
+  // the landing page reads best upright and the rooms sideways, so the installed app doesn't fix an orientation
+  return c.body(JSON.stringify({ name: cfg.siteName, short_name: cfg.siteName, start_url: '/', display: 'fullscreen', orientation: 'any',
     background_color: '#0b0a09', theme_color: '#0b0a09', icons: [192, 512].map(s => ({ src: `/icon-${s}.png`, sizes: `${s}x${s}`, type: 'image/png' })) }));
 });
-app.get('/robots.txt', c => c.text(cfg.staging ? 'User-agent: *\nDisallow: /\n' : `User-agent: *\nDisallow: /admin\nDisallow: /api/\nDisallow: /r/\nSitemap: ${cfg.baseURL}/sitemap.xml\n`));
+app.get('/robots.txt', c => c.text(cfg.staging ? 'User-agent: *\nDisallow: /\n' : `User-agent: *\nDisallow: /admin\nDisallow: /api/\nDisallow: /r/\nDisallow: /i/\nSitemap: ${cfg.baseURL}/sitemap.xml\n`));
 app.get('/sitemap.xml', c => {
   const urls = ['/', ...R.released().map(m => `/m/${m.id}`), '/privacy', '/terms'];
   c.header('Content-Type', 'application/xml');
@@ -138,16 +144,21 @@ app.get('/healthz', async c => {
   try { await q('select 1'); return c.json({ ok: true, version: cfg.version }); } catch (e) { return c.json({ ok: false }, 503); }
 });
 
-/* ---------- the landing page (/, and /m/<id> opening one room's door) ---------- */
-function landingHtml(room) {
+/* ---------- the landing page (/, /m/<id> opening one room's door, /i/<code> a shared invite) ---------- */
+// the game's code, fetched in the background once someone opens a door (so Begin starts quickly on phones)
+const PREFETCH = () => [`/game/${R.appFile()}`, '/vendor/three-0.160.0.module.js'];
+function landingHtml(room, { canon = null } = {}) {
   const rel = R.released().map(m => m.id);
   const head = room
     ? headTags({ title: `${room.title} · ${cfg.siteName}`, description: room.tagline || room.hook, path: `/m/${room.id}`, image: `/og/m/${room.id}.png`, page: 'site', room: room.id })
     : headTags({ title: `${cfg.siteName} · Horror mystery rooms in your browser`, description: 'First-person horror mystery rooms you play alone in your browser. A real place on one night, something in it that follows a rule, and one way out. Free, no download.', path: '/' });
   // the doors' words come from the game's own room list, so the corridor and the room never disagree
   const words = Object.fromEntries(R.allRooms().map(m => [m.id, { title: m.title, place: m.place, era: m.era, hook: m.hook, tagline: m.tagline, start: m.start }]));
-  const data = JSON.stringify({ rel, words }).replace(/</g, '\\u003c');
-  return LANDING.replace('<!--MR_HEAD-->', `${head}\n<script>(function(d){window.MR_RELEASED=d.rel;window.MR_ROOMS=d.words;})(${data});${room ? `window.MR_OPEN=${JSON.stringify(room.id)};` : ''}</script>`);
+  const vars = { MR_RELEASED: rel, MR_ROOMS: words, MR_PREFETCH: PREFETCH() };
+  if (room) vars.MR_OPEN = room.id;
+  if (canon) vars.MR_CANON = canon;
+  const js = Object.entries(vars).map(([k, v]) => `window.${k}=${JSON.stringify(v).replace(/</g, '\\u003c')};`).join('');
+  return LANDING.replace('<!--MR_HEAD-->', `<script>${js}</script>\n${head}`);   // before mr.js, which reads MR_CANON
 }
 app.get('/', c => { c.header('Cache-Control', 'no-cache'); return c.html(landingHtml(null)); });
 app.get('/m/:id', c => {
@@ -156,6 +167,14 @@ app.get('/m/:id', c => {
   c.header('Cache-Control', 'no-cache');
   return c.html(landingHtml(m));
 });
+// someone's invite: a room's door, or the front page. A link that no longer exists still opens the site.
+app.get('/i/:code', async c => {
+  const code = codeOr(c.req.param('code'));
+  const s = code ? await one('select kind, room from shares where code = $1', [code]).catch(() => null) : null;
+  c.header('Cache-Control', 'no-cache'); c.header('X-Robots-Tag', 'noindex');
+  const m = s && s.room && R.isReleased(s.room) ? R.roomById(s.room) : null;
+  return c.html(m ? landingHtml(m, { canon: `/m/${m.id}` }) : landingHtml(null, { canon: '/' }));
+});
 
 /* ---------- the game (/play/<id>) ---------- */
 app.get('/play', c => c.redirect('/#rooms'));
@@ -163,12 +182,13 @@ app.get('/play/:id', async c => {
   const m = R.roomById(c.req.param('id'));
   if (!m) return c.html(notFoundPage(), 404);
   if (!R.isReleased(m.id)) return c.redirect('/#rooms');
-  if (cfg.requireLogin && !(await session(c))) return c.redirect(`/?signin=required&next=${encodeURIComponent(`/play/${m.id}${new URL(c.req.url).search}`)}`);
+  // sign in on this room's door, then Google brings the player straight back here
+  if (cfg.requireLogin && !(await session(c))) { const u = new URL(c.req.url); return c.redirect(`/m/${m.id}?signin=required&next=${encodeURIComponent(`/play/${m.id}${u.search}`)}`); }
   const etag = `"p-${m.id}-${cfg.version}"`;
   c.header('ETag', etag); c.header('Cache-Control', 'no-cache');
   if (c.req.header('if-none-match') === etag) return c.body(null, 304);
   const head = headTags({ title: `${m.title} · ${cfg.siteName}`, description: m.tagline || m.hook, path: `/m/${m.id}`, image: `/og/m/${m.id}.png`, page: 'game', room: m.id });
-  return c.html(playPage(m, head));
+  return c.html(playPage(m, head).replace('<!--MR_BOOT-->', htmlEsc(m.title)));
 });
 // the room's screen is filled in on the server, so it shows the moment the page arrives (the game takes over once loaded)
 function playPage(m, head) {
@@ -190,9 +210,8 @@ function playPage(m, head) {
 app.get('/r/:code', async c => {
   const code = c.req.param('code').toLowerCase();
   const s = CODE.test(code) ? await one('select * from shares where code = $1', [code]) : null;
-  if (!s || !R.roomById(s.room)) return c.html(notFoundPage(), 404);
-  if (!isBot(c.req.header('user-agent'))) q('update shares set landings = landings + 1 where code = $1', [code]).catch(() => {});
-  c.header('Cache-Control', 'no-cache');
+  if (!s || s.kind !== 'result' || !R.roomById(s.room)) return s ? c.redirect(`/i/${code}`) : c.html(notFoundPage(), 404);
+  c.header('Cache-Control', 'no-cache');   // visits are counted by the page itself (share_visit), so link previews don't count
   return c.html(resultPage(s));
 });
 async function sendPng(c, key, build, cache) {
@@ -253,7 +272,7 @@ app.post('/api/me/results', async c => {
     await q('update feedback set user_id = $1 where anon_id = $2 and user_id is null', [uid, anon]);
   }
   const res = await rows('select room, to_char(day, \'YYYY-MM-DD\') as day, seconds, hints, wrong, tiers, marks from results where user_id = $1', [uid]);
-  const sh = await rows('select distinct on (room) room, code from shares where user_id = $1 order by room, created_at', [uid]);
+  const sh = await rows("select distinct on (room) room, code from shares where user_id = $1 and kind = 'result' order by room, created_at", [uid]);
   return c.json({
     rooms: Object.fromEntries(res.map(r => [r.room, { day: r.day, time: r.seconds, hints: r.hints, wrong: r.wrong, tiers: r.tiers, marks: r.marks }])),
     shares: Object.fromEntries(sh.map(r => [r.room, r.code])),
@@ -295,28 +314,30 @@ app.post('/api/plays/start', async c => {
   const b = await c.req.json().catch(() => ({}));
   const play = uuidOr(b.play), anon = uuidOr(b.anon), room = R.roomById(b.room) ? b.room : null;
   if (!play || !room) return c.json({ error: 'bad request' }, 400);
+  // from: the share link this browser first arrived through (kept 30 days), credited with the plays it leads to
   const s = await session(c); if (cfg.requireLogin && !s) return c.json({ error: 'sign in' }, 401);
-  const uid = s ? s.user.id : null, from = typeof b.from === 'string' && CODE.test(b.from.toLowerCase()) ? b.from.toLowerCase() : null;
+  const uid = s ? s.user.id : null, from = codeOr(b.from), via = viaOr(b.via);
   await touchPlayer(anon, uid, c);
-  const r = await one(`insert into plays (id, room, anon_id, user_id, steps_total, from_share, device, country, app_version) values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+  const r = await one(`insert into plays (id, room, anon_id, user_id, steps_total, from_share, from_via, device, country, app_version) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
            on conflict (id) do update set resumed = true, last_seen = now(), user_id = coalesce(plays.user_id, excluded.user_id)
            returning (xmax = 0) as inserted`,
-    [play, room, anon, uid, int(b.steps, 1, 40), from, deviceOf(c.req.header('user-agent')), countryOf(c), cfg.version]);
-  if (r && r.inserted && from) await q('update shares set plays_started = plays_started + 1 where code = $1 and room = $2', [from, room]);
+    [play, room, anon, uid, int(b.steps, 1, 40), from, via, deviceOf(c.req.header('user-agent')), countryOf(c), cfg.version]);
+  if (r && r.inserted && from) await q('update shares set plays_started = plays_started + 1 where code = $1', [from]);
   return c.json({ ok: true });
 });
-async function makeShare({ play, uid, anon, room, secs, hints, wrong, marks }) {
+async function makeShare({ play = null, uid, anon, room, secs = null, hints = 0, wrong = 0, marks = '', kind = 'result', surface = null }) {
   for (let i = 0; i < 5; i++) {
     const code = newCode();
-    const r = await one(`insert into shares (code, play_id, user_id, anon_id, room, seconds, hints, wrong, marks) values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-                         on conflict (code) do nothing returning code`, [code, play, uid, anon, room, secs, hints, wrong, marks]);
+    const r = await one(`insert into shares (code, play_id, user_id, anon_id, room, seconds, hints, wrong, marks, kind, surface) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                         on conflict (code) do nothing returning code`, [code, play, uid, anon, room, secs, hints, wrong, marks, kind, surface]);
     if (r) return r.code;
   }
   throw new Error('could not make a share code');
 }
-async function existingShare(uid, anon, room) {
-  if (uid) { const r = await one('select code from shares where user_id = $1 and room = $2 order by created_at limit 1', [uid, room]); if (r) return r.code; }
-  if (anon) { const r = await one('select code from shares where anon_id = $1 and room = $2 order by created_at limit 1', [anon, room]); if (r) return r.code; }
+// one link per person per room (or for the site, room = null) and kind, reused every time they share it
+async function existingShare(uid, anon, room, kind = 'result') {
+  if (uid) { const r = await one('select code from shares where user_id = $1 and kind = $2 and room is not distinct from $3 order by created_at limit 1', [uid, kind, room]); if (r) return r.code; }
+  if (anon) { const r = await one('select code from shares where anon_id = $1 and kind = $2 and room is not distinct from $3 order by created_at limit 1', [anon, kind, room]); if (r) return r.code; }
   return null;
 }
 app.post('/api/plays/finish', async c => {
@@ -341,16 +362,26 @@ app.post('/api/plays/finish', async c => {
   if (!code && first) code = await makeShare({ play, uid, anon, room, secs, hints, wrong, marks });
   return c.json({ ok: true, code });
 });
-// a share link for a result made before the site existed (or on a browser that lost its code)
+// a share link: for a room or the whole site (an invite, /i/<code>), or for a result (/r/<code>), including
+// results made before the site existed or on a browser that lost its code
 app.post('/api/share', async c => {
-  if (limited(c, 'share', 20)) return c.json({ error: 'slow down' }, 429);
+  if (limited(c, 'share', 30)) return c.json({ error: 'slow down' }, 429);
   const b = await c.req.json().catch(() => ({}));
+  const kind = KINDS.includes(b.kind) ? b.kind : 'result';
   const anon = uuidOr(b.anon), room = R.roomById(b.room) ? b.room : null, secs = int(b.time, 0, 86400 * 7);
-  if (!room || secs === null) return c.json({ error: 'bad request' }, 400);
-  const s = await session(c); if (cfg.requireLogin && !s) return c.json({ error: 'sign in' }, 401);
-  const uid = s ? s.user.id : null;
-  const code = (await existingShare(uid, anon, room)) || await makeShare({ play: null, uid, anon, room, secs, hints: int(b.hints, 0, 999) || 0, wrong: int(b.wrong, 0, 999) || 0, marks: marksStr(b.marks) });
-  return c.json({ code });
+  const surface = typeof b.surface === 'string' && /^[a-z]{2,16}$/.test(b.surface) ? b.surface : null;
+  if (kind === 'result' && (!room || secs === null)) return c.json({ error: 'bad request' }, 400);
+  if (kind === 'room' && !room) return c.json({ error: 'bad request' }, 400);
+  if (!anon) return c.json({ error: 'bad request' }, 400);
+  // results need an account when the site does; inviting someone to a room or the site never does
+  const s = await session(c); if (kind === 'result' && cfg.requireLogin && !s) return c.json({ error: 'sign in' }, 401);
+  const uid = s ? s.user.id : null, forRoom = kind === 'site' ? null : room;
+  let code = await existingShare(uid, anon, forRoom, kind);
+  if (!code) code = kind === 'result'
+    ? await makeShare({ uid, anon, room, secs, hints: int(b.hints, 0, 999) || 0, wrong: int(b.wrong, 0, 999) || 0, marks: marksStr(b.marks), surface })
+    : await makeShare({ uid, anon, room: forRoom, kind, surface });
+  await touchPlayer(anon, uid, c);
+  return c.json({ code, url: `${cfg.baseURL}/${kind === 'result' ? 'r' : 'i'}/${code}` });
 });
 
 /* ---------- events ---------- */
@@ -370,21 +401,38 @@ app.post('/api/events', async c => {
   if (pings.length === list.length) { await touchPlayer(anon, uid, c); return c.json({ ok: true }); }
   const ver = typeof b.v === 'string' ? b.v.slice(0, 40) : null;
   const vals = [], params = [];
-  const stepPlays = [], hintPlays = [], wrongPlays = [], seen = new Set(), clicks = [];
+  const stepPlays = [], hintPlays = [], wrongPlays = [], seen = new Set(), clicks = [], visits = [];
+  // share events carry a link code: file them under that link's room and kind, so the dashboard can group them
+  const codes = [...new Set(list.filter(e => e && (e.name === 'share_visit' || e.name === 'share_click') && e.data && codeOr(e.data.code)).map(e => codeOr(e.data.code)))].slice(0, 10);
+  const links = codes.length ? Object.fromEntries((await rows('select code, kind, room from shares where code = any($1)', [codes])).map(r => [r.code, r])) : {};
   for (const e of list) {
     if (!e || !EVENT.test(e.name || '') || e.name === 'ping' || e.name === 'server_error') continue;
-    const room = typeof e.room === 'string' && R.roomById(e.room) ? e.room : null, play = uuidOr(e.play), step = int(e.step, -1, 99);
+    let room = typeof e.room === 'string' && R.roomById(e.room) ? e.room : null;
+    const play = uuidOr(e.play), step = int(e.step, -1, 99);
     let data = e.data && typeof e.data === 'object' ? e.data : {};
+    const link = (e.name === 'share_visit' || e.name === 'share_click') ? links[codeOr(data.code)] : null;
+    if (link) { room = room || link.room || null; data = Object.assign({}, data, { kind: link.kind }); }
     let json = JSON.stringify(data); if (json.length > 2000) json = JSON.stringify({ truncated: true });
     const ts = Number.isFinite(e.t) && Math.abs(Date.now() - e.t) < 7 * 864e5 ? new Date(e.t).toISOString() : new Date().toISOString();
     params.push(ts, play, anon, uid, room, e.name, step, json, device, country, ver);
     const k = params.length;
     vals.push(`($${k - 10}, $${k - 9}, $${k - 8}, $${k - 7}, $${k - 6}, $${k - 5}, $${k - 4}, $${k - 3}::jsonb, $${k - 2}, $${k - 1}, $${k})`);
     if (play) { seen.add(play); if (e.name === 'step_done') stepPlays.push(play); if (e.name === 'hint_used') hintPlays.push(play); if (e.name === 'wrong') wrongPlays.push(play); }
-    if (e.name === 'share_click' && typeof data.code === 'string' && CODE.test(data.code)) clicks.push(data.code);
+    if (e.name === 'share_click' && link) clicks.push(codeOr(data.code));
+    if (e.name === 'share_visit') visits.push({ code: link ? codeOr(data.code) : null, via: viaOr(data.via) });
   }
   if (!vals.length) return c.json({ ok: true });
   await q(`insert into events (ts, play_id, anon_id, user_id, room, name, step, data, device, country, app_version) values ${vals.join(', ')}`, params);
+  // a browser arriving through a share link: credit the link, and remember it as where this browser came from
+  // (only for a browser we hadn't seen before, or only just: first touch)
+  for (const v of visits.slice(0, 3)) {
+    if (v.code) await q('update shares set landings = landings + 1 where code = $1', [v.code]);
+    if (!v.code && !v.via) continue;
+    await q(`insert into players (anon_id, user_id, device, country, from_share, from_via, from_at) values ($1, $2, $3, $4, $5, $6, now())
+             on conflict (anon_id) do update set from_share = excluded.from_share, from_via = excluded.from_via, from_at = excluded.from_at
+             where players.from_at is null and players.first_seen > now() - interval '30 minutes'`,
+      [anon, uid, device, country, v.code, v.via]);
+  }
   await touchPlayer(anon, uid, c);
   const bump = async (col, ids) => { for (const id of ids) await q(`update plays set ${col} = ${col} + 1, last_seen = now() where id = $1 and outcome = 'in_progress'`, [id]); };
   await bump('steps_done', stepPlays); await bump('hints', hintPlays); await bump('wrong', wrongPlays);

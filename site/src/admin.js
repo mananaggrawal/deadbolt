@@ -100,6 +100,16 @@ const meter = (v, max, cls = '') => `<span class="meter ${cls}"><i style="width:
 
 const fbWhere = f => { const c = f.context || {}; if (c.step == null) return ''; return c.from === 'end' || f.kind === 'rating' ? `after escaping in ${fmtTime(c.seconds)}` : `on puzzle ${c.step + 1}, ${fmtTime(c.seconds)} in`; };
 
+/* ---------- sharing labels ---------- */
+// the app a link was shared through (?via=), and older names from before the share panel
+const CHANNEL = { wa: 'WhatsApp', tg: 'Telegram', x: 'X', fb: 'Facebook', em: 'Email', cp: 'Copied link', sh: 'Phone share sheet', li: 'LinkedIn' };
+const chKey = c => ({ copy: 'cp', manual: 'cp', sheet: 'sh' }[c] || c || '?');
+const chName = c => CHANNEL[c] || (c === '?' ? 'No app tag' : c);
+// where the Share button was tapped
+const SURFACE = { end: 'Game: end screen', title: 'Game: room title screen', pause: 'Game: pause menu', door: 'Site: a room\'s door', nav: 'Site: top bar',
+  cta: 'Site: bottom of the page', footer: 'Site: footer', account: 'Site: account menu', game: 'Game', site: 'Site', result: 'Result page' };
+const KIND = { result: 'Result', room: 'Room invite', site: 'Site invite' };
+
 /* ---------- what an event means, in words ---------- */
 function describe(e) {
   const d = e.data || {}, room = e.room ? `<b>${esc(roomTitle(e.room))}</b>` : '', step = Number.isInteger(e.step) && e.step >= 0 ? e.step + 1 : null;
@@ -114,7 +124,12 @@ function describe(e) {
     case 'room_escape': return `<span class="good">Escaped</span> ${room}${d.seconds ? ` in ${fmtTime(d.seconds)}` : ''}${d.hints ? `, ${d.hints} hint${d.hints === 1 ? '' : 's'}` : ''}`;
     case 'room_quit': return `Left ${room} on puzzle ${step ?? '?'}${d.seconds ? ` after ${fmtTime(d.seconds)}` : ''}`;
     case 'page_hide': return `Switched away from ${room || 'the site'}${step ? ` on puzzle ${step}` : ''}`;
-    case 'share_click': return `Shared ${room || 'a result'} <span class="muted">(${esc(d.channel || '?')})</span>`;
+    case 'share_open': return `Opened the share panel <span class="muted">(${esc(SURFACE[d.surface] || d.surface || '?')})</span>`;
+    case 'share_click': return `Shared ${d.kind === 'site' ? 'the site' : room || 'a room'}${d.kind === 'result' ? ' result' : ''} <span class="muted">via ${esc(chName(chKey(d.channel)))}</span>`;
+    case 'share_visit': return `Arrived through a shared link${room ? ` to ${room}` : ''} <span class="muted">via ${esc(chName(d.via || '?'))}${d.code ? ` · ${esc(d.code)}` : ''}</span>`;
+    case 'share_fail': return 'Share sheet failed';
+    case 'inapp_seen': return `Opened inside ${esc(d.app || 'an app')}'s browser`;
+    case 'inapp_out': return `Moved from ${esc(d.app || 'an app')}'s browser to a real one`;
     case 'feedback_sent': return `Sent feedback <span class="muted">(${esc(d.kind || '?')})</span>${room ? ` on ${room}` : ''}`;
     case 'signin_prompt': return 'Saw the sign-in dialog';
     case 'signin_start': return 'Went to Google to sign in';
@@ -182,6 +197,83 @@ export async function livePanel(opts) {
   <div class="split"><div><h3>In a room</h3>${roomsNow}</div><div><h3>What just happened</h3><ol class="feed">${items}</ol></div></div>`;
 }
 
+/* ---------- Sharing: what was shared, where, through which app, and what it led to ---------- */
+async function sharingSection(ctx) {
+  const P = ctx.p;
+  const [k, sent, visits, newp, plays, signups, surf, byRoom, sharers, links, mix] = await Promise.all([
+    O(`select
+        (select count(*) from events where name = 'share_click' and ts > @since and ${notMe()})::int sent,
+        (select count(distinct anon_id) from events where name = 'share_click' and ts > @since and ${notMe()})::int sharers,
+        (select count(*) from events where name = 'share_open' and ts > @since and ${notMe()})::int opened,
+        (select count(distinct anon_id) from events where name = 'share_visit' and ts > @since and ${notMe()})::int visitors,
+        (select count(*) from players where from_at > @since and ${notMe()})::int new_players,
+        (select count(*) from plays where (from_share is not null or from_via is not null) and started_at > @since and ${notMe()})::int plays,
+        (select count(*) from plays where (from_share is not null or from_via is not null) and outcome = 'escaped' and started_at > @since and ${notMe()})::int escapes,
+        (select count(distinct u.id) from players p join "user" u on u.id = p.user_id where p.from_at is not null and u."createdAt" >= p.from_at - interval '5 minutes'
+           and u."createdAt" > @since and not (u.id = any(@xu::text[])))::int signups`, P),
+    R(`select coalesce(data->>'channel', '?') ch, count(*)::int n, count(distinct anon_id)::int people from events
+       where name = 'share_click' and ts > @since and ${notMe()} group by 1`, P),
+    R(`select coalesce(data->>'via', '?') ch, count(distinct anon_id)::int n from events where name = 'share_visit' and ts > @since and ${notMe()} group by 1`, P),
+    R(`select coalesce(from_via, '?') ch, count(*)::int n from players where from_at > @since and ${notMe()} group by 1`, P),
+    R(`select coalesce(from_via, '?') ch, count(*)::int n, count(*) filter (where outcome = 'escaped')::int esc from plays
+       where (from_share is not null or from_via is not null) and started_at > @since and ${notMe()} group by 1`, P),
+    R(`select coalesce(p.from_via, '?') ch, count(distinct u.id)::int n from players p join "user" u on u.id = p.user_id
+       where p.from_at is not null and u."createdAt" >= p.from_at - interval '5 minutes' and u."createdAt" > @since and not (u.id = any(@xu::text[])) group by 1`, P),
+    R(`select coalesce(data->>'surface', '?') surface, coalesce(data->>'kind', '?') kind, count(*) filter (where name = 'share_open')::int opens,
+         count(*) filter (where name = 'share_click')::int sent
+       from events where name in ('share_open', 'share_click') and ts > @since and ${notMe()} group by 1, 2 order by 4 desc, 3 desc`, P),
+    R(`select e.room, count(*) filter (where e.name = 'share_click' and e.data->>'kind' = 'room')::int invites,
+         count(*) filter (where e.name = 'share_click' and e.data->>'kind' = 'result')::int results,
+         count(distinct e.anon_id) filter (where e.name = 'share_visit')::int visitors,
+         (select count(*) from plays p where p.room = e.room and p.from_share is not null and p.started_at > @since and ${notMe('p.')})::int plays
+       from events e where e.name in ('share_click', 'share_visit') and e.room is not null and e.ts > @since and ${notMe('e.')} group by e.room`, P),
+    R(`select coalesce(s.user_id, s.anon_id::text) k, max(u.id) uid, max(u.name) uname, max(u.email) email, max(s.anon_id::text) anon_id, count(*)::int links,
+         sum(s.clicks)::int sent, sum(s.landings)::int visits, sum(s.plays_started)::int plays,
+         (select count(*) from plays p where p.from_share = any(array_agg(s.code)) and p.outcome = 'escaped')::int escapes
+       from shares s left join "user" u on u.id = s.user_id where ${notMe('s.')}
+       group by 1 having sum(s.clicks) > 0 or sum(s.landings) > 0 order by 8 desc, 9 desc, 7 desc limit 15`, P),
+    R(`select s.code, s.kind, s.room, s.surface, s.created_at, s.clicks, s.landings, s.plays_started, s.anon_id, u.id uid, u.name uname, u.email,
+         (select count(*) from players p where p.from_share = s.code)::int new_players,
+         (select count(*) from plays p where p.from_share = s.code and p.outcome = 'escaped')::int escapes,
+         (select count(distinct pl.user_id) from players pl join "user" u2 on u2.id = pl.user_id where pl.from_share = s.code and u2."createdAt" >= pl.from_at - interval '5 minutes')::int signups
+       from shares s left join "user" u on u.id = s.user_id where (s.clicks > 0 or s.landings > 0) and ${notMe('s.')}
+       order by s.landings desc, s.plays_started desc, s.clicks desc limit 25`, P),
+    R(`select data->>'code' code, coalesce(data->>'channel', '?') ch, count(*)::int n from events
+       where name = 'share_click' and data->>'code' is not null and ${notMe()} group by 1, 2`, P),
+  ]);
+  const agg = {};
+  const add = (list, f) => list.forEach(r => { const c = chKey(r.ch); agg[c] = agg[c] || { sent: 0, people: 0, visitors: 0, newp: 0, plays: 0, esc: 0, signups: 0 }; f(agg[c], r); });
+  add(sent, (a, r) => { a.sent += r.n; a.people += r.people; }); add(visits, (a, r) => { a.visitors += r.n; }); add(newp, (a, r) => { a.newp += r.n; });
+  add(plays, (a, r) => { a.plays += r.n; a.esc += r.esc; }); add(signups, (a, r) => { a.signups += r.n; });
+  const chRows = Object.entries(agg).sort((a, b) => (b[1].visitors - a[1].visitors) || (b[1].sent - a[1].sent));
+  const maxSent = Math.max(1, ...chRows.map(([, a]) => a.sent));
+  const chHtml = chRows.map(([c, a]) => `<tr><td>${esc(chName(c))}</td><td class="n">${num(a.sent)}</td><td class="wide">${meter(a.sent, maxSent)}</td><td class="n">${num(a.visitors)}</td>
+      <td class="n">${num(a.newp)}</td><td class="n">${num(a.plays)}${a.plays ? `<small>${num(a.esc)} escaped</small>` : ''}</td><td class="n">${num(a.signups)}</td></tr>`).join('')
+    || '<tr><td colspan="7" class="muted">Nothing shared in this period.</td></tr>';
+  const surfHtml = surf.map(r => `<tr><td>${esc(SURFACE[r.surface] || r.surface)}<small>${esc(KIND[r.kind] || '')}</small></td><td class="n">${num(r.opens)}</td><td class="n">${num(r.sent)}</td>
+      <td class="n">${r.opens ? `${pct(r.sent, r.opens)}%` : '–'}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">Nobody opened the share panel in this period.</td></tr>';
+  const roomHtml = allRooms().slice().reverse().map(m => { const r = byRoom.find(x => x.room === m.id); if (!r) return '';
+    return `<tr><td>${esc(m.title)}<small>#${m.n}</small></td><td class="n">${num(r.invites)}</td><td class="n">${num(r.results)}</td><td class="n">${num(r.visitors)}</td><td class="n">${num(r.plays)}</td></tr>`; }).join('')
+    || '<tr><td colspan="5" class="muted">No room shared in this period.</td></tr>';
+  const sharerHtml = sharers.map(r => `<tr><td>${who(r)}${r.email ? `<small>${esc(r.email)}</small>` : ''}</td><td class="n">${num(r.links)}</td><td class="n">${num(r.sent)}</td>
+      <td class="n">${num(r.visits)}</td><td class="n">${num(r.plays)}</td><td class="n">${num(r.escapes)}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">No sharers yet.</td></tr>';
+  const mixOf = code => mix.filter(r => r.code === code).sort((a, b) => b.n - a.n).map(r => `${chName(chKey(r.ch))} ${r.n}`).join(' · ');
+  const linkHtml = links.map(r => `<tr><td><a class="who" href="/${r.kind === 'result' ? 'r' : 'i'}/${esc(r.code)}" target="_blank" rel="noopener"><code>${esc(r.code)}</code></a><small>${esc(KIND[r.kind] || r.kind)}${r.room ? ` · ${esc(roomTitle(r.room))}` : ''}</small></td>
+      <td>${who(r)}</td><td class="n">${num(r.clicks)}<small>${esc(mixOf(r.code))}</small></td><td class="n">${num(r.landings)}</td><td class="n">${num(r.new_players)}</td><td class="n">${num(r.plays_started)}</td>
+      <td class="n">${num(r.signups)}</td><td class="n">${num(r.escapes)}</td><td>${esc(fmtDT(r.created_at))}<small>${esc(SURFACE[r.surface] || r.surface || '')}</small></td></tr>`).join('')
+    || '<tr><td colspan="9" class="muted">No shared link has been opened yet.</td></tr>';
+  const tile = (label, v, note) => `<div class="tile"><span>${label}</span><b>${v}</b>${note ? `<small>${note}</small>` : ''}</div>`;
+  return `<section id="sharing"><h2>Sharing</h2>
+<p class="muted lead">Every Share button opens one panel. Each person gets one link per room, one for the site and one per result, and each app adds its own tag, so a visit is credited to the person and the app. A browser is credited to the first link it arrived through, for 30 days.</p>
+<div class="tiles">${tile('Shares sent', num(k.sent), `${num(k.opened)} share panels opened`)}${tile('People sharing', num(k.sharers))}${tile('Visitors from links', num(k.visitors), k.sent ? `${(k.visitors / k.sent).toFixed(1)} per share` : '')}
+${tile('New players from links', num(k.new_players), 'first visit through a link')}${tile('Plays from links', num(k.plays), `${num(k.escapes)} escaped`)}${tile('Sign-ups from links', num(k.signups))}</div>
+<h3>By app</h3><div class="scroll"><table class="t"><thead><tr><th>Shared through</th><th class="n">Sent</th><th></th><th class="n">Visitors</th><th class="n">New players</th><th class="n">Plays</th><th class="n">Sign-ups</th></tr></thead><tbody>${chHtml}</tbody></table></div>
+<div class="split"><div><h3>Where people tap Share</h3><div class="scroll"><table class="t"><thead><tr><th>Place</th><th class="n">Opened</th><th class="n">Sent</th><th class="n">Sent / opened</th></tr></thead><tbody>${surfHtml}</tbody></table></div></div>
+<div><h3>By room</h3><div class="scroll"><table class="t"><thead><tr><th>Room</th><th class="n">Invites sent</th><th class="n">Results sent</th><th class="n">Visitors</th><th class="n">Plays from links</th></tr></thead><tbody>${roomHtml}</tbody></table></div></div></div>
+<h3>Top sharers <small class="muted">all time</small></h3><div class="scroll"><table class="t"><thead><tr><th>Who</th><th class="n">Links</th><th class="n">Sent</th><th class="n">Visitors</th><th class="n">Plays</th><th class="n">Escapes</th></tr></thead><tbody>${sharerHtml}</tbody></table></div>
+<h3>Top links <small class="muted">all time</small></h3><div class="scroll"><table class="t"><thead><tr><th>Link</th><th>Shared by</th><th class="n">Sent</th><th class="n">Visits</th><th class="n">New players</th><th class="n">Plays</th><th class="n">Sign-ups</th><th class="n">Escapes</th><th>Made</th></tr></thead><tbody>${linkHtml}</tbody></table></div></section>`;
+}
+
 /* ---------- the dashboard ---------- */
 export async function adminPage(opts) {
   const ctx = await context(opts);
@@ -192,7 +284,7 @@ export async function adminPage(opts) {
       select date_trunc(@unit, ${col} at time zone @tz) k, ${value} v from ${from} where ${col} > @since and ${where} group by 1) x on x.k = b.k order by b.k`, P);
 
   const [kpi, live, chVisitors, chAccounts, chPlays, chEscapes, funnel, retention, roomStats, opens, gameViews, steps, trouble, shares, fb,
-    players, playerCount, clientErr, serverErr, fbList, pages, refs, places, devices, daily] = await Promise.all([
+    players, playerCount, clientErr, serverErr, fbList, pages, refs, places, devices, daily, sharing] = await Promise.all([
     O(`select
         (select count(distinct anon_id) from events where name = 'page_view' and ts > @since and ${notMe()})::int visitors,
         (select count(distinct anon_id) from events where name = 'page_view' and ts > @prev and ts <= @since and ${notMe()})::int visitors_prev,
@@ -283,6 +375,7 @@ export async function adminPage(opts) {
        select to_char(b.d, 'YYYY-MM-DD') d, coalesce(v.visitors, 0)::int visitors, coalesce(v.views, 0)::int views, coalesce(a.n, 0)::int accounts,
          coalesce(s.n, 0)::int starts, coalesce(x.n, 0)::int escapes
        from b left join v using (d) left join a using (d) left join s using (d) left join x using (d) order by b.d desc limit 400`, P),
+    sharingSection(ctx),
   ]);
   const by = (list, id) => list.find(r => r.room === id) || {};
 
@@ -385,7 +478,7 @@ export async function adminPage(opts) {
   const head = headTags({ title: `Dashboard · ${cfg.siteName}`, description: 'What is happening on the site', path: '/admin', page: 'admin', noindex: true });
   return layout(head, `<style>${ADMIN_CSS}</style><div class="wrap dash">
 <div class="dhead"><div><p class="eyebrow">Production · build ${esc(cfg.version)}</p><h1>Dashboard</h1></div>
-<nav class="ctl" aria-label="Period"><span class="seg">${Object.entries(RANGES).map(([k, r]) => `<a href="${q({ range: k })}" class="${k === ctx.range ? 'on' : ''}">${r.label}</a>`).join('')}</span>
+<nav class="ctl" aria-label="Period"><a class="toggle" href="#sharing">Sharing</a><span class="seg">${Object.entries(RANGES).map(([k, r]) => `<a href="${q({ range: k })}" class="${k === ctx.range ? 'on' : ''}">${r.label}</a>`).join('')}</span>
 <a class="toggle${ctx.me ? ' on' : ''}" href="${q({ me: ctx.me ? '0' : '1' })}">${ctx.me ? 'Including your own activity' : 'Your own activity hidden'}</a></nav></div>
 
 <section id="live" class="live" data-src="/admin/live${ctx.me ? '?me=1' : ''}">${live}</section>
@@ -398,8 +491,10 @@ export async function adminPage(opts) {
 <div class="scroll"><table class="t funnel"><tbody>${funnelRows}</tbody></table></div>
 <h3>Do new players stick?</h3><div class="tiles tiles-sm">${ret}</div></section>
 
-<section><h2>Rooms</h2><div class="scroll"><table class="t"><thead><tr><th>Room</th><th class="n">Game page opened</th><th class="n">Plays started</th><th class="n">Escaped</th><th class="n">Median time</th><th class="n">Hints per escape</th><th class="n">Time before giving up</th><th class="n">On phones</th><th class="n">Shares</th><th class="n">Rating</th></tr></thead><tbody>${roomRows}</tbody></table></div>
+<section><h2>Rooms</h2><div class="scroll"><table class="t"><thead><tr><th>Room</th><th class="n">Game page opened</th><th class="n">Plays started</th><th class="n">Escaped</th><th class="n">Median time</th><th class="n">Hints per escape</th><th class="n">Time before giving up</th><th class="n">On phones</th><th class="n">Share links made</th><th class="n">Rating</th></tr></thead><tbody>${roomRows}</tbody></table></div>
 <h3>Where players stop</h3>${funnels}</section>
+
+${sharing}
 
 <section><h2>Players <small class="muted">${num(playerCount.n)} accounts${playerCount.n > players.length ? `, the ${players.length} most recently active shown` : ''}</small></h2>
 <div class="scroll"><table class="t">${playerHead}<tbody>${playerRows}</tbody></table></div>${playerMore}</section>
@@ -416,7 +511,7 @@ export async function adminPage(opts) {
 <div><h3>Devices</h3><table class="t"><thead><tr><th>Device</th><th class="n">Visitors</th></tr></thead><tbody>${small(devices, [['kind', 0, (k, r) => deviceShort(`${k} ${r.os} ${r.browser}`)], ['u', 1, num]], 'None yet.')}</tbody></table></div>
 </div></section>
 
-<section><h2>Export</h2><p class="exp">${['plays', 'events', 'users', 'feedback', 'shares'].map(t => `<a href="/admin/export/${t}.csv${q()}">${t}.csv</a>`).join('')}</p>
+<section><h2>Export</h2><p class="exp">${['plays', 'events', 'users', 'feedback', 'shares', 'sharing'].map(t => `<a href="/admin/export/${t}.csv${q()}">${t}.csv</a>`).join('')}</p>
 <p class="muted">Times are India time. Bots, link previews and headless browsers aren't counted.</p></section>
 </div>
 <script>
@@ -511,7 +606,7 @@ ${browsers.map(b => `<tr><td>${esc(deviceShort(b.device))}</td><td>${esc(country
 /* ---------- CSV exports ---------- */
 const EXPORTS = {
   plays: `select p.id, p.room, p.user_id, u.email, p.anon_id, p.started_at, p.last_seen, p.ended_at, p.outcome, p.resumed, p.steps_total, p.steps_done, p.hints, p.wrong,
-            p.seconds, p.marks, p.first_escape, p.from_share, p.device, p.country, p.app_version
+            p.seconds, p.marks, p.first_escape, p.from_share, p.from_via, p.device, p.country, p.app_version
           from plays p left join "user" u on u.id = p.user_id where p.started_at > @since and ${notMe('p.')} order by p.started_at`,
   events: `select e.id, e.ts, e.play_id, e.anon_id, e.user_id, e.room, e.name, e.step, e.data, e.device, e.country, e.app_version
            from events e where e.ts > @since and ${notMe('e.')} order by e.id`,
@@ -522,8 +617,10 @@ const EXPORTS = {
           from "user" u left join profiles pr on pr.user_id = u.id where not (u.id = any(@xu::text[])) order by u."createdAt"`,
   feedback: `select f.id, f.created_at, f.room, f.kind, f.rating, f.difficulty, f.text, f.context, f.device, f.user_id, u.email
              from feedback f left join "user" u on u.id = f.user_id where f.created_at > @since and ${notMe('f.')} order by f.id`,
-  shares: `select code, room, user_id, seconds, hints, wrong, marks, created_at, clicks, landings, plays_started from shares
+  shares: `select code, kind, room, surface, user_id, seconds, hints, wrong, marks, created_at, clicks, landings, plays_started from shares
            where created_at > @since and ${notMe()} order by created_at`,
+  sharing: `select ts, name, room, data->>'kind' kind, data->>'surface' surface, coalesce(data->>'channel', data->>'via') channel, data->>'code' code, anon_id, user_id, device, country
+            from events where name in ('share_open', 'share_click', 'share_visit') and ts > @since and ${notMe()} order by id`,
 };
 export async function exportCsv(table, opts) {
   if (!EXPORTS[table]) return null;

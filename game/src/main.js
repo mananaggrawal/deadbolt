@@ -56,6 +56,7 @@ function update(dt) {
   if (G.probeT % 2 === 0 || G.uiOpen || G.cutscene || G.frozen) G.hover = (!G.uiOpen && !G.cutscene && !G.carrying && !G.frozen) ? probe() : null;
   updatePrompt();
   ROOM.update(dt);
+  clickHintTick();
   G.fearT = Math.max(0, (G.fearT || 0) - dt * 0.12);
   G.fear = Math.max(G.fearT, G.fear - dt * 0.22);
   G.black = lerp(G.black, G.blackT || 0, Math.min(1, dt * 3));
@@ -88,19 +89,36 @@ const stc = $('#static'), sg = stc.getContext('2d'); stc.width = 160; stc.height
 let stFlip = 0;
 function drawStatic() { if ((stFlip ^= 1)) return; const d = simg.data; for (let i = 0; i < d.length; i += 4) { const v = Math.random() * 255; d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255; } sg.putImageData(simg, 0, 0); }
 
+// phones that can't hold ~24 frames a second step down to a lower resolution (twice at most)
+const PERF = { acc: 0, n: 0 };
+function perfTick(raw) {
+  if (!G.touch || G.mode !== 'play' || UI.kind || document.hidden || (G.play || 0) < 6 || raw > 0.5) { PERF.acc = PERF.n = 0; return; }
+  PERF.acc += raw; PERF.n++;
+  if (PERF.acc < 4) return;
+  const fps = PERF.n / PERF.acc; PERF.acc = PERF.n = 0;
+  if (fps < 24 && PR > 0.74) setRenderScale(PR > 0.9 ? 0.85 : 0.72);
+}
+
 let last = performance.now();
 function frame(t) {
-  const dt = Math.min(0.05, Math.max(0, (t - last) / 1000)); last = t;
+  const raw = Math.max(0, (t - last) / 1000), dt = Math.min(0.05, raw); last = t;
   requestAnimationFrame(frame);
   try {
     if (G.mode === 'home') drawHome(t / 1000);
     else if (G.mode === 'title') { if (ROOM.titleFx) ROOM.titleFx(stc, sg, t / 1000); else drawStatic(); }
-    else if (G.mode === 'play') { update(dt); render(dt); }
+    else if (G.mode === 'play') { update(dt); render(dt); perfTick(raw); }
   } catch (e) { if (!G.errLogged) { G.errLogged = true; console.error(e); } }
 }
 
+// Begin / Continue on the title screen. Sound, full screen and the screen wake lock all need the tap itself;
+// on an upright phone the room then waits until the phone is turned sideways (touchAwaitLandscape).
 function startGame(cont) {
-  initAudio(); touchFullscreen();
+  initAudio(); touchFullscreen(); wakeLock(true);
+  if (G.touch && isPortrait()) { touchAwaitLandscape(cont); return; }
+  beginGame(cont);
+}
+function beginGame(cont) {
+  document.body.classList.add('playing'); if (G.touch) fsButton();
   const saved = store.get(ROOM.saveKey);
   if (cont && saved) S = Object.assign(ROOM.defaults(), saved); else { store.del(ROOM.saveKey); S = ROOM.defaults(); }
   ROOM.applyState();
@@ -144,6 +162,7 @@ async function boot() {
   if (mr) { try { mr.attach && mr.attach(hostState); if (mr.ready) await Promise.race([mr.ready, wait(3000)]); } catch (e) {} }
   const sel = takeSelection();
   if (sel) enterMystery(sel.id); else renderHome();
+  const bootEl = $('#boot'); if (bootEl) { bootEl.classList.add('gone'); setTimeout(() => bootEl.remove(), 500); }
   try { window.claude?.hot?.snapshot?.(() => { if (G.mode === 'play') flushSave(); return {}; }); } catch (e) {}
 }
 

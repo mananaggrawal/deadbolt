@@ -312,9 +312,43 @@ body.touch #inv{max-width:46%;left:calc(12px + env(safe-area-inset-left,0px));}
 body.touch #toast{left:calc(12px + env(safe-area-inset-left,0px));max-width:min(360px,48vw);}
 body.touch #subs{left:calc(50% - 115px);max-width:min(560px,calc(100% - 330px));font-size:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));}
 body.touch #panel{right:auto;left:calc(12px + env(safe-area-inset-left,0px));max-height:calc(100% - 24px);}
-#rotate{display:none;position:fixed;inset:0;z-index:60;background:#050505;color:var(--paper);align-items:center;justify-content:center;text-align:center;font-size:14px;letter-spacing:.04em;}
-@media (orientation:portrait){ body.touch #rotate{display:flex;} }
+#rotate{display:none;position:fixed;inset:0;z-index:60;background:#050505;color:var(--paper);align-items:center;justify-content:center;text-align:center;font-size:14px;letter-spacing:.04em;padding:24px;}
+/* upright phones can read the title and end screens; only playing needs the phone sideways */
+@media (orientation:portrait){ body.touch.playing #rotate,body.touch.starting #rotate{display:flex;} }
 #rotate .ph{display:block;width:40px;height:68px;border:2px solid var(--paper);border-radius:8px;margin:0 auto 18px;animation:rotph 2.6s ease-in-out infinite;}
+#rotate p{margin:0 0 6px;}
+#rotate .rsub{color:var(--mute);font-size:12px;line-height:1.6;max-width:30ch;margin:0 auto 20px;}
+#rotate .btn{min-height:44px;}
+body:not(.starting) #rotate .rsub,body:not(.starting) #rotBack{display:none;}
+/* a cutscene is running: the corner buttons wait */
+#tc.busy .tc-top .tcb[data-tc=hints],#tc.busy .tc-top .tcb[data-tc=nb]{opacity:.35;}
+#tc .tcb.fs{padding:0;display:inline-grid;place-items:center;}
+#tc .tcb.fs svg{width:18px;height:18px;}
+/* bigger targets for thumbs */
+body.touch .x{font-size:12px;padding:12px 14px;right:2px;top:0;}
+body.touch .btn{min-height:44px;}
+body.touch .t-actions .btn{min-height:50px;}
+body.touch .wheel button{height:40px;}
+body.touch .pager button{min-height:42px;padding:8px 16px;}
+body.touch .nb li{padding:9px 0;}
+body.touch .linkbtn{padding:9px 0;font-size:13px;}
+body.touch .plinks{gap:4px 24px;}
+body.touch .alink{padding:6px 0;}
+body.touch #pVol{height:32px;}
+.t-share{margin:-6px 0 22px;}
+.t-phone{color:var(--paper-dim);}
+/* loading screen, shown until the game code has arrived and started */
+#boot{position:fixed;inset:0;z-index:70;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px;transition:opacity .45s;}
+#boot.gone{opacity:0;pointer-events:none;}
+/* the website fills in the room's own screen before the code arrives: that screen is the loading screen then */
+#title:not([hidden]) ~ #boot{display:none;}
+#boot .bk{font:500 11px var(--ui);letter-spacing:.24em;text-transform:uppercase;color:var(--lamp);margin:0;}
+#boot .bt{font:400 clamp(30px,7vw,58px)/1.05 var(--type);color:var(--paper);margin:0;min-height:.5em;}
+#boot .bar{width:min(220px,52vw);height:2px;background:rgba(231,222,198,.12);overflow:hidden;position:relative;margin:8px 0 2px;}
+#boot .bar i{position:absolute;top:0;bottom:0;left:0;width:40%;background:var(--lamp);animation:bootbar 1.5s ease-in-out infinite;}
+#boot .bm{font-size:12px;color:var(--mute);margin:0;max-width:34ch;line-height:1.6;}
+@keyframes bootbar{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}
+@media (prefers-reduced-motion: reduce){ #boot .bar i{animation-duration:4s} }
 @keyframes rotph{0%,15%{transform:rotate(0)}45%,80%{transform:rotate(-90deg)}100%{transform:rotate(0)}}
 @media (max-height:520px){
   #overlay{padding:8px;}
@@ -800,7 +834,7 @@ button.mcard:hover,button.mcard:focus-visible{border-color:var(--lamp);transform
   <div id="hud" class="hide">
     <div id="cross"></div>
     <div id="prompt"></div>
-    <div id="clickhint" hidden>Click to look around</div>
+    <div id="clickhint" hidden>Click to carry on</div>
     <div id="edgeL" class="edge l" aria-hidden="true"></div><div id="edgeR" class="edge r" aria-hidden="true"></div>
     <div id="toast" aria-live="polite"></div>
     <div id="subs" aria-live="polite"></div>
@@ -827,7 +861,9 @@ button.mcard:hover,button.mcard:focus-visible{border-color:var(--lamp);transform
         <button id="bCont" class="btn" hidden>Continue</button>
       </div>
       <p class="fine t-note" id="tNote" hidden></p>
+      <p class="fine t-share" id="tShareRow" hidden><button class="alink" id="tShare" type="button">Dare a friend to try this room</button></p>
       <p class="fine" id="tKeys">WASD to move &middot; mouse to look &middot; E to interact &middot; H for hints</p>
+      <p class="fine t-phone" id="tPhone" hidden></p>
       <p class="fine" id="tPhones">Headphones recommended.</p>
     </div>
   </section>
@@ -854,7 +890,9 @@ button.mcard:hover,button.mcard:focus-visible{border-color:var(--lamp);transform
       <figure class="end-tv" id="endTv"><div class="bezel"><img id="endFrame" alt="" width="320" height="240"></div><figcaption id="endCap"></figcaption></figure>
     </div>
   </section>
-  <div id="rotate" aria-live="polite"><div><span class="ph"></span><p>Turn your phone sideways to play.</p></div></div>
+  <div id="rotate" aria-live="polite"><div><span class="ph"></span><p id="rotMsg">Turn your phone sideways to play.</p><p class="rsub">The room starts as soon as your phone is on its side.</p><button class="btn" id="rotBack" type="button">Back</button></div></div>
   <div id="nogl" hidden><p>This game needs WebGL, and this browser didn't provide it. Try a desktop browser with hardware acceleration turned on.</p></div>
+  <div id="boot" aria-live="polite"><p class="bk">Deadbolt</p><p class="bt"><!--MR_BOOT--></p><div class="bar"><i></i></div><p class="bm" id="bootMsg">Opening the door&hellip;</p></div>
 </div>
+<script>setTimeout(function(){var m=document.getElementById('bootMsg');if(m&&document.getElementById('boot'))m.textContent='Still loading. On a slow connection the first visit can take a minute.';},15000);</script>
 

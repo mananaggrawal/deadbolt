@@ -9,6 +9,8 @@ function setVolume(v) { A.vol = v; store.set('lethe.vol', v); if (A.master) A.ma
 function initAudio() {
   if (A.ctx) { A.ctx.resume && A.ctx.resume(); return; }
   const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
+  // iPhones mute web audio with the silent switch unless the page says it's playing media
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
   const ctx = new C(); A.ctx = ctx;
   A.master = ctx.createGain(); A.master.gain.value = A.vol;
   const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -10; comp.ratio.value = 4;
@@ -153,6 +155,7 @@ function sCreak(pos, dur = 1.2, vol = 0.35, base = 90) {
   o.connect(bp); bp.connect(g); route(g, { pos, wet: 0.4 }); o.start(t); o.stop(t + dur + 0.05);
 }
 function sStinger(vol = 1) {
+  if (vol >= 0.5) buzz(vol >= 0.9 ? [120, 60, 220] : [80, 40, 120]);
   if (!A.ready) return; const t = now(), ctx = A.ctx;
   const out = ctx.createGain(); out.gain.setValueAtTime(0.0001, t); out.gain.exponentialRampToValueAtTime(0.55 * vol, t + 0.03); out.gain.exponentialRampToValueAtTime(0.0001, t + 3.2);
   [55, 58.3, 116.5, 233.1, 311, 466.2, 622].forEach((f, i) => { const o = ctx.createOscillator(); o.type = i < 3 ? 'sawtooth' : 'square'; o.frequency.setValueAtTime(f, t); o.frequency.linearRampToValueAtTime(f * (i % 2 ? 0.97 : 1.03), t + 3); const g = ctx.createGain(); g.gain.value = i < 3 ? 0.3 : 0.08; o.connect(g); g.connect(out); o.start(t); o.stop(t + 3.3); });

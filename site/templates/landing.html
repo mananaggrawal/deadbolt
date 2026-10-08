@@ -82,6 +82,9 @@ button { font: inherit; color: inherit; }
 .snd .off { display: none; }
 .snd[aria-pressed="false"] .on { display: none; }
 .snd[aria-pressed="false"] .off { display: block; }
+.shr { display: inline-flex; align-items: center; gap: 8px; background: none; border: 0; padding: 6px 12px; min-height: 36px; cursor: pointer; color: var(--muted); font-size: 14px; border-radius: 999px; }
+.shr:hover { color: var(--ink); background: var(--bg-3); }
+.shr svg { width: 16px; height: 16px; }
 
 /* buttons */
 .btn {
@@ -401,6 +404,9 @@ footer.site { padding-block: 96px 64px; border-top: 1px solid var(--line); }
   .footer-top { grid-template-columns: 1fr 1fr; gap: 40px 24px; }
   .footer-top > :first-child { grid-column: 1 / -1; }
   .footer-bottom { flex-direction: column; margin-top: 56px; gap: 12px; }
+  .nav-right { gap: 2px; }
+  .snd, .shr { padding: 6px 9px; min-width: 40px; min-height: 40px; justify-content: center; }
+  .snd .lbl, .shr .lbl { display: none; }
 }
 @media (max-width: 440px) {
 }
@@ -429,6 +435,10 @@ footer.site { padding-block: 96px 64px; border-top: 1px solid var(--line); }
         <svg class="on" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M2.5 6h2.6L8.5 3v10L5.1 10H2.5z"/><path d="M11 5.5c.9.8.9 4.2 0 5M12.8 3.8c1.9 1.9 1.9 6.5 0 8.4"/></svg>
         <svg class="off" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M2.5 6h2.6L8.5 3v10L5.1 10H2.5z"/><path d="M11 6l4 4M15 6l-4 4"/></svg>
         <span class="lbl">Sound</span>
+      </button>
+      <button class="shr" type="button" data-share="site" data-surface="nav" aria-label="Share Deadbolt">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M8 10V2M5 4.8 8 1.8l3 3M3.5 7.5v6h9v-6"/></svg>
+        <span class="lbl">Share</span>
       </button>
       <span id="mrAccount"></span>
       <button class="btn btn-sm" type="button" data-enter="newest">Open the newest door</button>
@@ -560,7 +570,7 @@ Escaped in 31:20 · 2 hints
         <details class="faq"><summary>Is it free?</summary><p>Yes. There's nothing to install. You sign in with Google once, then open a door and you're in. Your escapes and squares are kept on every device you sign in on.</p></details>
         <details class="faq"><summary>How scary is it?</summary><p>Scary enough to make you jump: sudden faces, things moving in the dark and some unsettling images. It isn't meant for young children.</p></details>
         <details class="faq"><summary>What if I get stuck?</summary><p>Press H, or tap Hints on a phone. The hints go from a nudge to the answer itself. Using them only changes the colour of that puzzle's square.</p></details>
-        <details class="faq"><summary>Does it work on my phone?</summary><p>Yes, held sideways. You get a thumbstick to walk, drag to look around, and buttons for whatever you can do next.</p></details>
+        <details class="faq"><summary>Does it work on my phone?</summary><p>Yes. Read the room's screen upright, then turn your phone sideways when you go in: a thumbstick to walk, drag to look around, and buttons for whatever you can do next. On an iPhone, add the site to your Home Screen to play full screen.</p></details>
         <details class="faq"><summary>How often do new rooms open?</summary><p>New rooms open regularly, and the newest one is always the first open door in the corridor.</p></details>
         <details class="faq"><summary>Can I continue on another device?</summary><p>Your results can. Sign in with Google on each device and your escapes and squares follow you. A room you leave halfway picks up again on the device you were playing on.</p></details>
         <details class="faq"><summary>What do you keep about me?</summary><p>Your name, email address and results, and a record of how each room went, so we can see where people get stuck. The <a href="/privacy" style="text-decoration:underline;text-underline-offset:3px">privacy page</a> has the details.</p></details>
@@ -570,7 +580,10 @@ Escaped in 31:20 · 2 hints
 
   <section class="cta wrap">
     <h2>The newest door is open. <span class="faint">Go in while it's still quiet.</span></h2>
-    <button class="btn" type="button" data-enter="newest">Open the newest door <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 6h8M6.5 2.5 10 6l-3.5 3.5"/></svg></button>
+    <div class="actions" style="justify-content:center">
+      <button class="btn" type="button" data-enter="newest">Open the newest door <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 6h8M6.5 2.5 10 6l-3.5 3.5"/></svg></button>
+      <button class="btn btn-ghost" type="button" data-share="site" data-surface="cta">Dare a friend</button>
+    </div>
   </section>
 </main>
 
@@ -582,7 +595,7 @@ Escaped in 31:20 · 2 hints
         <span class="muted">Horror mystery rooms you play in your browser.</span>
       </div>
       <div class="footer-col" id="footRooms"><span class="label">Newest rooms</span></div>
-      <div class="footer-col"><span class="label">Play</span><button type="button" data-enter="newest">Open the newest door</button><a href="#rooms">All the rooms</a><a href="#how">How it works</a><a href="#faq">Questions</a></div>
+      <div class="footer-col"><span class="label">Play</span><button type="button" data-enter="newest">Open the newest door</button><a href="#rooms">All the rooms</a><a href="#how">How it works</a><a href="#faq">Questions</a><button type="button" data-share="site" data-surface="footer">Tell a friend</button></div>
     </div>
     <div class="footer-bottom"><p>Best with headphones. Plays on a computer with a keyboard and mouse, or on a phone held sideways.</p><span class="faint"><a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a></span></div>
   </div>
@@ -879,10 +892,26 @@ addEventListener('pageshow', e => {
   document.documentElement.classList.remove('locked');
   $$('.door.open').forEach(d => d.classList.remove('open'));
 });
+/* fetch the game's code in the background once the corridor is in view (or a door is touched), so a room opens quickly on a phone */
+let prefetched = false;
+function prefetchGame() {
+  if (prefetched || !Array.isArray(window.MR_PREFETCH)) return;
+  const cn = navigator.connection; if (cn && (cn.saveData || /(^|-)2g$/.test(cn.effectiveType || ''))) return;
+  prefetched = true;
+  const viaLink = (() => { try { return document.createElement('link').relList.supports('prefetch'); } catch (e) { return false; } })();
+  for (const href of window.MR_PREFETCH) {
+    if (viaLink) { const l = document.createElement('link'); l.rel = 'prefetch'; l.href = href; l.as = 'script'; document.head.appendChild(l); }
+    else fetch(href, { credentials: 'same-origin' }).catch(() => {});
+  }
+}
+document.addEventListener('pointerdown', e => { if (e.target.closest('.dbtn, .kcard, [data-enter]')) prefetchGame(); }, { passive: true });
+try { const io = new IntersectionObserver(es => { if (es.some(x => x.isIntersecting)) { prefetchGame(); io.disconnect(); } }); io.observe($('#doors')); } catch (e) {}
 
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), 2600); }
 
 document.addEventListener('click', e => {
+  const sh = e.target.closest('[data-share]');
+  if (sh) { e.preventDefault(); if (window.MR && MR.openShare) MR.openShare({ kind: 'site', surface: sh.dataset.surface || 'site' }); return; }
   const n = e.target.closest('[data-enter="newest"]');
   if (n) {
     e.preventDefault();

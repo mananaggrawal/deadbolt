@@ -43,6 +43,7 @@ with sync_playwright() as p:
     pg.goto(BASE + '/'); pg.wait_for_timeout(2500)
     check(pg.locator('#mrAccount button', has_text='Sign in').count() == 1, 'signed-out visitor sees a Sign in button')
     check(pg.locator('#doors .dbtn').count() >= 9, f"corridor has doors ({pg.locator('#doors .dbtn').count()})")
+    check(pg.locator('.nav .shr').count() == 1, 'the top bar has a Share button')
     check(pg.evaluate('typeof window.MR') == 'object' and pg.evaluate('window.MR.v') == 1, 'mr.js loaded')
     pg.screenshot(path=f'{SHOTS}/01-landing.png')
     pg.click('#mrAccount button'); pg.wait_for_timeout(300)
@@ -98,7 +99,9 @@ with sync_playwright() as p:
         res = pg2.evaluate("""async () => { MR.emit('room_escape', { room: 'lamp', first: true, day: '2026-10-08', time: 1290, hints: 1, wrong: 0, tiers: {}, marks: [{title:'a',lvl:0},{title:'b',lvl:1},{title:'c',lvl:0}] });
                                    await new Promise(r => setTimeout(r, 800));
                                    return await MR.share({ room: 'lamp', text: 'Mystery #2 \u00b7 The Lamp Room\\nEscaped in 21:30', time: 1290, hints: 1, wrong: 0, marks: [0,1,0] }); }""")
-        check(bool(res and ('/r/' in (res.get('fallback') or '') or 'Copied' in (res.get('msg') or ''))), f'share returns a link ({res})')
+        pg2.wait_for_function("() => { const a = document.querySelector('.mrm [data-ch=wa]'); return a && /%2Fr%2F[a-z0-9]{6}/.test(a.href); }", timeout=8000)
+        check(pg2.locator('.mrm h2', has_text='Share your result').count() == 1, 'share opens the share panel with a link to the result')
+        pg2.locator('.mrm .x').click()
         pg2.evaluate("MR.feedback({ from: 'end', room: 'lamp' })"); pg2.wait_for_timeout(300)
         pg2.click('#mrRate button[data-v="4"]'); pg2.click('#mrDiff button[data-v="Just right"]'); pg2.fill('#mrTxt', 'The lighthouse was great.')
         pg2.screenshot(path=f'{SHOTS}/05b-feedback.png')

@@ -1066,7 +1066,7 @@ function takePainting() {
 function hangPainting() { S.painting = false; save(); sScrape(O.painting.position, 0.4, 0.2); tween(0.8, k => { O.painting.position.y = lerp(0.98, 1.62, k); O.painting.position.z = lerp(-2.62, -2.975, k); O.painting.rotation.x = lerp(-0.28, 0, k); }); }
 function toggleDrawer() { S.drawer = !S.drawer; save(); sScrape(O.desk.position, 0.35, 0.22); const x0 = O.drawer.position.x, x1 = S.drawer ? 0.3 : 0; tween(0.4, k => O.drawer.position.x = lerp(x0, x1, k)); }
 function lookUnderBed() {
-  if (!G.crouch) { subtitle('', '<i>You\'d have to get down on the floor for that.</i> &nbsp;<kbd>C</kbd> crouches.', 4000); return; }
+  if (!G.crouch) { subtitle('', '<i>You\'d have to get down on the floor for that.</i> &nbsp;' + (G.touch ? 'Tap <b>Crouch</b>.' : '<kbd>C</kbd> crouches.'), 4000); return; }
   S.skirt = true; save(); sScrape(new THREE.Vector3(-0.3, 0.2, -1.6), 0.3, 0.14);
   tween(0.5, k => { O.skirtE.rotation.z = 1.35 * k; O.skirtF.rotation.x = -1.35 * k; });
   noRay(O.skirtE); noRay(O.skirtF);
@@ -1102,7 +1102,7 @@ function caseLock() {
 function caseContents() {
   openContainer('Tool case', 'Foam cut-outs shaped for tools. Most of them are empty.', [
     { name: 'Flat screwdriver', desc: 'Heavy, with flecks of cream paint in the notch of the blade.', take: 'screwdriver', onTake: () => { O.caseIn.children[0].visible = false; } },
-    { name: 'Flashlight', desc: 'Rubber-cased. It works.', take: 'flashlight', onTake: () => { O.caseIn.children[1].visible = false; toast('Press <kbd>F</kbd> to switch the flashlight on or off.'); } }]);
+    { name: 'Flashlight', desc: 'Rubber-cased. It works.', take: 'flashlight', onTake: () => { O.caseIn.children[1].visible = false; toast(G.touch ? 'Tap <b>Torch</b>, top right, to switch the flashlight on or off.' : 'Press <kbd>F</kbd> to switch the flashlight on or off.'); } }]);
 }
 function padlock() {
   flag('sawPadlock');
@@ -1200,7 +1200,7 @@ function climbChair() {
   if (Math.hypot(P.x - S.chair.x, P.z - S.chair.z) > 1.3) { subtitle('', '<i>Get closer to it first.</i>', 2000); return; }
   G.onChair = true; G.crouch = false; G.eyeT = 2.12; sScrape(O.chair.position, 0.2, 0.2);
   const x0 = P.x, z0 = P.z; tween(0.35, k => { P.x = lerp(x0, S.chair.x, k); P.z = lerp(z0, S.chair.z, k); });
-  toast('<kbd>Space</kbd> steps back down.');
+  toast(G.touch ? 'Tap <b>Step down</b> to get off.' : '<kbd>Space</kbd> steps back down.');
 }
 function stepDown() {
   if (!G.onChair) return;

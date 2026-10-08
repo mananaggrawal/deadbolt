@@ -99,7 +99,8 @@ kbd{font:500 11px/1.4 var(--db-mono);border:1px solid rgba(237,232,222,.38);bord
 #rotate{font:400 15px/24px var(--db-sans);letter-spacing:0;background:var(--db-bg);}
 #rotate .ph{border-color:var(--db-ink);}
 /* on a phone held upright you can still read a room's screen and its ending; only playing needs it sideways */
-#title:not([hidden]) ~ #rotate,#end:not([hidden]) ~ #rotate{display:none!important;}
+/* (after Begin, the room waits for the phone to turn: then the prompt shows over the room's screen) */
+body:not(.starting) #title:not([hidden]) ~ #rotate,#end:not([hidden]) ~ #rotate{display:none!important;}
 #nogl{font:400 15px/24px var(--db-sans);color:var(--db-ink2);background:var(--db-bg);}
 #tc .tcb{font:450 13px var(--db-sans);letter-spacing:0;text-transform:none;border-radius:999px;background:rgba(11,10,9,.6);border:1px solid rgba(237,232,222,.28);color:var(--db-ink);}
 #tc .tc-acts .tcb{font-size:14px;padding:0 20px;}
