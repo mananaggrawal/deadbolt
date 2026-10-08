@@ -121,8 +121,8 @@ export function privacyPage() {
 </ul>
 <h2>Your choices</h2>
 <ul>
-<li>Signed in, the account menu (top right) lets you download your data or delete your account. Deleting removes your account, results, share links and feedback, and unlinks your past plays from you.</li>
-<li>To ask anything about your data, or to complain, write to ${who}. We reply within 7 days.</li>
+<li>Signed in, the account menu (top right) lets you delete your account. Deleting removes your account, results, share links and feedback, and unlinks your past plays from you.</li>
+<li>To get a copy of your data, ask anything about it, or complain, write to ${who}. We reply within 7 days.</li>
 </ul>
 <h2>Age</h2>
 <p>These rooms contain frightening scenes and are meant for adults. Accounts are only for people aged 18 or over.</p>

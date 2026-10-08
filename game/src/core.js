@@ -630,13 +630,15 @@ function openPause() {
     <div class="row"><button class="btn primary" id="pRes" autofocus>Resume</button><button class="btn" id="pHint">Hints</button><button class="btn" id="pNb">Notebook</button></div>
     ${G.touch ? `<div class="pkeys"><div><span>Walk</span><b>Left thumb</b></div><div><span>Look</span><b>Drag, right thumb</b></div><div><span>Use things</span><b>Buttons, bottom right</b></div><div><span>Hints &middot; notebook</span><b>Buttons, top right</b></div></div>` : `<div class="pkeys">${K.map(([a, k]) => `<div><span>${a}</span><b>${k}</b></div>`).join('')}</div>`}
     <label class="pvol">Volume <input type="range" id="pVol" min="0" max="1" step="0.05" value="${A.vol}"></label>
-    <div class="plinks"><button class="linkbtn" id="pQuit">${HOST.mr() ? 'Back to the corridor' : 'Quit to all mysteries'}</button><button class="linkbtn" id="pRestart">Start this room over</button>${HOST.mr() && HOST.mr().feedback ? '<button class="linkbtn" id="pFb">Send feedback</button>' : ''}</div>`, { cls: 'ui-card pz' });
+    <div class="plinks"><button class="linkbtn" id="pQuit">${HOST.mr() ? 'Back to the corridor' : 'Quit to all mysteries'}</button><button class="linkbtn" id="pRestart">Start this room over</button>${HOST.mr() && HOST.mr().feedback && !HOST.mr().faceRow ? '<button class="linkbtn" id="pFb">Send feedback</button>' : ''}</div>
+    ${HOST.mr() && HOST.mr().faceRow ? '<div class="mr-pause-faces" id="pFaces"></div>' : ''}`, { cls: 'ui-card pz' });
   $('#pQuit').onclick = () => { flushSave(); reloadInto(null); };
   $('#pRes').onclick = () => UI.close();
   $('#pNb').onclick = () => openNotebook();
   $('#pHint').onclick = () => openHints();
   $('#pVol').oninput = e => setVolume(+e.target.value);
   if ($('#pFb')) $('#pFb').onclick = () => HOST.mr().feedback({ room: ROOM.id, from: 'pause', state: hostState() });
+  if ($('#pFaces')) HOST.mr().faceRow($('#pFaces'), { room: ROOM.id, from: 'pause', state: hostState() });
   $('#pRestart').onclick = () => {
     const b = $('#pRestart');
     if (b.dataset.sure) { store.del(ROOM.saveKey); G.mode = 'end'; reloadInto(ROOM.id); }

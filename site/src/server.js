@@ -183,6 +183,7 @@ function playPage(m, head) {
   h = fill(h, 'tHook', esc(m.hook));
   h = fill(h, 'bNew', esc(m.loading || 'Loading…'));
   h = fill(h, 'tKeys', 'WASD to move &middot; Mouse to look &middot; E to use &middot; H for hints &middot; Headphones recommended');
+  h = h.replace('<p class="fine" id="tPhones">', '<p class="fine t-fb"><button type="button" class="linkbtn" data-mr-fb="room">Send feedback</button></p>\n      <p class="fine" id="tPhones">');
   return h;
 }
 
@@ -272,21 +273,6 @@ app.post('/api/me/delete', async c => {
     await client.query('commit');
   } catch (e) { await client.query('rollback'); throw e; } finally { client.release(); }
   return c.json({ ok: true });
-});
-app.get('/me/export', async c => {
-  const s = await session(c); if (!s) return c.redirect('/?signin=1');
-  const uid = s.user.id;
-  const data = {
-    exported_at: new Date().toISOString(),
-    account: { name: s.user.name, email: s.user.email, image: s.user.image, created_at: s.user.createdAt },
-    profile: await one('select age_confirmed_at, consented_at, handle, show_handle from profiles where user_id = $1', [uid]),
-    results: await rows('select room, day, seconds, hints, wrong, marks, created_at from results where user_id = $1 order by room', [uid]),
-    shares: await rows('select code, room, seconds, hints, wrong, marks, created_at, landings from shares where user_id = $1 order by created_at', [uid]),
-    plays: await rows('select room, started_at, ended_at, outcome, steps_done, hints, wrong, seconds, device, country from plays where user_id = $1 order by started_at', [uid]),
-    feedback: await rows('select created_at, room, kind, rating, difficulty, text from feedback where user_id = $1 order by created_at', [uid]),
-  };
-  c.header('Content-Disposition', 'attachment; filename="deadbolt-my-data.json"');
-  return c.json(data);
 });
 
 /* ---------- plays ---------- */
@@ -397,15 +383,16 @@ app.post('/api/events', async c => {
 app.post('/api/feedback', async c => {
   if (limited(c, 'feedback', 10)) return c.json({ error: 'slow down' }, 429);
   const b = await c.req.json().catch(() => ({}));
-  const kind = ['rating', 'bug', 'stuck', 'idea'].includes(b.kind) ? b.kind : null;
+  const kind = ['rating', 'note', 'bug', 'stuck', 'idea'].includes(b.kind) ? b.kind : null;
   if (!kind) return c.json({ error: 'bad request' }, 400);
   const text = typeof b.text === 'string' ? b.text.trim().slice(0, 2000) : '';
+  const face = ['bad', 'okay', 'good'].includes(b.face) ? b.face : null;
   const rating = int(b.rating, 1, 5), difficulty = ['Too easy', 'Just right', 'Too hard'].includes(b.difficulty) ? b.difficulty : null;
-  if (!text && !rating && !difficulty) return c.json({ error: 'empty' }, 400);
+  if (!text && !face && !rating && !difficulty) return c.json({ error: 'empty' }, 400);
   const s = await session(c);
   const ctx = b.context && typeof b.context === 'object' ? JSON.stringify(b.context).slice(0, 2000) : null;
-  await q(`insert into feedback (play_id, anon_id, user_id, room, kind, rating, difficulty, text, context, device) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-    [uuidOr(b.play), uuidOr(b.anon), s ? s.user.id : null, R.roomById(b.room) ? b.room : null, kind, rating, difficulty, text || null, ctx, deviceOf(c.req.header('user-agent'))]);
+  await q(`insert into feedback (play_id, anon_id, user_id, room, kind, face, rating, difficulty, text, context, device) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+    [uuidOr(b.play), uuidOr(b.anon), s ? s.user.id : null, R.roomById(b.room) ? b.room : null, kind, face, rating, difficulty, text || null, ctx, deviceOf(c.req.header('user-agent'))]);
   return c.json({ ok: true });
 });
 

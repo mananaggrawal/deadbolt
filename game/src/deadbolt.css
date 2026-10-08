@@ -49,6 +49,8 @@ kbd{font:500 11px/1.4 var(--db-mono);border:1px solid rgba(237,232,222,.38);bord
 #app #title .t-note{margin:18px 0 0;font-size:13px;line-height:20px;color:var(--db-muted);max-width:560px;}
 #app #title #tKeys{margin:44px 0 0;font:400 13px/20px var(--db-mono);color:var(--db-muted);}
 #app #title #tDone{margin:-14px 0 24px;}
+#app #title .t-fb{margin:14px 0 0;}
+#app #title .t-fb .linkbtn{font-size:13px;}
 .done-line{font-size:15px;line-height:24px;color:var(--db-ink2);}
 .done-line b{color:var(--db-ink);font-weight:500;}
 
