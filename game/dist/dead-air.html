@@ -936,7 +936,26 @@ const rand = (a, b) => a + Math.random() * (b - a);
 const irand = (a, b) => Math.floor(a + Math.random() * (b - a + 1));
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const TAU = Math.PI * 2;
-const wait = ms => new Promise(r => setTimeout(r, ms));
+// Real-time timers that stand still while the game is paused (or the page is hidden mid-room).
+// Voice lines, their subtitles and the waits between them in cutscenes all use these, so pausing
+// holds a line where it is instead of letting the next one start behind the pause screen.
+const PZ = { on: false, list: new Set() };
+function pTimeout(fn, ms) {
+  const h = { left: Math.max(0, ms || 0), at: 0, id: 0 };
+  h.run = () => { PZ.list.delete(h); h.id = 0; fn(); };
+  PZ.list.add(h);
+  if (!PZ.on) { h.at = performance.now(); h.id = setTimeout(h.run, h.left); }
+  return h;
+}
+function pClear(h) { if (!h || !h.run) return; clearTimeout(h.id); h.id = 0; PZ.list.delete(h); }
+function freezeTimers(on) {
+  if (on === PZ.on) return; PZ.on = on; const t = performance.now();
+  for (const h of PZ.list) {
+    if (on) { if (h.id) { clearTimeout(h.id); h.id = 0; h.left = Math.max(0, h.left - (t - h.at)); } }
+    else { h.at = t; h.id = setTimeout(h.run, h.left); }
+  }
+}
+const wait = ms => new Promise(r => pTimeout(r, ms));
 const smooth = t => t * t * (3 - 2 * t);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const store = {
@@ -1389,14 +1408,14 @@ let subsTimer = null;
 function subtitle(who, text, ms = 4200) {
   const el = $('#subs');
   el.innerHTML = (who ? `<b>${esc(who)}</b>` : '') + text;
-  clearTimeout(subsTimer);
-  if (ms > 0) subsTimer = setTimeout(() => { el.innerHTML = ''; }, ms);
+  pClear(subsTimer); subsTimer = null;
+  if (ms > 0) subsTimer = pTimeout(() => { el.innerHTML = ''; }, ms);
 }
-function clearSubs() { clearTimeout(subsTimer); $('#subs').innerHTML = ''; }
+function clearSubs() { pClear(subsTimer); subsTimer = null; $('#subs').innerHTML = ''; }
 function toast(msg, ms = 3800) {
   const box = $('#toast'); const d = document.createElement('div'); d.innerHTML = msg; box.appendChild(d);
   while (box.children.length > 3) box.firstChild.remove();
-  setTimeout(() => d.remove(), ms);
+  pTimeout(() => d.remove(), ms);   // a note shown just before pausing is still there after
 }
 
 /* ---------------- mouse look ---------------- */
@@ -1554,7 +1573,10 @@ const UI = {
     const cb = UI.onClose, always = UI.kind === 'phone', wasPause = UI.kind === 'pause'; UI.kind = null; UI.onClose = null; UI.onKey = null;
     $('#overlay').hidden = true; $('#card').innerHTML = ''; G.uiOpen = false;
     if (cb && (!replacing || always)) cb();
-    if (wasPause) wakeAudio();
+    // closing the pause card itself goes back to the game; hints or the notebook opened from it keep
+    // the game paused and come back to the pause card when they close
+    if (wasPause && !replacing) setPaused(false);
+    else if (G.paused && !UI.kind && !replacing && G.mode === 'play') { openPause(); return; }
     if (!silent && !UI.kind && !G.panelOpen) resumeLook(byEsc);
   },
 };
@@ -1583,7 +1605,8 @@ function openPause() {
     <label class="pvol">Volume <input type="range" id="pVol" min="0" max="1" step="0.05" value="${A.vol}"></label>
     <div class="plinks"><button class="linkbtn" id="pQuit">${HOST.mr() ? 'Back to the corridor' : 'Quit to all mysteries'}</button><button class="linkbtn" id="pRestart">Start this room over</button>${HOST.mr() && HOST.mr().openShare ? '<button class="linkbtn" id="pShare">Send this room to a friend</button>' : ''}${HOST.mr() && HOST.mr().feedback && !HOST.mr().faceRow ? '<button class="linkbtn" id="pFb">Send feedback</button>' : ''}</div>
     ${HOST.mr() && HOST.mr().faceRow ? '<div class="mr-pause-faces" id="pFaces"></div>' : ''}`, { cls: 'ui-card pz' });
-  G.pauseAt = performance.now();
+  if (!G.paused) G.pauseAt = performance.now();
+  setPaused(true);
   if ($('#pShare')) $('#pShare').onclick = () => shareRoom(ROOM.id, 'pause');
   $('#pQuit').onclick = () => { flushSave(); reloadInto(null); };
   $('#pRes').onclick = () => UI.close();
@@ -1652,14 +1675,39 @@ function flushSave() { if (!S || !ROOM) return; S.player = { x: P.x, z: P.z, yaw
 addEventListener('beforeunload', () => { if (G.mode === 'play') flushSave(); });
 addEventListener('pagehide', () => { if (G.mode === 'play') flushSave(); });
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden') {
-    if (G.mode === 'play') { flushSave(); if (!UI.kind) { if (typeof touchRelease === 'function') touchRelease(); openPause(); } }
-    // nothing should keep playing in the background
-    if (A.ctx && A.ctx.state === 'running') { A.hidPaused = true; A.ctx.suspend().catch(() => {}); }
-  } else if (A.hidPaused) { A.hidPaused = false; wakeAudio(); }
+  if (document.visibilityState === 'hidden' && G.mode === 'play') { flushSave(); if (!UI.kind) { if (typeof touchRelease === 'function') touchRelease(); openPause(); } }
+  syncSound();
 });
-// the audio context can be suspended or "interrupted" (iOS after a call): wake it on the next chance
-function wakeAudio() { try { if (A.ctx && A.ctx.state !== 'running' && !document.hidden) A.ctx.resume().catch(() => {}); } catch (e) {} }
+
+/* ---------------- pause: everything stops ----------------
+   While paused (or while the page is hidden) game time stops (update() returns), the audio context is
+   suspended, so a voice line, its echo, the ambience and any scheduled sound all hold where they are,
+   speech synthesis is paused, and the real-time waits of cutscenes freeze (pTimeout). */
+function setPaused(on) {
+  on = !!on; if (!!G.paused === on) return;
+  G.paused = on;
+  syncSound();
+}
+const soundWanted = () => !G.paused && document.visibilityState !== 'hidden';
+function syncSound() {
+  freezeTimers(!!G.paused || (document.visibilityState === 'hidden' && G.mode === 'play'));
+  syncAudioCtx();
+  try {
+    if (!('speechSynthesis' in window)) return;
+    if (!soundWanted()) { if (speechSynthesis.speaking) speechSynthesis.pause(); }
+    else if (speechSynthesis.paused) speechSynthesis.resume();
+  } catch (e) {}
+}
+// suspend() and resume() settle later: re-check once each settles, so a quick pause-and-resume can't leave it silent
+function syncAudioCtx() {
+  const c = A.ctx; if (!c || c.state === 'closed') return;
+  try {
+    if (soundWanted()) c.resume().then(() => { if (!soundWanted()) syncAudioCtx(); }, () => {});
+    else c.suspend().then(() => { if (soundWanted()) syncAudioCtx(); }, () => {});
+  } catch (e) {}
+}
+// the audio context can be suspended or "interrupted" (iOS after a call): wake it on the next chance, unless paused
+function wakeAudio() { try { if (A.ctx && A.ctx.state !== 'running' && soundWanted()) A.ctx.resume().catch(() => {}); } catch (e) {} }
 
 /* ---------------- look-away helper ---------------- */
 const _v = new THREE.Vector3();
@@ -1679,7 +1727,7 @@ const A = { ctx: null, master: null, rev: null, noise: null, vol: 0.85, voices: 
 function setVolume(v) { A.vol = v; store.set('lethe.vol', v); if (A.master) A.master.gain.value = v; }
 
 function initAudio() {
-  if (A.ctx) { A.ctx.resume && A.ctx.resume(); return; }
+  if (A.ctx) { if (!G.paused) A.ctx.resume && A.ctx.resume(); return; }
   const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
   // iPhones mute web audio with the silent switch unless the page says it's playing media
   try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
@@ -1752,8 +1800,9 @@ function playVO(who, text, buf, opts) {
     voChain(src, buf, opts);
     voSrc = src;
     let done = false;
-    const fin = () => { if (done) return; done = true; clearTimeout(to); if (voSrc === src) voSrc = null; if (tok === sayToken) setTimeout(() => { if (tok === sayToken) clearSubs(); }, 500); res(tok === sayToken); };
-    src.onended = fin; const to = setTimeout(fin, buf.duration / speed * 1000 + 1500);
+    // the safety timeout counts only unpaused time: a paused line (audio suspended) must not "finish" behind the pause screen
+    const fin = () => { if (done) return; done = true; pClear(to); if (voSrc === src) voSrc = null; if (tok === sayToken) pTimeout(() => { if (tok === sayToken) clearSubs(); }, 500); res(tok === sayToken); };
+    src.onended = fin; const to = pTimeout(fin, buf.duration / speed * 1000 + 1500);
     src.start();
   });
 }
@@ -1931,15 +1980,16 @@ function say(who, text, opts = {}) {
   subtitle(who, text, 0);
   const tok = ++sayToken;
   return new Promise(res => {
-    let done = false; const fin = () => { if (done) return; done = true; clearTimeout(to); if (tok === sayToken) setTimeout(() => { if (tok === sayToken) clearSubs(); }, 600); res(tok === sayToken); };
+    let done = false; const fin = () => { if (done) return; done = true; pClear(to); if (tok === sayToken) pTimeout(() => { if (tok === sayToken) clearSubs(); }, 600); res(tok === sayToken); };
     const speak = A.voices && 'speechSynthesis' in window && VOICES.length > 0 && plain;
-    const to = setTimeout(fin, speak ? est + 5000 : est);
+    const to = pTimeout(fin, speak ? est + 5000 : est);
     if (!speak) return;
     try {
       const u = new SpeechSynthesisUtterance(plain);
       u.rate = opts.rate || 0.92; u.pitch = opts.pitch ?? 1; u.volume = (opts.volume ?? 0.95) * A.vol;
       const v = voiceFor(opts.voice); if (v) u.voice = v;
-      u.onend = fin; u.onerror = fin; speechSynthesis.speak(u);
+      // through pTimeout so a line that comes up while paused waits for the pause to end
+      u.onend = fin; u.onerror = fin; pTimeout(() => { if (!done && tok === sayToken) speechSynthesis.speak(u); }, 0);
     } catch (e) { }
   });
 }
@@ -3160,8 +3210,8 @@ function toneStart(kind) {
   const os = fr.map(f => { const o = ctx.createOscillator(); o.frequency.value = f; o.connect(g); o.start(); return o; });
   let iv = null;
   if (kind === 'dial') g.gain.value = 0.07;
-  else { const on = kind === 'busy' ? 0.5 : 2, off = kind === 'busy' ? 0.5 : 4; let s = true; const tick = () => { g.gain.setTargetAtTime(s ? 0.07 : 0, now(), 0.01); iv = setTimeout(tick, (s ? on : off) * 1000); s = !s; }; tick(); }
-  PH.tone = { stop: () => { clearTimeout(iv); os.forEach(o => { try { o.stop(); } catch (e) {} }); g.disconnect(); } };
+  else { const on = kind === 'busy' ? 0.5 : 2, off = kind === 'busy' ? 0.5 : 4; let s = true; const tick = () => { g.gain.setTargetAtTime(s ? 0.07 : 0, now(), 0.01); iv = pTimeout(tick, (s ? on : off) * 1000); s = !s; }; tick(); }
+  PH.tone = { stop: () => { pClear(iv); os.forEach(o => { try { o.stop(); } catch (e) {} }); g.disconnect(); } };
 }
 function toneStop() { if (PH.tone) { PH.tone.stop(); PH.tone = null; } }
 let lineHiss = null;
@@ -3205,13 +3255,13 @@ function openPhone() {
 }
 function pstate(t) { const e = $('#pstate'); if (e) e.textContent = t; }
 function hangUp() {
-  PH.tok++; toneStop(); hiss(false); stopSpeech(); clearTimeout(PH.idle); PH.busy = false; PH.digits = ''; PH.dialing = false;
+  PH.tok++; toneStop(); hiss(false); stopSpeech(); pClear(PH.idle); PH.busy = false; PH.digits = ''; PH.dialing = false;
   sThunk(POS.phone, 0.4, 200); clearSubs();
-  if (PH.afterHang) { const f = PH.afterHang; PH.afterHang = null; setTimeout(f, 50); }
+  if (PH.afterHang) { const f = PH.afterHang; PH.afterHang = null; pTimeout(f, 50); }
 }
 function dial(d) {
   if (PH.busy || PH.dialing || UI.kind !== 'phone') return;
-  const k = d === '0' ? 10 : +d; PH.dialing = true; toneStop(); clearTimeout(PH.idle);
+  const k = d === '0' ? 10 : +d; PH.dialing = true; toneStop(); pClear(PH.idle);
   const rot = 60 - holeAngle(k), plate = $('#plate'); const tok = PH.tok;
   const t0 = performance.now(), fwd = rot / 360 * 700, back = k * 95 + 120;
   let pulses = 0;
@@ -3222,7 +3272,7 @@ function dial(d) {
     else { const b = (e - fwd) / back; a = rot * (1 - Math.min(1, b)); const p = Math.floor(Math.min(1, b) * k); while (pulses < p) { pulses++; sClick(null, 0.35, 1800); } }
     plate.setAttribute('transform', `rotate(${a.toFixed(1)} 150 150)`);
     if (e < fwd + back) requestAnimationFrame(step);
-    else { PH.dialing = false; PH.digits += d; const el = $('#dialed'); if (el) el.textContent = PH.digits.replace(/(\d)(?=\d)/g, '$1 '); PH.idle = setTimeout(() => evalNumber(), 2600); }
+    else { PH.dialing = false; PH.digits += d; const el = $('#dialed'); if (el) el.textContent = PH.digits.replace(/(\d)(?=\d)/g, '$1 '); PH.idle = pTimeout(() => evalNumber(), 2600); }
   };
   requestAnimationFrame(step);
 }
@@ -3243,10 +3293,10 @@ function evalNumber() {
 function ringPhone(times, onAnswer) {
   if (PH.ringing || UI.kind === 'phone') return;
   PH.ringing = true; PH.onAnswer = onAnswer; PH.ringLeft = times;
-  const ring = () => { if (!PH.ringing) return; if (PH.ringLeft-- <= 0) { stopRing(); return; } sBell(POS.phone, 1.8); PH.ringTimer = setTimeout(ring, 4200); };
+  const ring = () => { if (!PH.ringing) return; if (PH.ringLeft-- <= 0) { stopRing(); return; } sBell(POS.phone, 1.8); PH.ringTimer = pTimeout(ring, 4200); };
   ring();
 }
-function stopRing() { PH.ringing = false; clearTimeout(PH.ringTimer); }
+function stopRing() { PH.ringing = false; pClear(PH.ringTimer); }
 
 
 /* =====================================================================
@@ -3594,7 +3644,7 @@ function playMemo() {
     await say('Elias, on tape', 'I\'m sitting on the bed. I am not going to touch the chair.', { voice: 'm', rate: 0.82, pitch: 0.85, clip: 'memo3', fx: 'tape', pos }); await wait(1800);
     await say('Elias, on tape', 'I\'m not going to touch the chair.', { voice: 'm', rate: 0.75, pitch: 0.8, volume: 0.75, clip: 'memo4', fx: 'tape', pos, speed: 0.97 }); await wait(600);
     sScrape(pos, 2.4, 0.35); subtitle('', '<i>A slow scrape of wood across carpet. The tape runs out.</i>', 4000); await wait(2600);
-    if (tape) { setGain(tape, 0, 0.1); setTimeout(() => { try { tape.src.stop(); } catch (e) {} }, 600); }
+    if (tape) { setGain(tape, 0, 0.1); pTimeout(() => { try { tape.src.stop(); } catch (e) {} }, 600); }
     sClick(pos, 0.5, 1300); heard('memo'); G.memo = false;
   })();
 }
@@ -11433,7 +11483,7 @@ function startAmbience() {
   // the guard's radio, faint, a slow old song through a small speaker
   const rg = ctx.createGain(); rg.gain.value = 0; const rbp = filt('bandpass', 1100, 1.2); rbp.connect(rg); route(rg, { pos: new THREE.Vector3(-2.85, 1.0, -4.05), wet: 0.3, ref: 0.6 }); A.loops.radio = { gain: rg, bp: rbp };
   const notes = [392, 440, 523, 587, 523, 440, 392, 349, 392, 440, 392, 330];
-  let ni = 0; const tick = () => { if (!A.ready) return; const t = now(); const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.value = notes[ni++ % notes.length]; const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.4, t + 0.05); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9); o.connect(g); g.connect(rbp); o.start(t); o.stop(t + 1); setTimeout(tick, 620); }; tick();
+  let ni = 0; const tick = () => { if (!A.ready) return; const t = now(); const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.value = notes[ni++ % notes.length]; const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.4, t + 0.05); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9); o.connect(g); g.connect(rbp); o.start(t); o.stop(t + 1); pTimeout(tick, 620); }; tick();
   const rn = noiseSrc(true); const rng = ctx.createGain(); rng.gain.value = 0.08; rn.connect(rng); rng.connect(rbp); rn.start();
 }
 function soundUpdate(dt) {
@@ -20604,7 +20654,7 @@ function movePlayer(dt) {
 
 let autoT = 10;
 function update(dt) {
-  if (UI.kind === 'pause') return;
+  if (G.paused) return;   // pause (and hints or the notebook opened from it): game time stops
   G.time += dt; G.play = (G.play || 0) + dt; S.elapsed += dt;
   stepTweens(dt); stepTimers(dt);
   movePlayer(dt);

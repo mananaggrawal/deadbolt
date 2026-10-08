@@ -11,7 +11,26 @@ const rand = (a, b) => a + Math.random() * (b - a);
 const irand = (a, b) => Math.floor(a + Math.random() * (b - a + 1));
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const TAU = Math.PI * 2;
-const wait = ms => new Promise(r => setTimeout(r, ms));
+// Real-time timers that stand still while the game is paused (or the page is hidden mid-room).
+// Voice lines, their subtitles and the waits between them in cutscenes all use these, so pausing
+// holds a line where it is instead of letting the next one start behind the pause screen.
+const PZ = { on: false, list: new Set() };
+function pTimeout(fn, ms) {
+  const h = { left: Math.max(0, ms || 0), at: 0, id: 0 };
+  h.run = () => { PZ.list.delete(h); h.id = 0; fn(); };
+  PZ.list.add(h);
+  if (!PZ.on) { h.at = performance.now(); h.id = setTimeout(h.run, h.left); }
+  return h;
+}
+function pClear(h) { if (!h || !h.run) return; clearTimeout(h.id); h.id = 0; PZ.list.delete(h); }
+function freezeTimers(on) {
+  if (on === PZ.on) return; PZ.on = on; const t = performance.now();
+  for (const h of PZ.list) {
+    if (on) { if (h.id) { clearTimeout(h.id); h.id = 0; h.left = Math.max(0, h.left - (t - h.at)); } }
+    else { h.at = t; h.id = setTimeout(h.run, h.left); }
+  }
+}
+const wait = ms => new Promise(r => pTimeout(r, ms));
 const smooth = t => t * t * (3 - 2 * t);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const store = {
@@ -464,14 +483,14 @@ let subsTimer = null;
 function subtitle(who, text, ms = 4200) {
   const el = $('#subs');
   el.innerHTML = (who ? `<b>${esc(who)}</b>` : '') + text;
-  clearTimeout(subsTimer);
-  if (ms > 0) subsTimer = setTimeout(() => { el.innerHTML = ''; }, ms);
+  pClear(subsTimer); subsTimer = null;
+  if (ms > 0) subsTimer = pTimeout(() => { el.innerHTML = ''; }, ms);
 }
-function clearSubs() { clearTimeout(subsTimer); $('#subs').innerHTML = ''; }
+function clearSubs() { pClear(subsTimer); subsTimer = null; $('#subs').innerHTML = ''; }
 function toast(msg, ms = 3800) {
   const box = $('#toast'); const d = document.createElement('div'); d.innerHTML = msg; box.appendChild(d);
   while (box.children.length > 3) box.firstChild.remove();
-  setTimeout(() => d.remove(), ms);
+  pTimeout(() => d.remove(), ms);   // a note shown just before pausing is still there after
 }
 
 /* ---------------- mouse look ---------------- */
@@ -629,7 +648,10 @@ const UI = {
     const cb = UI.onClose, always = UI.kind === 'phone', wasPause = UI.kind === 'pause'; UI.kind = null; UI.onClose = null; UI.onKey = null;
     $('#overlay').hidden = true; $('#card').innerHTML = ''; G.uiOpen = false;
     if (cb && (!replacing || always)) cb();
-    if (wasPause) wakeAudio();
+    // closing the pause card itself goes back to the game; hints or the notebook opened from it keep
+    // the game paused and come back to the pause card when they close
+    if (wasPause && !replacing) setPaused(false);
+    else if (G.paused && !UI.kind && !replacing && G.mode === 'play') { openPause(); return; }
     if (!silent && !UI.kind && !G.panelOpen) resumeLook(byEsc);
   },
 };
@@ -658,7 +680,8 @@ function openPause() {
     <label class="pvol">Volume <input type="range" id="pVol" min="0" max="1" step="0.05" value="${A.vol}"></label>
     <div class="plinks"><button class="linkbtn" id="pQuit">${HOST.mr() ? 'Back to the corridor' : 'Quit to all mysteries'}</button><button class="linkbtn" id="pRestart">Start this room over</button>${HOST.mr() && HOST.mr().openShare ? '<button class="linkbtn" id="pShare">Send this room to a friend</button>' : ''}${HOST.mr() && HOST.mr().feedback && !HOST.mr().faceRow ? '<button class="linkbtn" id="pFb">Send feedback</button>' : ''}</div>
     ${HOST.mr() && HOST.mr().faceRow ? '<div class="mr-pause-faces" id="pFaces"></div>' : ''}`, { cls: 'ui-card pz' });
-  G.pauseAt = performance.now();
+  if (!G.paused) G.pauseAt = performance.now();
+  setPaused(true);
   if ($('#pShare')) $('#pShare').onclick = () => shareRoom(ROOM.id, 'pause');
   $('#pQuit').onclick = () => { flushSave(); reloadInto(null); };
   $('#pRes').onclick = () => UI.close();
@@ -727,14 +750,39 @@ function flushSave() { if (!S || !ROOM) return; S.player = { x: P.x, z: P.z, yaw
 addEventListener('beforeunload', () => { if (G.mode === 'play') flushSave(); });
 addEventListener('pagehide', () => { if (G.mode === 'play') flushSave(); });
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden') {
-    if (G.mode === 'play') { flushSave(); if (!UI.kind) { if (typeof touchRelease === 'function') touchRelease(); openPause(); } }
-    // nothing should keep playing in the background
-    if (A.ctx && A.ctx.state === 'running') { A.hidPaused = true; A.ctx.suspend().catch(() => {}); }
-  } else if (A.hidPaused) { A.hidPaused = false; wakeAudio(); }
+  if (document.visibilityState === 'hidden' && G.mode === 'play') { flushSave(); if (!UI.kind) { if (typeof touchRelease === 'function') touchRelease(); openPause(); } }
+  syncSound();
 });
-// the audio context can be suspended or "interrupted" (iOS after a call): wake it on the next chance
-function wakeAudio() { try { if (A.ctx && A.ctx.state !== 'running' && !document.hidden) A.ctx.resume().catch(() => {}); } catch (e) {} }
+
+/* ---------------- pause: everything stops ----------------
+   While paused (or while the page is hidden) game time stops (update() returns), the audio context is
+   suspended, so a voice line, its echo, the ambience and any scheduled sound all hold where they are,
+   speech synthesis is paused, and the real-time waits of cutscenes freeze (pTimeout). */
+function setPaused(on) {
+  on = !!on; if (!!G.paused === on) return;
+  G.paused = on;
+  syncSound();
+}
+const soundWanted = () => !G.paused && document.visibilityState !== 'hidden';
+function syncSound() {
+  freezeTimers(!!G.paused || (document.visibilityState === 'hidden' && G.mode === 'play'));
+  syncAudioCtx();
+  try {
+    if (!('speechSynthesis' in window)) return;
+    if (!soundWanted()) { if (speechSynthesis.speaking) speechSynthesis.pause(); }
+    else if (speechSynthesis.paused) speechSynthesis.resume();
+  } catch (e) {}
+}
+// suspend() and resume() settle later: re-check once each settles, so a quick pause-and-resume can't leave it silent
+function syncAudioCtx() {
+  const c = A.ctx; if (!c || c.state === 'closed') return;
+  try {
+    if (soundWanted()) c.resume().then(() => { if (!soundWanted()) syncAudioCtx(); }, () => {});
+    else c.suspend().then(() => { if (soundWanted()) syncAudioCtx(); }, () => {});
+  } catch (e) {}
+}
+// the audio context can be suspended or "interrupted" (iOS after a call): wake it on the next chance, unless paused
+function wakeAudio() { try { if (A.ctx && A.ctx.state !== 'running' && soundWanted()) A.ctx.resume().catch(() => {}); } catch (e) {} }
 
 /* ---------------- look-away helper ---------------- */
 const _v = new THREE.Vector3();

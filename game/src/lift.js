@@ -2017,7 +2017,7 @@ function startAmbience() {
   // the guard's radio, faint, a slow old song through a small speaker
   const rg = ctx.createGain(); rg.gain.value = 0; const rbp = filt('bandpass', 1100, 1.2); rbp.connect(rg); route(rg, { pos: new THREE.Vector3(-2.85, 1.0, -4.05), wet: 0.3, ref: 0.6 }); A.loops.radio = { gain: rg, bp: rbp };
   const notes = [392, 440, 523, 587, 523, 440, 392, 349, 392, 440, 392, 330];
-  let ni = 0; const tick = () => { if (!A.ready) return; const t = now(); const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.value = notes[ni++ % notes.length]; const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.4, t + 0.05); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9); o.connect(g); g.connect(rbp); o.start(t); o.stop(t + 1); setTimeout(tick, 620); }; tick();
+  let ni = 0; const tick = () => { if (!A.ready) return; const t = now(); const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.value = notes[ni++ % notes.length]; const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.4, t + 0.05); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9); o.connect(g); g.connect(rbp); o.start(t); o.stop(t + 1); pTimeout(tick, 620); }; tick();
   const rn = noiseSrc(true); const rng = ctx.createGain(); rng.gain.value = 0.08; rn.connect(rng); rng.connect(rbp); rn.start();
 }
 function soundUpdate(dt) {

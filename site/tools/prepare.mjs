@@ -24,9 +24,26 @@ for (const f of keep) fs.copyFileSync(path.join(gameDist, f), path.join(pub, 'ga
 fs.mkdirSync(path.join(pub, 'vendor'), { recursive: true });
 fs.copyFileSync(path.join(site, 'node_modules/three/build/three.module.js'), path.join(pub, 'vendor/three-0.160.0.module.js'));
 
-// app icons from the favicon
-const svg = fs.readFileSync(path.join(pub, 'favicon.svg'));
-for (const s of [192, 512]) fs.writeFileSync(path.join(pub, `icon-${s}.png`), new Resvg(svg, { fitTo: { mode: 'width', value: s } }).render().asPng());
+// icons, all the white door logo: favicon.ico (16, 32 and 48 px, for browsers and search results that
+// don't take the SVG) from the rounded favicon; the home-screen and app icons from the full-bleed icon.svg
+const pngOf = (file, s) => new Resvg(fs.readFileSync(path.join(pub, file)), { fitTo: { mode: 'width', value: s } }).render().asPng();
+for (const s of [192, 512]) fs.writeFileSync(path.join(pub, `icon-${s}.png`), pngOf('icon.svg', s));
+fs.writeFileSync(path.join(pub, 'apple-touch-icon.png'), pngOf('icon.svg', 180));
+fs.writeFileSync(path.join(pub, 'favicon.ico'), ico([16, 32, 48].map(s => [s, pngOf('favicon.svg', s)])));
+// an .ico holding PNG images: a 6-byte header, a 16-byte entry per image, then the images
+function ico(images) {
+  const head = Buffer.alloc(6 + 16 * images.length);
+  head.writeUInt16LE(0, 0); head.writeUInt16LE(1, 2); head.writeUInt16LE(images.length, 4);
+  let offset = head.length;
+  images.forEach(([s, png], i) => {
+    const e = 6 + 16 * i;
+    head.writeUInt8(s % 256, e); head.writeUInt8(s % 256, e + 1);   // width, height (0 means 256)
+    head.writeUInt16LE(1, e + 4); head.writeUInt16LE(32, e + 6);     // colour planes, bits per pixel
+    head.writeUInt32LE(png.length, e + 8); head.writeUInt32LE(offset, e + 12);
+    offset += png.length;
+  });
+  return Buffer.concat([head, ...images.map(([, png]) => png)]);
+}
 
 // everything the function needs, as one module
 const b64 = f => fs.readFileSync(f).toString('base64');
