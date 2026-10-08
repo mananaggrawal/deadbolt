@@ -255,7 +255,7 @@ button { font: inherit; color: inherit; }
 
 /* sections */
 section.block { padding-top: 152px; }
-.section-head { max-width: 600px; margin-bottom: 40px; display: flex; flex-direction: column; gap: 12px; }
+.section-head { margin-bottom: 40px; display: flex; flex-direction: column; gap: 12px; }
 .section-head .lead { color: var(--muted); }
 .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
 .step { position: relative; display: flex; flex-direction: column; gap: 8px; padding: 28px 28px 32px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg-2); }
@@ -325,22 +325,18 @@ kbd { display: inline-block; min-width: 16px; padding: 0 5px; border: 1px solid 
 .pg-nums button:hover { color: var(--ink); }
 .pg-nums button[aria-current="page"] { color: var(--ink); background: var(--bg-3); }
 
-/* before you go in + faq */
-.plain { list-style: none; margin: 0; padding: 0; }
-.plain li { padding: 14px 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 16px; }
-.plain li:last-child { border-bottom: 1px solid var(--line); }
-.plain .k { color: var(--muted); }
+/* questions */
 details.faq { border-top: 1px solid var(--line); }
 details.faq:last-of-type { border-bottom: 1px solid var(--line); }
 details.faq summary { list-style: none; cursor: pointer; padding: 18px 0; display: flex; justify-content: space-between; gap: 16px; font-size: 17px; }
 details.faq summary::-webkit-details-marker { display: none; }
 details.faq summary::after { content: "+"; color: var(--muted); font-family: var(--mono); }
 details.faq[open] summary::after { content: "\2013"; }
-details.faq p { color: var(--muted); padding: 0 0 20px; max-width: 680px; }
+details.faq p { color: var(--muted); padding: 0 0 20px; }
 
 /* cta + footer */
 .cta { text-align: center; padding-block: 200px 120px; display: flex; flex-direction: column; align-items: center; gap: 40px; }
-.cta h2 { line-height: 46px; max-width: 760px; }
+.cta h2 { line-height: 46px; }
 .cta h2 .faint { color: var(--faint); }
 footer.site { padding-block: 96px 64px; border-top: 1px solid var(--line); }
 .footer-top { display: grid; grid-template-columns: minmax(0, 1fr) repeat(2, 220px); gap: 40px; }
@@ -397,7 +393,6 @@ footer.site { padding-block: 96px 64px; border-top: 1px solid var(--line); }
   section.block { padding-top: 96px; }
   .grid3 .card { display: flex; align-items: stretch; }
   .grid2 { grid-template-columns: 1fr; }
-  .plain li { grid-template-columns: 1fr; gap: 2px; }
   .cta { padding-block: 120px 80px; }
   .cta h2 { line-height: 34px; }
   footer.site { padding-block: 64px 48px; }
@@ -555,27 +550,14 @@ Escaped in 31:20 · 2 hints
   </section>
 
   <section class="block wrap" id="faq">
-    <div class="grid2">
-      <div>
-        <div class="section-head"><p class="eyebrow">Before you go in</p><h2>What you need.</h2></div>
-        <ul class="plain">
-          <li><span class="k">A screen</span><span>A computer with a keyboard and mouse, or a phone held sideways.</span></li>
-          <li><span class="k">Sound</span><span>Headphones. Most of what happens in the dark, you hear before you see.</span></li>
-          <li><span class="k">Time</span><span>20 to 40 minutes. Leave halfway and the room waits for you on this device.</span></li>
-          <li><span class="k">Company</span><span>None. Every room is played alone.</span></li>
-        </ul>
-      </div>
-      <div>
-        <div class="section-head"><p class="eyebrow">Questions</p><h2>Asked at the door.</h2></div>
-        <details class="faq"><summary>Is it free?</summary><p>Yes. There's nothing to install. You sign in with Google once, then open a door and you're in. Your escapes and squares are kept on every device you sign in on.</p></details>
-        <details class="faq"><summary>How scary is it?</summary><p>Scary enough to make you jump: sudden faces, things moving in the dark and some unsettling images. It isn't meant for young children.</p></details>
-        <details class="faq"><summary>What if I get stuck?</summary><p>Press H, or tap Hints on a phone. The hints go from a nudge to the answer itself. Using them only changes the colour of that puzzle's square.</p></details>
-        <details class="faq"><summary>Does it work on my phone?</summary><p>Yes. Read the room's screen upright, then turn your phone sideways when you go in: a thumbstick to walk, drag to look around, and buttons for whatever you can do next. On an iPhone, add the site to your Home Screen to play full screen.</p></details>
-        <details class="faq"><summary>How often do new rooms open?</summary><p>New rooms open regularly, and the newest one is always the first open door in the corridor.</p></details>
-        <details class="faq"><summary>Can I continue on another device?</summary><p>Your results can. Sign in with Google on each device and your escapes and squares follow you. A room you leave halfway picks up again on the device you were playing on.</p></details>
-        <details class="faq"><summary>What do you keep about me?</summary><p>Your name, email address and results, and a record of how each room went, so we can see where people get stuck. The <a href="/privacy" style="text-decoration:underline;text-underline-offset:3px">privacy page</a> has the details.</p></details>
-      </div>
-    </div>
+    <div class="section-head"><p class="eyebrow">Questions</p><h2>Asked at the door.</h2></div>
+    <details class="faq"><summary>Is it free?</summary><p>Yes. There's nothing to install. You sign in with Google once, then open a door and you're in. Your escapes and squares are kept on every device you sign in on.</p></details>
+    <details class="faq"><summary>How scary is it?</summary><p>Scary enough to make you jump: sudden faces, things moving in the dark and some unsettling images. It isn't meant for young children.</p></details>
+    <details class="faq"><summary>What if I get stuck?</summary><p>Press H, or tap Hints on a phone. The hints go from a nudge to the answer itself. Using them only changes the colour of that puzzle's square.</p></details>
+    <details class="faq"><summary>Does it work on my phone?</summary><p>Yes. Read the room's screen upright, then turn your phone sideways when you go in: a thumbstick to walk, drag to look around, and buttons for whatever you can do next. On an iPhone, add the site to your Home Screen to play full screen.</p></details>
+    <details class="faq"><summary>How often do new rooms open?</summary><p>New rooms open regularly, and the newest one is always the first open door in the corridor.</p></details>
+    <details class="faq"><summary>Can I continue on another device?</summary><p>Your results can. Sign in with Google on each device and your escapes and squares follow you. A room you leave halfway picks up again on the device you were playing on.</p></details>
+    <details class="faq"><summary>What do you keep about me?</summary><p>Your name, email address and results, and a record of how each room went, so we can see where people get stuck. The <a href="/privacy" style="text-decoration:underline;text-underline-offset:3px">privacy page</a> has the details.</p></details>
   </section>
 
   <section class="cta wrap">
@@ -595,7 +577,7 @@ Escaped in 31:20 · 2 hints
         <span class="muted">Horror mystery rooms you play in your browser.</span>
       </div>
       <div class="footer-col" id="footRooms"><span class="label">Newest rooms</span></div>
-      <div class="footer-col"><span class="label">Play</span><button type="button" data-enter="newest">Open the newest door</button><a href="#rooms">All the rooms</a><a href="#how">How it works</a><a href="#faq">Questions</a><button type="button" data-share="site" data-surface="footer">Tell a friend</button></div>
+      <div class="footer-col"><span class="label">Play</span><button type="button" data-enter="newest">Open the newest door</button><a href="#rooms">All the rooms</a><a href="#how">How it works</a><a href="#faq">Questions</a><button type="button" data-share="site" data-surface="footer">Tell a friend</button><button type="button" data-mr-fb="site">Send feedback</button></div>
     </div>
     <div class="footer-bottom"><p>Best with headphones. Plays on a computer with a keyboard and mouse, or on a phone held sideways.</p><span class="faint"><a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a></span></div>
   </div>

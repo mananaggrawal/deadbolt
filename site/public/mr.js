@@ -5,7 +5,7 @@
    - sharing: one panel for the site, a room or a result, with a tracked link per person and app
    - where a visitor came from: the share link (and app) a browser first arrived through
    - a way out of in-app browsers (Instagram, Facebook...), where Google sign-in is blocked
-   - a small feedback form
+   - feedback: three faces, then a line if they want
    The game talks to it through window.MR (see "host bridge" in game/src/series.js). */
 (() => {
   'use strict';
@@ -227,6 +227,7 @@
   .mrm .box{position:relative;width:min(420px,100%);max-height:calc(100dvh - 32px);overflow:auto;overscroll-behavior:contain;background:#161412;border:1px solid #312d29;border-radius:8px;box-shadow:0 30px 90px rgba(0,0,0,.7);padding:24px 24px 20px;text-align:left}
   .mrm h2{margin:0 0 6px;font-size:22px;line-height:28px;font-weight:400;letter-spacing:-.2px;padding-right:28px}
   .mrm p{margin:0 0 14px;color:#c8c1b4;font-size:14px;line-height:21px}
+  .mrm .box:focus{outline:none}
   .mrm .x{position:absolute;right:6px;top:4px;background:none;border:0;color:#8d867b;font-size:24px;line-height:1;cursor:pointer;padding:10px;min-width:44px;min-height:44px}
   .mrm .x:hover{color:#ede8de}
   .mrm .b{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:44px;padding:8px 18px;border-radius:999px;border:0;cursor:pointer;font:500 15px/24px inherit;font-family:inherit;background:#ede8de;color:#0b0a09;width:100%;text-decoration:none;text-transform:none;letter-spacing:0}
@@ -258,6 +259,28 @@
   @media (max-height:520px){.mrm{padding:8px}.mrm .box{width:min(560px,100%);padding:14px 18px 14px;max-height:calc(100dvh - 16px)}.mrm h2{font-size:19px;line-height:24px}.mrm .lead{display:none}
     .mrm .pv{margin:6px 0 10px;padding:8px 10px;max-height:84px;overflow:auto}.mrm .sh,.mrm .sh.c2{grid-template-columns:repeat(4,minmax(0,1fr))}.mrm .sh .wide{grid-column:span 2}.mrm .sh a,.mrm .sh button{min-height:42px}}
   @media (max-width:380px){.mrm .sh{grid-template-columns:repeat(2,minmax(0,1fr))}.mrm .box{padding:20px 16px 16px}}
+  .mrm .faces{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0 4px}
+  .mrm .face{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 6px 12px;border-radius:10px;border:1px solid #312d29;background:transparent;color:#8d867b;cursor:pointer;font:inherit;font-size:13px;line-height:18px;transition:background .15s,border-color .15s,color .15s}
+  .mrm .face svg{width:36px;height:36px;transition:transform .15s}
+  .mrm .face span{color:#c8c1b4}
+  .mrm .face:hover{background:#1a1816;color:#ede8de}
+  .mrm .face:hover svg{transform:scale(1.06)}
+  .mrm .face[aria-pressed=true]{border-color:#f0c27a;background:rgba(240,194,122,.08);color:#f0c27a}
+  .mrm .face[aria-pressed=true] span{color:#ede8de}
+  .mrm .face:focus-visible{outline:2px solid #f0c27a;outline-offset:2px}
+  .mrm .more{margin-top:16px}
+  .mrm .more[hidden]{display:none}
+  @media (max-height:520px){.mrm .faces{margin-top:10px}.mrm .face{padding:10px 6px 8px;gap:4px}.mrm .face svg{width:28px;height:28px}.mrm .more{margin-top:10px}.mrm textarea{min-height:56px}.mrm .seg button{min-height:32px}.mrm .more ~ .fine{display:none}}
+  .mrq{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;font:inherit;color:inherit}
+  .mrq .q{font-size:14px;color:#8d867b}
+  .mrq .fs{display:inline-flex;gap:4px}
+  .mrq button{width:40px;height:40px;display:grid;place-items:center;border-radius:999px;border:1px solid transparent;background:transparent;color:#8d867b;cursor:pointer;padding:0;transition:background .15s,color .15s,border-color .15s}
+  .mrq button svg{width:26px;height:26px}
+  .mrq button:hover{background:rgba(237,232,222,.08);color:#ede8de}
+  .mrq button:focus-visible{outline:2px solid #f0c27a;outline-offset:2px}
+  .mrq .thanks{font-size:14px;color:#8d867b}
+  .mr-end-faces{margin:20px 0 0}.mr-end-faces .mrq{justify-content:flex-start;gap:10px}.mr-end-faces .mrq button{margin-left:-2px}
+  .mr-pause-faces{margin:18px 0 0;padding-top:14px;border-top:1px solid rgba(237,232,222,.1)}.mr-pause-faces .mrq{justify-content:flex-start;gap:10px}
   .mra{display:inline-flex;align-items:center;gap:8px;position:relative}
   .mra .av{width:34px;height:34px;border-radius:50%;background:#221f1c center/cover;border:1px solid #312d29;display:grid;place-items:center;font-size:13px;color:#ede8de;cursor:pointer;padding:0}
   .mra .menu{position:absolute;right:0;top:44px;min-width:220px;background:#161412;border:1px solid #312d29;border-radius:8px;box-shadow:0 18px 50px rgba(0,0,0,.55);padding:8px;display:flex;flex-direction:column;z-index:60}
@@ -277,7 +300,7 @@
   function modal(html, onMount, opts) {
     ensureCss(); closeModal();
     const el = document.createElement('div'); el.className = 'mrm'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
-    el.innerHTML = `<div class="box">${opts && opts.noClose ? '' : '<button class="x" type="button" aria-label="Close">&times;</button>'}${html}</div>`;
+    el.innerHTML = `<div class="box" tabindex="-1"${opts && opts.focusBox ? ' autofocus' : ''}>${opts && opts.noClose ? '' : '<button class="x" type="button" aria-label="Close">&times;</button>'}${html}</div>`;
     document.body.appendChild(el); openModal = el;
     const x = el.querySelector('.x'); if (x) x.onclick = closeModal;
     el.addEventListener('click', e => { if (e.target === el && !(opts && opts.noClose)) closeModal(); });
@@ -285,11 +308,16 @@
     el.addEventListener('keyup', e => e.stopPropagation());
     // the game listens for pointer and mouse presses on the page: keep presses inside the dialog
     ['pointerdown', 'mousedown'].forEach(t => el.addEventListener(t, e => e.stopPropagation()));
+    el._onClose = opts && opts.onClose;
     onMount && onMount(el);
     if (!coarse) setTimeout(() => { const f = el.querySelector('[autofocus]') || el.querySelector('button,input,textarea,a[href]'); f && f.focus(); }, 30);
     return el;
   }
-  function closeModal() { if (openModal) { openModal.remove(); openModal = null; } }
+  function closeModal() {
+    if (!openModal) return;
+    const el = openModal; openModal = null; el.remove();
+    if (el._onClose) try { el._onClose(); } catch (e) {}
+  }
 
   // in an in-app browser: how to get this page into a real browser
   function outHtml(cls) {
@@ -370,7 +398,7 @@
     const u = me.user, initial = esc((u.name || u.email || '?').trim().charAt(0).toUpperCase());
     host.innerHTML = `<span class="mra"><button class="av" type="button" aria-label="Account" aria-expanded="false" ${u.image ? `style="background-image:url('${esc(u.image)}')"` : ''}>${u.image ? '' : initial}</button>
       <span class="menu" hidden><span class="who">${esc(u.name || '')}<small>${esc(u.email || '')}</small></span>
-      <button type="button" data-a="share">Share ${esc(CFG.siteName)}</button><a href="/me/export" download>Download my data</a><button type="button" data-a="fb">Send feedback</button>
+      <button type="button" data-a="share">Share ${esc(CFG.siteName)}</button><button type="button" data-a="fb">Send feedback</button>
       ${me.admin ? '<a href="/admin">Dashboard</a>' : ''}<button type="button" data-a="out">Sign out</button><button type="button" data-a="del">Delete my account</button></span></span>`;
     const av = host.querySelector('.av'), menu = host.querySelector('.menu');
     av.onclick = e => { e.stopPropagation(); menu.hidden = !menu.hidden; av.setAttribute('aria-expanded', String(!menu.hidden)); };
@@ -387,36 +415,90 @@
     };
   }
 
-  /* ---------- feedback ---------- */
+  /* ---------- feedback: three faces, then a line if they want ----------
+     Picking a face is the feedback; the words are optional. A face picked and then closed is still sent. */
+  const FACE_SVG = {
+    bad: '<path d="M8.5 16.4c.9-1.15 2.1-1.75 3.5-1.75s2.6.6 3.5 1.75"/>',
+    okay: '<path d="M8.75 15.25h6.5"/>',
+    good: '<path d="M8.5 14.1c.9 1.35 2.1 2.05 3.5 2.05s2.6-.7 3.5-2.05"/>',
+  };
+  const faceSvg = f => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.25"/><circle cx="9" cy="10" r=".9" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r=".9" fill="currentColor" stroke="none"/>${FACE_SVG[f]}</svg>`;
+  const FACES = ['bad', 'okay', 'good'];
+  const faceWords = end => end
+    ? { bad: 'Didn’t like it', okay: 'It was okay', good: 'Loved it' }
+    : { bad: 'Not great', okay: 'Okay', good: 'Good' };
+  const faceAsk = end => end
+    ? { bad: 'What put you off?', okay: 'What would have made it better?', good: 'What did you like most?' }
+    : { bad: 'What went wrong?', okay: 'What would make it better?', good: 'What’s working for you?' };
+  const sentFrom = {};   // "room|from" -> true once a face row has been answered on this page
+
   function feedback(ctx) {
     ctx = ctx || {};
     const end = ctx.from === 'end', room = ctx.room || pageRoom;
-    const kinds = end ? null : [['bug', 'Something’s broken'], ['stuck', 'I’m stuck'], ['idea', 'An idea']];
-    let rating = 0, diff = '', kind = end ? 'rating' : (ctx.from === 'pause' ? 'stuck' : 'idea');
-    modal(`<h2>${end ? 'How was this room?' : 'Send feedback'}</h2>
-      ${end ? `<span class="lab">Your rating</span><div class="seg" id="mrRate">${[1, 2, 3, 4, 5].map(n => `<button type="button" data-v="${n}" aria-pressed="false">${n}</button>`).join('')}</div>
-        <span class="lab">Difficulty</span><div class="seg" id="mrDiff">${['Too easy', 'Just right', 'Too hard'].map(d => `<button type="button" data-v="${d}" aria-pressed="false">${d}</button>`).join('')}</div>`
-        : `<div class="seg" id="mrKind">${kinds.map(([k, l]) => `<button type="button" data-v="${k}" aria-pressed="${k === kind}">${l}</button>`).join('')}</div>`}
-      <span class="lab">${end ? 'Anything else? (optional)' : 'What happened?'}</span>
-      <textarea id="mrTxt" maxlength="2000" placeholder="${end ? 'What did you like, what put you off' : 'A line or two is plenty'}"></textarea>
-      <button class="b" type="button" id="mrSend">Send</button>
-      <p class="fine">${room ? 'We attach which room and step you were on, so you don’t have to explain.' : 'Thanks for helping make the rooms better.'}</p>`, el => {
-      const seg = (id, set) => { const g = el.querySelector(id); if (!g) return; g.onclick = e => { const b = e.target.closest('button'); if (!b) return; g.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); set(b.dataset.v); }; };
-      seg('#mrRate', v => { rating = +v; }); seg('#mrDiff', v => { diff = v; }); seg('#mrKind', v => { kind = v; });
-      const send = el.querySelector('#mrSend');
-      send.onclick = () => {
-        const text = el.querySelector('#mrTxt').value.trim();
-        if (end && !rating && !diff && !text) { send.textContent = 'Pick a rating, or write something'; return; }
-        if (!end && !text) { send.textContent = 'Write a line first'; return; }
-        send.disabled = true;
-        const st = ctx.state || (getState && (() => { try { return getState(); } catch (e) { return null; } })());
-        api('/api/feedback', { anon, room, play: room ? plays[room] || null : null, kind, rating: rating || null, difficulty: diff || null, text,
-          context: { from: ctx.from || CFG.page, step: st ? st.solved.length : null, seconds: st ? st.elapsed : null, hints: st ? st.hints : null, w: innerWidth, h: innerHeight } })
-          .then(() => { el.querySelector('.box').innerHTML = '<h2>Thank you</h2><p>Got it. Every message is read.</p><button class="b" type="button" id="mrDone" autofocus>Close</button>'; el.querySelector('#mrDone').onclick = closeModal; track('feedback_sent', { kind }, room); })
-          .catch(() => { send.disabled = false; send.textContent = 'Couldn’t send. Try again'; });
+    const words = faceWords(end), ask = faceAsk(end);
+    let face = FACES.includes(ctx.face) ? ctx.face : '', diff = '', sent = false;
+    const st = ctx.state || (getState && (() => { try { return getState(); } catch (e) { return null; } })());
+    const post = text => api('/api/feedback', { anon, room, play: room ? plays[room] || null : null, kind: end ? 'rating' : 'note', face: face || null, difficulty: diff || null, text,
+      context: { from: ctx.from || CFG.page, step: st ? st.solved.length : null, seconds: st ? st.elapsed : null, hints: st ? st.hints : null, w: innerWidth, h: innerHeight } })
+      .then(r => { track('feedback_sent', { kind: end ? 'rating' : 'note', face: face || null, words: !!text }, room); ctx.onSent && ctx.onSent(face); return r; });
+    const title = end ? 'How was this room?' : ctx.from === 'pause' ? 'How’s this room going?' : room ? 'What do you think of this room?' : 'How are we doing?';
+    modal(`<h2>${title}</h2>
+      <div class="faces" role="group" aria-label="${esc(title)}">${FACES.map(f => `<button type="button" class="face" data-v="${f}" aria-pressed="${f === face}">${faceSvg(f)}<span>${esc(words[f])}</span></button>`).join('')}</div>
+      <div class="more" id="mrMore"${face ? '' : ' hidden'}>
+        ${end ? `<span class="lab">Difficulty</span><div class="seg" id="mrDiff">${['Too easy', 'Just right', 'Too hard'].map(d => `<button type="button" data-v="${d}" aria-pressed="false">${d}</button>`).join('')}</div>` : ''}
+        <span class="lab" id="mrAsk">${esc(face ? ask[face] : '')}</span>
+        <textarea id="mrTxt" maxlength="2000" placeholder="Optional. A line or two is plenty"${face ? ' autofocus' : ''}></textarea>
+        <button class="b" type="button" id="mrSend">Send</button>
+      </div>
+      <p class="fine">${room ? 'We attach the room and the step you were on.' : 'Every message is read.'}</p>`, el => {
+      const more = el.querySelector('#mrMore'), txt = el.querySelector('#mrTxt'), send = el.querySelector('#mrSend');
+      el.querySelector('.faces').onclick = e => {
+        const b = e.target.closest('.face'); if (!b) return;
+        face = b.dataset.v;
+        el.querySelectorAll('.face').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+        el.querySelector('#mrAsk').textContent = ask[face];
+        const first = more.hidden; more.hidden = false;
+        if (first) setTimeout(() => txt.focus(), 0);
       };
-    });
+      const g = el.querySelector('#mrDiff');
+      if (g) g.onclick = e => { const b = e.target.closest('button'); if (!b) return; g.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); diff = b.dataset.v; };
+      txt.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) send.click(); });
+      send.onclick = () => {
+        if (!face) return;
+        send.disabled = true; sent = true;
+        post(txt.value.trim())
+          .then(() => {
+            el.querySelector('.box').innerHTML = `<h2>Thank you</h2><p>${txt.value.trim() ? 'Got it. Every message is read.' : 'Noted. That helps more than you’d think.'}</p><button class="b" type="button" id="mrDone" autofocus>Close</button>`;
+            el.querySelector('#mrDone').onclick = closeModal; el.querySelector('#mrDone').focus();
+          })
+          .catch(() => { sent = false; send.disabled = false; send.textContent = 'Couldn’t send. Try again'; });
+      };
+    }, { focusBox: !face, onClose: () => { if (face && !sent) { sent = true; post('').catch(() => {}); } } });
   }
+
+  /* a row of three faces under a question, for the pause card and the end screen; a face opens the form with it picked */
+  function faceRow(host, ctx) {
+    if (!host) return null;
+    ensureCss();
+    ctx = ctx || {};
+    const end = ctx.from === 'end', key = `${ctx.room || pageRoom}|${ctx.from}`, words = faceWords(end);
+    const thanks = () => { host.innerHTML = '<div class="mrq"><span class="thanks">Thanks for telling us.</span></div>'; };
+    if (sentFrom[key]) { thanks(); return host; }
+    host.innerHTML = `<div class="mrq"><span class="q">${esc(ctx.question || (end ? 'How was this room?' : 'How’s it going?'))}</span><span class="fs">${FACES.map(f => `<button type="button" data-v="${f}" aria-label="${esc(words[f])}" title="${esc(words[f])}">${faceSvg(f)}</button>`).join('')}</span></div>`;
+    host.querySelector('.fs').onclick = e => {
+      const b = e.target.closest('button'); if (!b) return;
+      feedback(Object.assign({}, ctx, { face: b.dataset.v, state: typeof ctx.state === 'function' ? ctx.state() : ctx.state, onSent: () => { sentFrom[key] = true; thanks(); } }));
+    };
+    return host;
+  }
+
+  /* any element with data-mr-fb opens the form (the corridor's footer, a room's screen) */
+  document.addEventListener('click', e => {
+    const t = e.target.closest && e.target.closest('[data-mr-fb]');
+    if (!t) return;
+    e.preventDefault();
+    feedback({ from: t.dataset.mrFb || CFG.page, room: pageRoom || null });
+  });
 
   /* ---------- sharing ----------
      openShare({ kind: 'site' | 'room' | 'result', room, n, title, tagline, text, surface, result })
@@ -518,17 +600,17 @@
     return { msg: '' };
   }
 
-  /* on the game's end screen: a "Rate this room" button beside Share */
+  /* on the game's end screen: "How was this room?" with three faces, under the main buttons */
   function watchEnd() {
     const end = document.getElementById('end'), btn = document.getElementById('bShare');
     if (!end || !btn) return;
     const add = () => {
-      if (end.hidden || document.getElementById('mrRateBtn')) return;
-      const b = document.createElement('button'); b.type = 'button'; b.id = 'mrRateBtn'; b.className = 'linkbtn'; b.textContent = 'Rate this room';
-      b.onclick = () => feedback({ from: 'end', room: (last && last.room) || pageRoom });
-      // beside "Play again" under the main buttons (older game pages: next to Share)
+      if (end.hidden || document.getElementById('mrEndFaces')) return;
+      const row = document.createElement('div'); row.id = 'mrEndFaces'; row.className = 'mr-end-faces';
+      const room = (last && last.room) || pageRoom;
       const links = document.getElementById('endLinks');
-      if (links) links.prepend(b); else { b.className = btn.className.replace('primary', '').trim() || 'btn'; btn.insertAdjacentElement('afterend', b); }
+      (links || btn.parentElement).insertAdjacentElement(links ? 'beforebegin' : 'afterend', row);
+      faceRow(row, { from: 'end', room });
     };
     new MutationObserver(add).observe(end, { attributes: true, attributeFilter: ['hidden'] });
     add();
@@ -536,7 +618,7 @@
 
   /* ---------- the bridge the game calls ---------- */
   window.MR = {
-    v: 1, anon, ready, track, flush, feedback, signInDialog, openShare, gate, inApp: IN_APP,
+    v: 1, anon, ready, track, flush, feedback, faceRow, signInDialog, openShare, gate, inApp: IN_APP,
     get me() { return me; },
     attach(fn) { getState = fn; if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watchEnd); else watchEnd(); },
     emit(name, d) {

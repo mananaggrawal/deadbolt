@@ -100,6 +100,13 @@ function delta(cur, prev, ctx) {
 }
 const meter = (v, max, cls = '') => `<span class="meter ${cls}"><i style="width:${max ? Math.max(v ? 2 : 0, Math.round(100 * v / max)) : 0}%"></i></span>`;
 
+const FACE_PATH = { bad: 'M8.5 16.4c.9-1.15 2.1-1.75 3.5-1.75s2.6.6 3.5 1.75', okay: 'M8.75 15.25h6.5', good: 'M8.5 14.1c.9 1.35 2.1 2.05 3.5 2.05s2.6-.7 3.5-2.05' };
+const FACE_WORD = { bad: 'Bad', okay: 'Okay', good: 'Good' };
+const faceIcon = f => FACE_PATH[f] ? `<svg class="fi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.25"/><circle cx="9" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/><path d="${FACE_PATH[f]}"/></svg>` : '';
+const faceTag = f => FACE_PATH[f] ? `<span class="face face-${f}">${faceIcon(f)}${FACE_WORD[f]}</span>` : '';
+const FROM_WORD = { end: 'end of the room', pause: 'paused in the room', room: 'room screen', site: 'website', game: 'in the room' };
+const fbFeel = f => `<span class="feel">${[faceTag(f.face) || (f.kind && f.kind !== 'note' && f.kind !== 'rating' ? esc(f.kind) : '') || '–', f.difficulty ? esc(f.difficulty) : ''].filter(Boolean).join('<span class="muted">·</span>')}</span>`;
+const fbFrom = f => { const c = f.context || {}; return FROM_WORD[c.from] || (f.kind === 'rating' ? FROM_WORD.end : ''); };
 const fbWhere = f => { const c = f.context || {}; if (c.step == null) return ''; return c.from === 'end' || f.kind === 'rating' ? `after escaping in ${fmtTime(c.seconds)}` : `on puzzle ${c.step + 1}, ${fmtTime(c.seconds)} in`; };
 
 /* ---------- sharing labels ---------- */
@@ -132,7 +139,7 @@ function describe(e) {
     case 'share_fail': return 'Share sheet failed';
     case 'inapp_seen': return `Opened inside ${esc(d.app || 'an app')}'s browser`;
     case 'inapp_out': return `Moved from ${esc(d.app || 'an app')}'s browser to a real one`;
-    case 'feedback_sent': return `Sent feedback <span class="muted">(${esc(d.kind || '?')})</span>${room ? ` on ${room}` : ''}`;
+    case 'feedback_sent': return `Sent feedback ${d.face ? faceTag(d.face) : `<span class="muted">(${esc(d.kind || '?')})</span>`}${room ? ` on ${room}` : ''}`;
     case 'signin_prompt': return 'Saw the sign-in dialog';
     case 'signin_start': return 'Went to Google to sign in';
     case 'client_error': return `<span class="bad">Browser error</span> <code>${esc(d.message || '')}</code> <span class="muted">${esc(d.where || '')}</span>`;
@@ -342,8 +349,9 @@ export async function adminPage(opts) {
     R(`select room, step, name, count(*)::int n from events where name in ('hint_used', 'wrong') and step is not null and ts > @since and ${notMe()} group by room, step, name`, P),
     R(`select room, count(*)::int shares, coalesce(sum(landings), 0)::int landings, coalesce(sum(plays_started), 0)::int plays
        from shares where created_at > @since and ${notMe()} group by room`, P),
-    R(`select room, count(rating)::int n, round(avg(rating), 1)::float avg, count(*) filter (where difficulty = 'Too easy')::int easy,
-         count(*) filter (where difficulty = 'Just right')::int ok, count(*) filter (where difficulty = 'Too hard')::int hard
+    R(`select room, count(face) filter (where kind = 'rating')::int n, count(*) filter (where kind = 'rating' and face = 'good')::int good,
+         count(*) filter (where kind = 'rating' and face = 'okay')::int okay, count(*) filter (where kind = 'rating' and face = 'bad')::int bad,
+         count(*) filter (where difficulty = 'Too easy')::int easy, count(*) filter (where difficulty = 'Just right')::int ok, count(*) filter (where difficulty = 'Too hard')::int hard
        from feedback where created_at > @since and ${notMe()} group by room`, P),
     R(`select u.id uid, u.name uname, u.email, u."createdAt" created, pr.age_confirmed_at, s.plays, s.escapes, s.rooms, s.rooms_escaped, s.secs, s.last_play,
          pl.device, pl.country, greatest(pl.last_seen, s.last_play, u."createdAt") last_active
@@ -359,7 +367,7 @@ export async function adminPage(opts) {
        from events where name = 'client_error' and ts > @since and ${notMe()} group by 1 order by n desc, last desc limit 20`, P),
     R(`select data->>'method' || ' ' || coalesce(data->>'path', '') path, data->>'message' msg, max(data->>'where') loc, count(*)::int n, max(ts) last
        from events where name = 'server_error' and ts > @since group by 1, 2 order by last desc limit 20`, P),
-    R(`select f.created_at, f.room, f.kind, f.rating, f.difficulty, f.text, f.context, u.id uid, u.name uname, u.email, f.anon_id
+    R(`select f.created_at, f.room, f.kind, f.face, f.rating, f.difficulty, f.text, f.context, u.id uid, u.name uname, u.email, f.anon_id
        from feedback f left join "user" u on u.id = f.user_id where f.created_at > @since and ${notMe('f.')} order by f.created_at desc limit 50`, P),
     R(`select regexp_replace(coalesce(data->>'path', '?'), '^/r/.*$', '/r/…') p, count(*)::int n, count(distinct anon_id)::int u
        from events where name = 'page_view' and ts > @since and ${notMe()} group by 1 order by 3 desc, 2 desc limit 15`, P),
@@ -430,7 +438,7 @@ export async function adminPage(opts) {
       <td class="n">${p.quit_secs ? dur(p.quit_secs) : '–'}</td>
       <td class="n">${pct(p.phone, p.starts)}%<small>${p.phone ? `${pct(p.phone_esc, p.phone)}% escape` : ''}</small></td>
       <td class="n">${num(s.shares)}<small>${pl(s.landings, 'visit')} · ${pl(s.plays, 'play')}</small></td>
-      <td class="n">${f.n ? `${f.avg} / 5` : '–'}<small>${f.n ? `${pl(f.n, 'rating')}${f.hard ? ` · ${f.hard} too hard` : ''}${f.easy ? ` · ${f.easy} too easy` : ''}` : ''}</small></td></tr>`;
+      <td class="n">${f.n ? `<span class="faces">${['good', 'okay', 'bad'].map(k => `<span class="face face-${k}" title="${FACE_WORD[k]}">${faceIcon(k)}${f[k]}</span>`).join('')}</span>` : '–'}<small>${f.n ? `${pct(f.good, f.n)}% good${f.hard ? ` · ${f.hard} too hard` : ''}${f.easy ? ` · ${f.easy} too easy` : ''}` : ''}</small></td></tr>`;
   }).join('');
 
   const funnels = rooms.map(m => {
@@ -468,8 +476,8 @@ export async function adminPage(opts) {
     || '<tr><td colspan="4" class="muted">No server errors in this period.</td></tr>';
 
   const fbRows = fbList.map(f => `<tr><td>${esc(fmtDT(f.created_at))}</td><td>${who(f, true, ctx.ownIds)}</td><td>${esc(roomTitle(f.room) || '–')}</td>
-    <td>${esc(f.kind)}${f.rating ? ` · ${f.rating}/5` : ''}${f.difficulty ? ` · ${esc(f.difficulty)}` : ''}</td>
-    <td>${esc(f.text || '')}<small>${fbWhere(f)}</small></td></tr>`).join('')
+    <td>${fbFeel(f)}<small>${esc(fbFrom(f))}</small></td>
+    <td>${f.text ? esc(f.text) : '<span class="muted">No words, just the face</span>'}<small>${fbWhere(f)}</small></td></tr>`).join('')
     || '<tr><td colspan="5" class="muted">No feedback in this period.</td></tr>';
 
   const small = (list, cols, empty) => list.length ? list.map(r => `<tr>${cols.map(([k, n, f]) => `<td class="${n ? 'n' : ''}">${esc(f ? f(r[k], r) : r[k] ?? '')}</td>`).join('')}</tr>`).join('')
@@ -504,7 +512,7 @@ ${sharing}
 <section><h2>Problems</h2><h3>Browser errors</h3><div class="scroll"><table class="t"><thead><tr><th>Error</th><th class="n">Times</th><th class="n">Visitors hit</th><th>Rooms</th><th>Browsers</th><th>Last</th></tr></thead><tbody>${errRows}</tbody></table></div>
 <h3>Server errors</h3><div class="scroll"><table class="t"><thead><tr><th>Request</th><th>Error</th><th class="n">Times</th><th>Last</th></tr></thead><tbody>${srvRows}</tbody></table></div></section>
 
-<section><h2>Feedback</h2><div class="scroll"><table class="t"><thead><tr><th>When (IST)</th><th>Who</th><th>Room</th><th>Kind</th><th>What they said</th></tr></thead><tbody>${fbRows}</tbody></table></div></section>
+<section><h2>Feedback</h2><div class="scroll"><table class="t"><thead><tr><th>When (IST)</th><th>Who</th><th>Room</th><th>Face</th><th>What they said</th></tr></thead><tbody>${fbRows}</tbody></table></div></section>
 
 <section><h2>Traffic</h2><div class="grid4">
 <div><h3>Pages</h3><table class="t"><thead><tr><th>Page</th><th class="n">Visitors</th><th class="n">Views</th></tr></thead><tbody>${small(pages, [['p'], ['u', 1, num], ['n', 1, num]], 'None yet.')}</tbody></table></div>
@@ -579,7 +587,7 @@ export async function playerPage(uid, opts) {
     R(`select room, day, seconds, hints, wrong from results where user_id = @uid order by day`, P),
     R(`select e.ts, e.name, e.room, e.step, e.data, e.device, e.country from events e
        where (e.user_id = @uid or e.anon_id in (select anon_id from players where user_id = @uid)) order by e.ts desc limit 500`, P),
-    R(`select created_at, room, kind, rating, difficulty, text from feedback where user_id = @uid order by created_at desc`, P),
+    R(`select created_at, room, kind, face, rating, difficulty, text, context from feedback where user_id = @uid order by created_at desc`, P),
   ]);
   const last = browsers[0] || {};
   const playRows = plays.map(p => `<tr><td>${esc(fmtDT(p.started_at))}</td><td>${esc(roomTitle(p.room))}</td>
@@ -598,7 +606,7 @@ export async function playerPage(uid, opts) {
 <div class="tile"><span>Plays</span><b>${num(plays.length)}</b><small>${num(plays.filter(p => p.outcome === 'escaped').length)} escapes</small></div>
 <div class="tile"><span>Rooms escaped</span><b>${num(results.length)}</b><small>${esc(results.map(r => `${roomTitle(r.room)} ${fmtTime(r.seconds)}`).join(' · ') || '–')}</small></div></div>
 <section><h2>Plays</h2><div class="scroll"><table class="t"><thead><tr><th>Started (IST)</th><th>Room</th><th>Outcome</th><th class="n">Puzzles</th><th class="n">Time</th><th class="n">Hints</th><th class="n">Wrong</th><th>Device</th></tr></thead><tbody>${playRows}</tbody></table></div></section>
-${fbs.length ? `<section><h2>Feedback</h2><ul class="plain">${fbs.map(f => `<li><time>${esc(fmtDT(f.created_at))}</time> ${esc(roomTitle(f.room) || '')} · ${esc(f.kind)}${f.rating ? ` · ${f.rating}/5` : ''}${f.difficulty ? ` · ${esc(f.difficulty)}` : ''}<br>${esc(f.text || '')}</li>`).join('')}</ul></section>` : ''}
+${fbs.length ? `<section><h2>Feedback</h2><ul class="plain">${fbs.map(f => `<li><time>${esc(fmtDT(f.created_at))}</time> ${esc(roomTitle(f.room) || '')} · ${fbFeel(f)}${fbFrom(f) ? ` <span class="muted">· ${esc(fbFrom(f))}</span>` : ''}${f.text ? `<br>${esc(f.text)}` : ''}</li>`).join('')}</ul></section>` : ''}
 <section><h2>Everything they did <small class="muted">newest first${events.length >= 500 ? ', last 500' : ''}</small></h2><ol class="feed tl">${timeline}</ol></section>
 <section><h2>Browsers</h2><table class="t"><thead><tr><th>Device</th><th>Country</th><th>First seen</th><th>Last seen</th></tr></thead><tbody>
 ${browsers.map(b => `<tr><td>${esc(deviceShort(b.device))}</td><td>${esc(country(b.country))}</td><td>${esc(fmtDT(b.first_seen))}</td><td>${esc(ago(b.last_seen))}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">None.</td></tr>'}</tbody></table></section>
@@ -617,7 +625,7 @@ const EXPORTS = {
             (select count(*) from plays where user_id = u.id) plays,
             (select count(*) from plays where user_id = u.id and outcome = 'escaped') escapes
           from "user" u left join profiles pr on pr.user_id = u.id where not (u.id = any(@xu::text[])) order by u."createdAt"`,
-  feedback: `select f.id, f.created_at, f.room, f.kind, f.rating, f.difficulty, f.text, f.context, f.device, f.user_id, u.email
+  feedback: `select f.id, f.created_at, f.room, f.kind, f.face, f.rating, f.difficulty, f.text, f.context, f.device, f.user_id, u.email
              from feedback f left join "user" u on u.id = f.user_id where f.created_at > @since and ${notMe('f.')} order by f.id`,
   shares: `select code, kind, room, surface, user_id, seconds, hints, wrong, marks, created_at, clicks, landings, plays_started from shares
            where created_at > @since and ${notMe()} order by created_at`,
@@ -662,6 +670,8 @@ const ADMIN_CSS = `
 .chart .hit{fill:transparent}.chart .col:hover .hit{fill:rgba(237,232,222,.06)}
 .t{width:100%;border-collapse:collapse;font-size:14px}.t th,.t td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
 .t th{font:500 11px/16px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap}.t td small{display:block;color:var(--muted);font-size:12px;line-height:17px}
+.feel{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}.face{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}.t td:first-child b{white-space:nowrap}.face .fi{width:16px;height:16px;flex:none;color:var(--muted)}.faces{display:inline-flex;gap:10px}
+.face-good .fi{color:#199e70}.face-okay .fi{color:#c98500}.face-bad .fi{color:#3987e5}
 .t tr.dim td{color:var(--faint)}.t td.wide{width:30%}@media(max-width:640px){.t td:first-child{min-width:130px}}
 .n{text-align:right!important;font-variant-numeric:tabular-nums;white-space:nowrap}.scroll{overflow-x:auto}
 .meter{display:inline-block;width:110px;height:6px;background:var(--track);border-radius:3px;vertical-align:middle;margin-left:8px}.t td.wide .meter{width:100%;margin:0}
