@@ -399,7 +399,7 @@
     host.innerHTML = `<span class="mra"><button class="av" type="button" aria-label="Account" aria-expanded="false" ${u.image ? `style="background-image:url('${esc(u.image)}')"` : ''}>${u.image ? '' : initial}</button>
       <span class="menu" hidden><span class="who">${esc(u.name || '')}<small>${esc(u.email || '')}</small></span>
       <button type="button" data-a="share">Share ${esc(CFG.siteName)}</button><button type="button" data-a="fb">Send feedback</button>
-      ${me.admin ? '<a href="/admin">Dashboard</a>' : ''}<button type="button" data-a="out">Sign out</button><button type="button" data-a="del">Delete my account</button></span></span>`;
+      <button type="button" data-a="out">Sign out</button><button type="button" data-a="del">Delete my account</button></span></span>`;
     const av = host.querySelector('.av'), menu = host.querySelector('.menu');
     av.onclick = e => { e.stopPropagation(); menu.hidden = !menu.hidden; av.setAttribute('aria-expanded', String(!menu.hidden)); };
     document.addEventListener('click', e => { if (!host.contains(e.target)) { menu.hidden = true; av.setAttribute('aria-expanded', 'false'); } });

@@ -43,6 +43,8 @@ with sync_playwright() as p:
     pg.goto(BASE + '/'); pg.wait_for_timeout(2500)
     check(pg.locator('#mrAccount button', has_text='Sign in').count() == 1, 'signed-out visitor sees a Sign in button')
     check(pg.locator('#doors .dbtn').count() >= 9, f"corridor has doors ({pg.locator('#doors .dbtn').count()})")
+    nums = [t.strip() for t in pg.locator('#pgNums button').all_inner_texts()]
+    check(nums == [str(i + 1) for i in range(len(nums))], f'corridor pager shows page numbers, not door ranges ({nums})')
     check(pg.locator('.nav .shr').count() == 1, 'the top bar has a Share button')
     check(pg.evaluate('typeof window.MR') == 'object' and pg.evaluate('window.MR.v') == 1, 'mr.js loaded')
     pg.screenshot(path=f'{SHOTS}/01-landing.png')
@@ -132,6 +134,7 @@ with sync_playwright() as p:
         pg.screenshot(path=f'{SHOTS}/06-signed-in-corridor.png')
         pg.click('#mrAccount .av'); pg.wait_for_timeout(300); pg.screenshot(path=f'{SHOTS}/07-account-menu.png')
         check('Download my data' not in pg.inner_text('#mrAccount'), 'the account menu has no data download')
+        check(pg.locator('#mrAccount a[href="/admin"]').count() == 0 and 'Dashboard' not in pg.inner_text('#mrAccount'), 'the account menu has no Dashboard link, even for the admin')
         r = pg.goto(BASE + '/admin'); pg.wait_for_timeout(1200)
         if r.status == 200:
             check(pg.locator('h1', has_text='Dashboard').count() == 1 and pg.locator('h2', has_text='Retention').count() == 1, 'dashboard opens for the admin account')
