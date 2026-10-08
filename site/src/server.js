@@ -155,7 +155,7 @@ function landingHtml(room, { canon = null } = {}) {
     ? headTags({ title: `${room.title} · ${cfg.siteName}`, description: room.tagline || room.hook, path: `/m/${room.id}`, image: `/og/m/${room.id}.jpg`, imageAlt: `${room.title}, a horror mystery room on ${cfg.siteName}`, page: 'site', room: room.id })
     : headTags({ title: `${cfg.siteName} · Horror mystery rooms`, description: 'Horror mystery rooms. A real place on one night, something in it that follows a rule, and one way out.', path: '/' });
   // the doors' words come from the game's own room list, so the corridor and the room never disagree
-  const words = Object.fromEntries(R.allRooms().map(m => [m.id, { title: m.title, place: m.place, era: m.era, hook: m.hook, tagline: m.tagline, start: m.start }]));
+  const words = Object.fromEntries(R.allRooms().map(m => [m.id, { title: m.title, place: m.place, era: m.era, mins: m.mins, hook: m.hook, tagline: m.tagline, start: m.start }]));
   const vars = { MR_RELEASED: rel, MR_ROOMS: words, MR_PREFETCH: PREFETCH() };
   if (room) vars.MR_OPEN = room.id;
   if (canon) vars.MR_CANON = canon;
@@ -194,19 +194,37 @@ app.get('/play/:id', async c => {
 });
 // the room's screen is filled in on the server, so it shows the moment the page arrives (the game takes over once loaded)
 function playPage(m, head) {
-  const fill = (html, id, text) => html.replace(new RegExp(`(id="${id}"[^>]*>)[^<]*(<)`), `$1${text}$2`);
-  let h = PLAY.replace('<!--MR_HEAD-->', head)
+  const words = {
+    id: esc(m.id), n: String(m.n), num: `Mystery #${m.n}`, title: esc(m.title), tagline: esc(m.tagline || ''),
+    meta: metaHtml(m), hook: esc(m.hook), loading: esc(m.loading || 'Loading…'), keys: keysHtml(m.keys),
+  };
+  return PLAY.replace('<!--MR_HEAD-->', head)
     .replace('<div id="app">', `<div id="app" data-theme="${esc(m.theme || '')}">`)
-    .replace('<section id="title" class="screen" hidden>', `<section id="title" class="screen"><img class="t-art" src="/art/${esc(m.id)}.jpg" alt="">`);
-  h = fill(h, 'tHome', '&larr; Back to the corridor');
-  h = fill(h, 'tNum', `Mystery #${m.n}`);
-  h = fill(h, 'tTitle', esc(m.title));
-  h = fill(h, 'tEyebrow', `${esc(m.place)} &middot; ${esc(m.era)}`);
-  h = fill(h, 'tHook', esc(m.hook));
-  h = fill(h, 'bNew', esc(m.loading || 'Loading…'));
-  h = fill(h, 'tKeys', 'WASD to move &middot; Mouse to look &middot; E to use &middot; H for hints &middot; Headphones recommended');
-  h = h.replace('<p class="fine" id="tPhones">', '<p class="fine t-fb"><button type="button" class="linkbtn" data-mr-fb="room">Send feedback</button></p>\n      <p class="fine" id="tPhones">');
-  return h;
+    .replace(/\{\{(\w+)\}\}/g, (all, k) => (k in words ? words[k] : all));
+}
+// place, night and how long it takes, under the room's title
+const ICONS = {
+  place: '<path d="M8 14.5s4.5-4.1 4.5-7.9A4.5 4.5 0 0 0 3.5 6.6c0 3.8 4.5 7.9 4.5 7.9Z"/><circle cx="8" cy="6.6" r="1.6"/>',
+  night: '<path d="M13 9.6A5.5 5.5 0 1 1 6.4 3a4.3 4.3 0 0 0 6.6 6.6Z"/>',
+  time: '<circle cx="8" cy="8" r="6"/><path d="M8 4.8V8l2.2 1.4"/>',
+};
+const icon = k => `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[k]}</svg>`;
+function metaHtml(m) {
+  return [['place', m.place], ['night', m.era], ['time', m.mins]].filter(([, v]) => v)
+    .map(([k, v]) => `<span>${icon(k)}${esc(v)}</span>`).join('');
+}
+// a room's controls as keycaps: the basics first (move, look, use, hints), then what this room adds, then pause
+const BASIC = ['Move', 'Look', 'Use', 'Hints'];
+function keysHtml(keys) {
+  const list = (Array.isArray(keys) && keys.length ? keys : [['Move', 'W A S D'], ['Look', 'Mouse'], ['Interact', 'E or click'], ['Hints', 'H']])
+    .map(([label, k]) => ({ label: String(label).replace(/^Interact\b/, 'Use'), k: String(k) }));
+  const isBasic = (x, b) => x.label === b || x.label.startsWith(b + ',');
+  const ordered = [...BASIC.map(b => list.find(x => isBasic(x, b))).filter(Boolean), ...list.filter(x => !BASIC.some(b => isBasic(x, b))), { label: 'Pause', k: 'Esc' }];
+  return ordered.map(({ label, k }) => {
+    const [main, alt] = k.split(' or ');
+    const caps = main.split(' ').filter(Boolean).map(c => `<kbd>${esc(c)}</kbd>`).join('');
+    return `<li><span class="rm-caps">${caps}${alt ? `<span class="rm-alt">or ${esc(alt)}</span>` : ''}</span><span class="rm-kl">${esc(label)}</span></li>`;
+  }).join('');
 }
 
 /* ---------- share pages and preview cards ---------- */

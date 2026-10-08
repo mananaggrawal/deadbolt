@@ -517,6 +517,14 @@
     e.preventDefault();
     feedback({ from: t.dataset.mrFb || CFG.page, room: pageRoom || null });
   });
+  /* any element with data-mr-share opens the share panel (a room's screen: "Dare a friend"), before the game has loaded too */
+  document.addEventListener('click', e => {
+    const t = e.target.closest && e.target.closest('[data-mr-share]');
+    if (!t) return;
+    e.preventDefault();
+    const d = t.dataset;
+    openShare({ kind: d.mrShare || 'site', room: d.room || pageRoom || null, n: d.n ? Number(d.n) : undefined, title: d.title, tagline: d.tagline, surface: d.surface || CFG.page });
+  });
 
   /* ---------- sharing ----------
      openShare({ kind: 'site' | 'room' | 'result', room, n, title, tagline, text, surface, result })

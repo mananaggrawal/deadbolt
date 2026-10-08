@@ -6,56 +6,56 @@
 const SERIES = { name: 'Deadbolt', tagline: 'A new horror escape room every day. The same room for everybody.' };
 // Add each new mystery here with the local date it opens. Dates are compared in the player's own time zone.
 const MYSTERIES = [
-  { n: 1, id: '406', title: 'Dead Air', date: '2026-09-26', place: 'Pinecrest Motor Lodge', era: '30 October 1983', theme: 'tv',
+  { n: 1, id: '406', title: 'Dead Air', date: '2026-09-26', place: 'Pinecrest Motor Lodge', era: '30 October 1983', mins: '30–40 min', theme: 'tv',
     osd: 'CH 13 <span class="rec">&#9679; REC</span>',
     hook: 'You wake on top of the covers in Room 406 with no memory of checking in. The door is padlocked from the inside. The television is off. For now.',
     tagline: 'A motel room in 1983. The television shows the room three minutes from now, and you are never in the picture.',
     start: 'Check in', loading: 'Tuning in…', endTitle: 'Checked out', endCaption: 'Channel 13, three minutes from now', frame: 'tv',
     endAlt: 'The last picture on channel 13: Room 406 seen from the vent, the door open and someone asleep on the bed.',
     epilogue: 'You step into a corridor longer than the building. Behind you, the television switches itself on. On channel 13 the room is already the way it will be in three minutes: the door open, the chair under the vent, and someone asleep on top of the covers.' },
-  { n: 2, id: 'lamp', title: 'The Lamp Room', date: '2026-09-27', place: 'Skerrow Rock Light', era: '21 December 1911', theme: 'lamp',
+  { n: 2, id: 'lamp', title: 'The Lamp Room', date: '2026-09-27', place: 'Skerrow Rock Light', era: '21 December 1911', mins: '20–40 min', theme: 'lamp',
     osd: 'Skerrow Rock <span class="flash" aria-hidden="true">&#10022;</span> Gp Fl (3) 20s',
     hook: 'You wake on the iron floor of a lighthouse lamp room, twenty miles out to sea, on the longest night of the year. The lamp is out. The hatch to the stairs is padlocked from your side, and something is climbing the tower.',
     tagline: 'A lighthouse in 1911, on the longest night. Keep the light turning, or they come up out of the sea.',
     start: 'Take the watch', loading: 'Trimming the wick…', endTitle: 'Relieved', endCaption: 'Skerrow Rock, from the relief boat', frame: 'photo',
     endAlt: 'Skerrow Rock lighthouse at first light, seen from the sea. The lamp is lit, and three figures in oilskins stand in the lamp room.',
     epilogue: 'You go down a hundred and forty steps in the dark with the key still in your fist, and nothing touches you. The relief boat takes you off the landing at first light. As it pulls away you look back. The light is still turning, and up in the lamp room three men in oilskins are standing at the glass, watching you go. Nobody on the boat will say who is keeping it now.' },
-  { n: 3, id: 'cold', title: 'Cold Storage', date: '2026-09-28', place: 'St Agnes County Hospital', era: '3 February 1974', theme: 'cold',
+  { n: 3, id: 'cold', title: 'Cold Storage', date: '2026-09-28', place: 'St Agnes County Hospital', era: '3 February 1974', mins: '10–20 min', theme: 'cold',
     osd: 'Cold room <span class="temp" id="tTemp">2.0</span>&deg;C',
     tagline: 'A hospital morgue in 1974. The power is out and the cold room is warming up. The dead don\'t stay still when they\'re warm.',
     hook: 'It\'s your first night shift at the county morgue. At ten past three the power fails, the door locks itself, and the cold room starts to warm up. The dead don\'t stay still when they\'re warm.',
     start: 'Clock on', loading: 'Cooling down…', endTitle: 'Clocked off', endCaption: 'The mortuary from the doorway, 3:52 a.m.', frame: 'photo',
     endAlt: 'The mortuary seen from the open door: every drawer pulled open and empty, the table bare, and three figures standing in the far corner facing the wall.',
     epilogue: 'You run up six flights of stairs and don\'t stop until you\'re out in the snow. At six the day man unlocks the mortuary and finds the cold running and the lights out. Every drawer is shut. Every body is where the book says it should be. But all of them, every one, are lying face down.' },
-  { n: 4, id: 'sitting', title: 'The Last Sitting', date: '2026-09-28', place: '9 Pellam Street, Bloomsbury', era: '3 March 1893', theme: 'sitting',
+  { n: 4, id: 'sitting', title: 'The Last Sitting', date: '2026-09-28', place: '9 Pellam Street, Bloomsbury', era: '3 March 1893', mins: '25–40 min', theme: 'sitting',
     osd: '<span class="cc">Madame Ada Kell</span><span class="cc2">Clairvoyante &middot; sittings Fridays at nine</span>',
     tagline: 'A medium\'s parlour in 1893. Every ghost in it is a trick, and you have to work out how each one is done. All but one.',
     hook: 'London, 1893. You investigate fake mediums for the Society for Psychical Research. After tonight\'s sitting you hid in Madame Kell\'s parlour to catch her out. She has locked you in, turned down the gas, and left you a note.',
     start: 'Take your seat', loading: 'Dimming the gas…', endTitle: 'Exposed', endCaption: 'The last plate in the camera, 3 March 1893', frame: 'cabinet',
     endAlt: 'A sepia photograph of the parlour taken from the camera: the empty table, the door open, and a pale little girl in a white dress standing beside Madame\'s chair with her hands folded.',
     epilogue: 'Your report runs to eleven pages: the pedal, the flap, the paint, the phonograph, the plates and the rod. Madame Kell never gives another sitting. The report leaves out one thing. The camera took a picture as you opened the door, and you developed it yourself. There you are, a dark blur in the doorway. The table is empty. And beside Madame\'s chair, with her hands folded, stands a little girl in a white dress. She is looking straight at the camera, as if she had been waiting a long time for somebody to take her picture.' },
-  { n: 5, id: 'night', title: 'Night Mail', date: '2026-09-29', place: 'Kasheli Ghat, Western Ghats', era: '29 September 2026', theme: 'night',
+  { n: 5, id: 'night', title: 'Night Mail', date: '2026-09-29', place: 'Kasheli Ghat, Western Ghats', era: '29 September 2026', mins: '25–35 min', theme: 'night',
     osd: '<span class="dv">काशेली घाट</span><span class="en">KASHELI GHAT</span><span class="ht">HT. ABOVE M.S.L. 562.45 M</span>',
     tagline: 'The last carriage of a night train, tonight. It keeps going through the same tunnel, and the man on the track behind you is closer every time.',
     hook: 'You rented an old railway saloon for a night ride over the ghats, and fell asleep at Karjat. You wake at twenty to three. The door to the rest of the train is locked. The train goes into a tunnel, and comes out at the same tunnel again. And every time it comes out, the man standing on the track behind you is closer.',
     start: 'Wake up', loading: 'Coupling up…', endTitle: 'Uncoupled', endCaption: 'Saloon No. 9, as the survey party found it', frame: 'photo',
     endAlt: 'A faded expedition photograph of the saloon lying in the ravine: teak walls furred with moss, ferns growing up through the floor, the desk by the back windows, and grey daylight in the glass.',
     epilogue: 'The Night Mail runs into Lonavala at ten past four, one carriage short, and nobody can say which one. The attendant swears there was never a saloon. The guard\'s journal lists none. Three weeks later a survey party climbs down into the ravine below the Horseshoe Curve and finds Inspection Saloon No. 9 where it fell in 1926: full of ferns, its handbrake screwed hard on. In the desk is a register that should have rotted to nothing. The last line is dated tonight, and it is in your handwriting. It says: Got out.' },
-  { n: 6, id: 'lift', title: 'Doors Closing', date: '2026-09-29', place: 'Cheongun Building, Euljiro, Seoul', era: '17 December 2004', theme: 'lift',
+  { n: 6, id: 'lift', title: 'Doors Closing', date: '2026-09-29', place: 'Cheongun Building, Euljiro, Seoul', era: '17 December 2004', mins: '30–40 min', theme: 'lift',
     osd: '<span class="ar">&#9650;</span><span class="fl">10</span><span class="kr">문이 닫힙니다</span>',
     tagline: 'A Seoul office lift, 2004, and the Elevator Game. Press the buttons in the right order, alone. When a woman gets on at the fifth floor, don\'t look at her.',
     hook: 'A week ago your sister Ji-yeon played the Elevator Game in the lift of her office building: four, two, six, two, ten, five, then one. The camera in the car shows it going up. It never brought her back down. Tonight you press the same buttons. When a woman gets on at the fifth floor, don\'t look at her.',
     start: 'Step in', loading: 'Calling the lift…', endTitle: 'Walked out', endCaption: 'CAM 03 · 1F lobby · 02:31', frame: 'cctv',
     endAlt: 'A grainy black-and-white security camera frame of the building lobby at night: the lift standing open and lit, and in its mirror a young woman in a grey suit standing in the corner, facing the wall.',
     epilogue: 'You walk until you reach the police box on Euljiro, and you never go back into the Cheongun Building. Nobody believes you, and after a while you stop telling it. The building comes down in 2011. On its last night the guard writes in his log that the lift went up to the tenth floor at 2:13 a.m. with nobody in it, and came back down with its doors open. The camera in the car shows a young woman in a grey suit standing in the corner, facing the wall. She is still waiting for somebody to look at her.' },
-  { n: 7, id: 'orloj', title: 'The Blind Hour', date: '2026-10-07', place: 'Old Town Hall Tower, Prague', era: '8 January 2018', theme: 'orloj',
+  { n: 7, id: 'orloj', title: 'The Blind Hour', date: '2026-10-07', place: 'Old Town Hall Tower, Prague', era: '8 January 2018', mins: '35–50 min', theme: 'orloj',
     osd: '<span class="ob">Pražský orloj</span><span class="os">MCCCCX</span>',
     tagline: 'Inside Prague\'s astronomical clock, the night they stopped it. Something blind is feeling through the gears for any sound you make. Work only while the bells ring.',
     hook: 'In 1490, the story goes, the city blinded the master who built Prague\'s astronomical clock, so that he could never build a finer one. He had himself led up into the works and stopped them with his bare hands. Tonight the restorers have stopped the clock for the first time in seventy years, and you fell asleep inside it. He\'s blind. He finds you by sound. But when a bell strikes, he stops to count.',
     start: 'Wake up', loading: 'Winding…', endTitle: 'The last stroke', endCaption: 'Restoration record photograph, 9 January 2018, 7:58 a.m.', frame: 'photo',
     endAlt: 'A morning photograph of the astronomical clock from the snowy square: the great gilded dial, restorers\' scaffolding, and the apostles\' left window standing open with a grey, eyeless face among the carved figures.',
     epilogue: 'You climb down the scaffold in the snow and sit on the steps of the Old Town Hall until the watchman finds you at six, blue with cold. He says nobody knocked at the stair door last night: he was asleep in his lodge, with the key in his pocket. The clock is taken apart that week and does not run again until the twenty-eighth of September. The restorers work only by daylight. One of them keeps a little brass bell on the bench and rings it, steadily, whenever anybody has to make a noise in the works, and nobody asks him why. In their first record photograph, taken the morning after, the apostles\' left window stands open, and among the faces in it there is one too many.' },
-  { n: 8, id: 'tik', title: 'Tik-Tik', date: '2026-10-07', place: 'Barrio San Isidro, Infanta, Quezon', era: '20 October 1979', theme: 'tik',
+  { n: 8, id: 'tik', title: 'Tik-Tik', date: '2026-10-07', place: 'Barrio San Isidro, Infanta, Quezon', era: '20 October 1979', mins: '20–30 min', theme: 'tik',
     osd: '<span class="br">Brgy. San Isidro</span><span class="pr">Infanta &middot; Quezon</span>',
     hook: 'Typhoon night, two in the morning, in a house on stilts. Your sister Lorna is in labour behind the mosquito net, and Nanay went for the midwife hours ago. Something with wings is circling the house. Its legs are standing somewhere on your land. Salt them before dawn.',
     tagline: 'A stilt house in a typhoon, 1979. Something with wings hunts you across the yard. Find where she left her legs, and salt them before dawn.',
@@ -63,7 +63,7 @@ const MYSTERIES = [
     endAlt: 'A faded colour snapshot at dawn: the stilt house seen through the open gate in grey morning light, and in the mud of the yard a dark shape with broken wings, still smoking.',
     wrongLabel: 'Times caught', wrongWords: ['time caught', 'times caught'],
     epilogue: 'The neighbours come when the rain stops. They find you at the gate with Tatay\'s bolo across your knees, and a thing in the mud that they cover with banana leaves before anyone can see its face. Under the house there is a pair of legs in Nanay\'s good skirt, the navy one with the little white flowers, folded at the knees as if she had knelt to pray. Lorna\'s daughter was born as the sun came up. She is forty-six now. Everyone says she has her grandmother\'s eyes. She has never once eaten garlic.' },
-  { n: 9, id: 'tio', title: 'El Tío', date: '2026-10-07', place: 'Cerro Rico, Potosí', era: '31 July 1998', theme: 'tio',
+  { n: 9, id: 'tio', title: 'El Tío', date: '2026-10-07', place: 'Cerro Rico, Potosí', era: '31 July 1998', mins: '25–35 min', theme: 'tio',
     osd: '<span class="bm">BOCAMINA SANTA RITA</span><span class="nv">NIVEL 3 &middot; 4.200 m.s.n.m.</span>',
     hook: 'Potosí, 1998. On the afternoon mine tour you slipped a lump of silver from the Tío\'s offerings into your pocket while the guide\'s back was turned. The miners say everything inside the mountain belongs to him, and nothing leaves it unpaid. Then the mountain shook. You wake alone in the dark, deep inside the mine, with your lamp out and the way back full of rock. And the Tío\'s chair is empty.',
     tagline: 'A silver mine in the Bolivian Andes, 1998. You stole from the devil who owns the inside of the mountain. He only moves in the dark, and your lamp is running out.',
@@ -71,7 +71,7 @@ const MYSTERIES = [
     endAlt: 'A colour photograph at dawn of a timber mine entrance in red rock, stained dark with old blood, a small wooden cross above it. On the left post, a sun-bleached poster reading DESAPARECIDO beside a bright new party flyer for August 2026. In the black of the tunnel, two glass eyes catch the light, and the tip of a cigarette glows.',
     wrongLabel: 'Times caught', wrongWords: ['time caught', 'times caught'],
     epilogue: 'The miner who finds you in the main tunnel stares at your carbide lamp as if it came out of a museum. Outside it is dawn, four thousand metres up and bitterly cold. On the timbers of the mine mouth there\'s a poster so bleached by the sun that you can hardly read it: DESAPARECIDO, the photograph from your passport, and a date, 31 July 1998. It is the first of August, 2026. You were in the mountain for one night. Don Teo is eighty-one now. When they bring him up the hill to see you, he looks at you for a long time without a word. Then he goes down into the mine on his own with a pack of cigarettes, to say thank you.' },
-  { n: 10, id: 'ded', title: 'Dedushka', date: '2026-10-08', place: 'Kamenka, on the Angara, Siberia', era: '30 September 1974', theme: 'ded',
+  { n: 10, id: 'ded', title: 'Dedushka', date: '2026-10-08', place: 'Kamenka, on the Angara, Siberia', era: '30 September 1974', mins: '30–40 min', theme: 'ded',
     osd: '<span class="kd">д. Каменка · дом № 14</span><span class="kx">СЖЕЧЬ · 1.X.74</span>',
     hook: 'Siberia, 1974. Your grandmother\'s island village is going under a new reservoir, and tonight the clearing brigade is burning it, house by house. From her hospital bed she made you promise to carry Dedushka, the spirit of her house, out of the old house in her bast shoe, the old way. You only meant to lie down for five minutes. It\'s twenty to three, the far end of the village is on fire, and something small in the house keeps hiding things.',
     tagline: 'A log house in a Siberian village on the night it burns, 1974. Carry the house spirit out the old way before the fire gets there. Something small keeps moving your things.',
@@ -262,14 +262,18 @@ function drawHome(t) { for (const c of CARD_FX) { try { c.fx(c.cv, c.g, t); } ca
 /* ---------- a mystery's title screen ---------- */
 function renderLobby(m, startGame) {
   const R = results(), r = R.rooms[m.id], mr = HOST.mr();
+  // on the website the server has already filled in this room's screen (words, picture, controls): only what
+  // depends on this browser changes here (where you are in the room, your result, the buttons)
+  const site = !!(mr && $('#title').dataset.filled);
   ROOM.n = m.n; document.title = mr ? `${m.title} · ${SERIES.name}` : m.title; $('#app').dataset.theme = m.theme || '';
-  $('#tOsd').innerHTML = mr ? '' : m.osd; $('#tNum').textContent = `Mystery #${m.n}`; $('#tTitle').textContent = m.title;
-  $('#tEyebrow').innerHTML = `${esc(m.place)} &middot; ${esc(m.era)}`; $('#tHook').textContent = m.hook;
   const saved = store.get(ROOM.saveKey);
   const inProg = saved && saved.flags && saved.flags.woke && !saved.flags.escaped;
   const bNew = $('#bNew'), bCont = $('#bCont'), box = $('#tDone');
   bNew.textContent = m.loading || 'Loading…'; bNew.disabled = true; bCont.disabled = true; bCont.hidden = true; delete bNew.dataset.sure;
   bNew.classList.add('primary'); bCont.classList.remove('primary');
+  if (site) { lobbySite(m, r, inProg, startGame); return; }
+  $('#tOsd').innerHTML = mr ? '' : m.osd; $('#tNum').textContent = `Mystery #${m.n}`; $('#tTitle').textContent = m.title;
+  $('#tEyebrow').innerHTML = `${esc(m.place)} &middot; ${esc(m.era)}`; $('#tHook').textContent = m.hook;
   box.hidden = !r;
   if (r) box.innerHTML = `<p class="done-line">You escaped this one in <b>${fmtTime(r.time)}</b>. <button class="alink" id="bSeeRes">See your result</button></p>`;
   if (r) $('#bSeeRes').onclick = () => showResult(m);
@@ -299,6 +303,26 @@ function renderLobby(m, startGame) {
   // on the website: send this room to someone (their link opens its door, nothing given away)
   const row = $('#tShareRow');
   if (row) { row.hidden = !(mr && mr.openShare); $('#tShare').onclick = () => shareRoom(m.id, 'title'); }
+}
+// the website's room screen: your status beside the room's number, and one row of buttons
+// (Begin, or Continue and Start over, or Play again and See your result; then Dare a friend, which mr.js opens)
+function lobbySite(m, r, inProg, startGame) {
+  const bNew = $('#bNew'), bCont = $('#bCont'), bRes = $('#bRes'), st = $('#tStatus');
+  const pills = [];
+  if (inProg) pills.push('<span class="prog">In progress</span>');
+  if (r) pills.push(`<span class="ok">Escaped in ${fmtTime(r.time)}</span>`);
+  st.innerHTML = pills.join(''); st.hidden = !pills.length;
+  $('#tDone').hidden = true; $('#tNote').hidden = true;
+  bRes.hidden = !(r && !inProg); bRes.onclick = () => showResult(m);
+  if (inProg) {
+    bCont.hidden = false; bCont.classList.add('primary'); bNew.classList.remove('primary');
+    bNew.parentNode.insertBefore(bCont, bNew); bNew.dataset.label = 'Start over';
+    bNew.onclick = () => { if (bNew.dataset.sure) startGame(false); else { bNew.dataset.sure = '1'; bNew.textContent = G.touch ? 'Tap again to start over' : 'Click again to start over'; } };
+    bCont.onclick = () => startGame(true);
+  } else {
+    bNew.dataset.label = r ? 'Play again' : (m.start || 'Begin'); bNew.onclick = () => startGame(false);
+  }
+  $('#tHome').onclick = e => { e.preventDefault(); renderHome(); };
 }
 // send a room to someone, through the website's share panel
 function shareRoom(id, surface) {

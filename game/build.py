@@ -131,8 +131,22 @@ def mysteries_json():
     arr = js[i:j + 1]
     out = subprocess.run(['node', '-e', f'process.stdout.write(JSON.stringify({arr}))'],
                          capture_output=True, text=True, check=True).stdout
-    keep = ('n', 'id', 'title', 'date', 'place', 'era', 'hook', 'tagline', 'start', 'loading', 'theme', 'endTitle', 'wrongLabel', 'wrongWords')
-    return [{k: m[k] for k in keep if k in m} for m in json.loads(out)]
+    keep = ('n', 'id', 'title', 'date', 'place', 'era', 'mins', 'hook', 'tagline', 'start', 'loading', 'theme', 'endTitle', 'wrongLabel', 'wrongWords')
+    keys = room_keys()
+    return [dict({k: m[k] for k in keep if k in m}, keys=keys.get(m['id'], [])) for m in json.loads(out)]
+
+def room_keys():
+    """Each room's controls (the `keys:` list its pause card shows), by room id, for the room's screen on the site."""
+    sources = [rd('room406.js')] + [rd(r) if isinstance(r, str) else ''.join(rd(f) + '\n' for f in r['files']) for r in ROOMS]
+    found = {}
+    for src in sources:
+        rid = re.search(r"^  id: '([^']+)'", src, re.M)
+        ks = re.search(r'^  keys: (\[\[.*\]\]),?\s*$', src, re.M)
+        if not rid or not ks: continue
+        out = subprocess.run(['node', '-e', f'process.stdout.write(JSON.stringify({ks.group(1)}))'],
+                             capture_output=True, text=True, check=True).stdout
+        found[rid.group(1)] = json.loads(out)
+    return found
 
 def build_site():
     head, vo, code = assemble()
@@ -151,6 +165,9 @@ def build_site():
     geist = '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..600&family=Geist+Mono:wght@400;500&display=swap">\n'
     head = head.replace('<style>', geist + '<style>', 1)
     i = head.rindex('</style>'); head = head[:i] + rd('deadbolt.css') + head[i:]
+    # the room's screen: the corridor's layout (src/deadbolt_title.html), filled in by the server for each room
+    a = head.index('<section id="title" class="screen" hidden>'); b = head.index('</section>', a) + len('</section>')
+    head = head[:a] + rd('deadbolt_title.html').strip() + head[b:]
     shell = '<!doctype html>\n<html lang="en">\n<meta charset="utf-8">\n<!--MR_HEAD-->\n' + head
     page = (shell + '<link rel="modulepreload" href="/vendor/three-0.160.0.module.js">\n'
             f'<script type="module" src="/game/{app_name}"></script>\n')
