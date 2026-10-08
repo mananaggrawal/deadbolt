@@ -85,7 +85,34 @@ function takeSelection() {
   if (!s || !s.id || !s.t || Date.now() - s.t > 10 * 60 * 1000) return null;
   return releasedMysteries().find(x => x.id === s.id) || null;
 }
-function reloadInto(id) { if (id) store.set(SEL_KEY, { id, t: Date.now() }); else store.del(SEL_KEY); location.reload(); }
+function reloadInto(id) { if (HOST.go(id)) return; if (id) store.set(SEL_KEY, { id, t: Date.now() }); else store.del(SEL_KEY); location.reload(); }
+
+/* ---------- host bridge ----------
+   On the self-hosted website, site/public/mr.js defines window.MR before this page boots: it
+   tracks plays, syncs results to the player's account, makes share links and owns navigation
+   (each room has its own URL; "home" is the landing page). Without window.MR (a single-file
+   build opened anywhere else) every call below is a no-op and the game behaves as before. */
+const HOST = {
+  mr: () => (typeof window !== 'undefined' && window.MR && window.MR.v) ? window.MR : null,
+  emit(name, data) { const mr = HOST.mr(); if (mr && mr.emit) try { mr.emit(name, data); } catch (e) {} },
+  go(id) { const mr = HOST.mr(); if (!mr || !mr.go) return false; try { mr.go(id); return true; } catch (e) { return false; } },
+};
+// the ids of a room's result squares, in order (the same filtering as puzzleMarks)
+function markIds(room) {
+  const skip = new Set(room.markSkip || []), merge = room.markMerge || {};
+  return (room.HINTS || []).filter(h => !skip.has(h.id) && !(h.id in merge)).map(h => h.id);
+}
+// what the host polls to report progress: which squares are done, hints and wrong guesses so far
+function hostState() {
+  if (typeof ROOM === 'undefined' || !ROOM || typeof S === 'undefined' || !S) return null;
+  const merge = ROOM.markMerge || {}, ids = markIds(ROOM), solved = [];
+  for (const h of ROOM.HINTS || []) {
+    let st = 'hidden'; try { st = h.when(S); } catch (e) {}
+    if (st === 'solved') { const id = h.id in merge ? merge[h.id] : h.id; if (ids.includes(id) && !solved.includes(id)) solved.push(id); }
+  }
+  return { mode: G.mode, room: ROOM.id, built: !!(BUILT && BUILT.id === ROOM.id), elapsed: Math.round(S.elapsed || 0),
+    hints: S.hints || 0, wrong: S.wrong || 0, tiers: Object.assign({}, S.hintTiers || {}), steps: ids, solved };
+}
 const statusOf = m => {
   const r = results().rooms[m.id], sv = store.get(`lethe.room${m.id}.v1`), prog = sv && sv.flags && sv.flags.woke && !sv.flags.escaped;
   return { r, prog };
@@ -128,7 +155,9 @@ function finishRoom(frame) {
   const m = MYSTERIES.find(x => x.id === ROOM.id);
   const tiers = Object.assign({}, S.hintTiers);
   const run = { day: dayKey(), time: S.elapsed, hints: S.hints, wrong: S.wrong, tiers, marks: puzzleMarks(ROOM, tiers), frame };
-  if (results().rooms[ROOM.id]) showResult(m, run); else { saveResult(ROOM.id, run); showResult(m); }
+  const first = !results().rooms[ROOM.id];
+  HOST.emit('room_escape', { room: ROOM.id, n: m.n, title: m.title, first, day: run.day, time: Math.round(run.time), hints: run.hints, wrong: run.wrong, tiers, marks: run.marks.map(x => x.lvl) });
+  if (!first) showResult(m, run); else { saveResult(ROOM.id, run); showResult(m); }
 }
 
 /* ---------- the end page ---------- */
@@ -155,6 +184,20 @@ function showResult(m, replay) {
     const done = ok => { $('#shareMsg').textContent = ok ? 'Copied. Paste it anywhere.' : 'Select the text below and copy it.'; if (!ok) { const t = $('#shareText'); t.hidden = false; t.value = text; t.select(); } };
     try { navigator.clipboard.writeText(text).then(() => done(true), () => done(false)); } catch (e) { done(false); }
   };
+  // on the website, sharing adds a link to a result page and uses the phone's share sheet
+  const mr = HOST.mr();
+  if (mr && mr.share) {
+    $('#bShare').textContent = replay ? 'Share first result' : 'Share result';
+    $('#bShare').onclick = () => {
+      $('#shareMsg').textContent = '';
+      Promise.resolve(mr.share({ room: m.id, n: m.n, title: m.title, text, marks: (first.marks || marks).map(x => x.lvl), time: Math.round(first.time), hints: first.hints, wrong: first.wrong }))
+        .then(res => {
+          if (!res) return;
+          $('#shareMsg').textContent = res.msg || '';
+          if (res.fallback) { const t = $('#shareText'); t.hidden = false; t.value = res.fallback; t.select(); }
+        }, () => { $('#shareMsg').textContent = 'Select the text below and copy it.'; const t = $('#shareText'); t.hidden = false; t.value = text; t.select(); });
+    };
+  }
   $('#bLobby').onclick = () => reloadInto(null);
   $('#bAgain').onclick = () => reloadInto(m.id);
   tickCountdowns();
@@ -170,6 +213,7 @@ function archiveLine(cur) {
 /* ---------- home: every mystery ---------- */
 const CARD_FX = [];
 function renderHome() {
+  if (HOST.go(null)) return;   // on the website, home is the landing page
   G.mode = 'home'; document.title = SERIES.name; $('#app').dataset.theme = 'home';
   $('#title').hidden = true; $('#end').hidden = true; $('#home').hidden = false;
   const R = results().rooms, rel = releasedMysteries().slice().reverse(), today = dayKey(), nx = nextMystery();

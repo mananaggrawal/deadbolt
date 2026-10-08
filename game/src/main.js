@@ -105,6 +105,7 @@ function startGame(cont) {
   if (cont && saved) S = Object.assign(ROOM.defaults(), saved); else { store.del(ROOM.saveKey); S = ROOM.defaults(); }
   ROOM.applyState();
   ROOM.startAmbience();
+  HOST.emit('room_start', { room: ROOM.id, cont: !!(cont && saved) });
   $('#title').hidden = true; $('#hud').classList.remove('hide');
   G.mode = 'play'; G.lockFromClick = true; lockPointer();
   if (cont && S.player) { P.x = S.player.x; P.z = S.player.z; G.yaw = S.player.yaw; G.pitch = S.player.pitch || 0; G.eye = G.eyeT = 1.62; if (BODY.on) bodyPlace(S.player.x, S.player.y || 0, S.player.z, S.player.yaw, !!S.player.cr); ROOM.resumed && ROOM.resumed(); updatePrompt(true); toast(ROOM.backText || 'Back where you left off.'); }
@@ -138,6 +139,9 @@ async function buildMystery(m) {
 async function boot() {
   onResize();
   initTouch();
+  // the website syncs results from the player's account before the first screen draws
+  const mr = HOST.mr();
+  if (mr) { try { mr.attach && mr.attach(hostState); if (mr.ready) await Promise.race([mr.ready, wait(3000)]); } catch (e) {} }
   const sel = takeSelection();
   if (sel) enterMystery(sel.id); else renderHome();
   try { window.claude?.hot?.snapshot?.(() => { if (G.mode === 'play') flushSave(); return {}; }); } catch (e) {}
