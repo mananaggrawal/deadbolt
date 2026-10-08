@@ -76,12 +76,6 @@ button { font: inherit; color: inherit; }
 .nav-links a:hover { color: var(--ink); }
 .nav-right { display: flex; align-items: center; gap: 8px; }
 #mrAccount { display: inline-flex; align-items: center; min-height: 32px; }
-.snd { display: inline-flex; align-items: center; gap: 8px; background: none; border: 0; padding: 6px 12px; cursor: pointer; color: var(--muted); font-size: 14px; border-radius: 999px; }
-.snd:hover { color: var(--ink); background: var(--bg-3); }
-.snd svg { width: 16px; height: 16px; }
-.snd .off { display: none; }
-.snd[aria-pressed="false"] .on { display: none; }
-.snd[aria-pressed="false"] .off { display: block; }
 .shr { display: inline-flex; align-items: center; gap: 8px; background: none; border: 0; padding: 6px 12px; min-height: 36px; cursor: pointer; color: var(--muted); font-size: 14px; border-radius: 999px; }
 .shr:hover { color: var(--ink); background: var(--bg-3); }
 .shr svg { width: 16px; height: 16px; }
@@ -400,8 +394,8 @@ footer.site { padding-block: 96px 64px; border-top: 1px solid var(--line); }
   .footer-top > :first-child { grid-column: 1 / -1; }
   .footer-bottom { flex-direction: column; margin-top: 56px; gap: 12px; }
   .nav-right { gap: 2px; }
-  .snd, .shr { padding: 6px 9px; min-width: 40px; min-height: 40px; justify-content: center; }
-  .snd .lbl, .shr .lbl { display: none; }
+  .shr { padding: 6px 9px; min-width: 40px; min-height: 40px; justify-content: center; }
+  .shr .lbl { display: none; }
 }
 @media (max-width: 440px) {
 }
@@ -426,11 +420,6 @@ footer.site { padding-block: 96px 64px; border-top: 1px solid var(--line); }
       <div class="nav-links"><a href="#how">How it works</a><a href="#rooms">The rooms</a><a href="#faq">Questions</a></div>
     </div>
     <div class="nav-right">
-      <button class="snd" id="snd" type="button" aria-pressed="true" aria-label="Door sounds">
-        <svg class="on" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M2.5 6h2.6L8.5 3v10L5.1 10H2.5z"/><path d="M11 5.5c.9.8.9 4.2 0 5M12.8 3.8c1.9 1.9 1.9 6.5 0 8.4"/></svg>
-        <svg class="off" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M2.5 6h2.6L8.5 3v10L5.1 10H2.5z"/><path d="M11 6l4 4M15 6l-4 4"/></svg>
-        <span class="lbl">Sound</span>
-      </button>
       <button class="shr" type="button" data-share="site" data-surface="nav" aria-label="Share Deadbolt">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M8 10V2M5 4.8 8 1.8l3 3M3.5 7.5v6h9v-6"/></svg>
         <span class="lbl">Share</span>
@@ -759,14 +748,6 @@ $('#footRooms').insertAdjacentHTML('beforeend', order.slice(0, 4).map(r => `<but
 
 /* ---------- sound (made on the spot, only after a click) ---------- */
 let soundOn = true, ac = null, drone = null, heroUnlocked = false;
-try { soundOn = localStorage.getItem('mr.sound') !== 'off'; } catch (e) {}
-const sndBtn = $('#snd');
-sndBtn.setAttribute('aria-pressed', String(soundOn));
-sndBtn.onclick = () => {
-  soundOn = !soundOn; sndBtn.setAttribute('aria-pressed', String(soundOn));
-  try { localStorage.setItem('mr.sound', soundOn ? 'on' : 'off'); } catch (e) {}
-  if (!soundOn) stopDrone(); else creak(.7, .3);
-};
 function A() {
   if (!soundOn) return null;
   try { if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); } catch (e) { return null; }
