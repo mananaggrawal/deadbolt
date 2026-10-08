@@ -225,6 +225,7 @@
   }
   function closeModal() { if (openModal) { openModal.remove(); openModal = null; } }
 
+  // next: where Google brings you back to (a room's page when a door asked for sign-in)
   function signInDialog(reason, next) {
     track('signin_prompt', { where: reason || CFG.page });
     const required = reason === 'required' || CFG.requireLogin;
@@ -333,9 +334,11 @@
     if (!end || !btn) return;
     const add = () => {
       if (end.hidden || document.getElementById('mrRateBtn')) return;
-      const b = document.createElement('button'); b.type = 'button'; b.id = 'mrRateBtn'; b.className = btn.className.replace('primary', '').trim() || 'btn'; b.textContent = 'Rate this room';
+      const b = document.createElement('button'); b.type = 'button'; b.id = 'mrRateBtn'; b.className = 'linkbtn'; b.textContent = 'Rate this room';
       b.onclick = () => feedback({ from: 'end', room: (last && last.room) || pageRoom });
-      btn.insertAdjacentElement('afterend', b);
+      // beside "Play again" under the main buttons (older game pages: next to Share)
+      const links = document.getElementById('endLinks');
+      if (links) links.prepend(b); else { b.className = btn.className.replace('primary', '').trim() || 'btn'; btn.insertAdjacentElement('afterend', b); }
     };
     new MutationObserver(add).observe(end, { attributes: true, attributeFilter: ['hidden'] });
     add();

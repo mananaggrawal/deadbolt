@@ -12,7 +12,7 @@ import { runMaintenance } from './maintenance.js';
 import { landingHtml as LANDING, playHtml as PLAY } from './generated/assets.js';
 import * as R from './rooms.js';
 import * as og from './og.js';
-import { headTags, resultPage, privacyPage, termsPage, gatePage, notFoundPage } from './pages.js';
+import { headTags, resultPage, privacyPage, termsPage, gatePage, notFoundPage, esc } from './pages.js';
 import { adminOptions, adminPage, adminLoginPage, livePanel, playerPage, exportCsv } from './admin.js';
 
 export const app = new Hono();
@@ -144,7 +144,10 @@ function landingHtml(room) {
   const head = room
     ? headTags({ title: `${room.title} · ${cfg.siteName}`, description: room.tagline || room.hook, path: `/m/${room.id}`, image: `/og/m/${room.id}.png`, page: 'site', room: room.id })
     : headTags({ title: `${cfg.siteName} · Horror escape rooms in your browser`, description: 'First-person horror escape rooms you play alone in your browser. A real place on one night, something in it that follows a rule, and one way out. Free, no download.', path: '/' });
-  return LANDING.replace('<!--MR_HEAD-->', `${head}\n<script>window.MR_RELEASED=${JSON.stringify(rel)};${room ? `window.MR_OPEN=${JSON.stringify(room.id)};` : ''}</script>`);
+  // the doors' words come from the game's own room list, so the corridor and the room never disagree
+  const words = Object.fromEntries(R.allRooms().map(m => [m.id, { title: m.title, place: m.place, era: m.era, hook: m.hook, tagline: m.tagline, start: m.start }]));
+  const data = JSON.stringify({ rel, words }).replace(/</g, '\\u003c');
+  return LANDING.replace('<!--MR_HEAD-->', `${head}\n<script>(function(d){window.MR_RELEASED=d.rel;window.MR_ROOMS=d.words;})(${data});${room ? `window.MR_OPEN=${JSON.stringify(room.id)};` : ''}</script>`);
 }
 app.get('/', c => { c.header('Cache-Control', 'no-cache'); return c.html(landingHtml(null)); });
 app.get('/m/:id', c => {
@@ -160,13 +163,28 @@ app.get('/play/:id', async c => {
   const m = R.roomById(c.req.param('id'));
   if (!m) return c.html(notFoundPage(), 404);
   if (!R.isReleased(m.id)) return c.redirect('/#rooms');
-  if (cfg.requireLogin && !(await session(c))) return c.redirect(`/?signin=required&next=${encodeURIComponent(`/play/${m.id}`)}`);
+  if (cfg.requireLogin && !(await session(c))) return c.redirect(`/?signin=required&next=${encodeURIComponent(`/play/${m.id}${new URL(c.req.url).search}`)}`);
   const etag = `"p-${m.id}-${cfg.version}"`;
   c.header('ETag', etag); c.header('Cache-Control', 'no-cache');
   if (c.req.header('if-none-match') === etag) return c.body(null, 304);
   const head = headTags({ title: `${m.title} · ${cfg.siteName}`, description: m.tagline || m.hook, path: `/m/${m.id}`, image: `/og/m/${m.id}.png`, page: 'game', room: m.id });
-  return c.html(PLAY.replace('<!--MR_HEAD-->', head));
+  return c.html(playPage(m, head));
 });
+// the room's screen is filled in on the server, so it shows the moment the page arrives (the game takes over once loaded)
+function playPage(m, head) {
+  const fill = (html, id, text) => html.replace(new RegExp(`(id="${id}"[^>]*>)[^<]*(<)`), `$1${text}$2`);
+  let h = PLAY.replace('<!--MR_HEAD-->', head)
+    .replace('<div id="app">', `<div id="app" data-theme="${esc(m.theme || '')}">`)
+    .replace('<section id="title" class="screen" hidden>', `<section id="title" class="screen"><img class="t-art" src="/art/${esc(m.id)}.jpg" alt="">`);
+  h = fill(h, 'tHome', '&larr; Back to the corridor');
+  h = fill(h, 'tNum', `Mystery #${m.n}`);
+  h = fill(h, 'tTitle', esc(m.title));
+  h = fill(h, 'tEyebrow', `${esc(m.place)} &middot; ${esc(m.era)}`);
+  h = fill(h, 'tHook', esc(m.hook));
+  h = fill(h, 'bNew', esc(m.loading || 'Loading…'));
+  h = fill(h, 'tKeys', 'WASD to move &middot; Mouse to look &middot; E to use &middot; H for hints &middot; Headphones recommended');
+  return h;
+}
 
 /* ---------- share pages and preview cards ---------- */
 app.get('/r/:code', async c => {

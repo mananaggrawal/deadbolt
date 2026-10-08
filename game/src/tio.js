@@ -1349,11 +1349,20 @@ function respawn(wasL4) {
 /* ---------------- offerings ---------------- */
 function offerActions() {
   const p = S.paid, a = [];
-  if (took('coca') && !p.coca) a.push({ label: 'Put coca in his mouth', run: () => offer('coca') });
-  if (took('cigs') && S.cigsLeft > 0 && !(S.smokeT > 0)) a.push({ label: 'Light a cigarette for him', run: () => offer('cig') });
-  if (took('alcohol') && !p.alc) a.push({ label: 'Pour the alcohol on his feet', run: () => offer('alc') });
-  if (took('silver') && !p.silver) a.push({ label: 'Give him back the silver', run: () => offer('silver') });
+  if (took('coca') && !p.coca) a.push({ k: 'coca', label: 'Put coca in his mouth', run: () => offer('coca') });
+  if (took('cigs') && S.cigsLeft > 0 && !(S.smokeT > 0)) a.push({ k: 'cig', label: 'Light a cigarette for him', run: () => offer('cig') });
+  if (took('alcohol') && !p.alc) a.push({ k: 'alc', label: 'Pour the alcohol on his feet', run: () => offer('alc') });
+  if (took('silver') && !p.silver) a.push({ k: 'silver', label: 'Give him back the silver', run: () => offer('silver') });
   return a;
+}
+const OFFER_NAME = { coca: 'the coca', cig: 'a cigarette', alc: 'the alcohol', silver: 'the silver' };
+function offerNames(offers) { const n = offers.map(o => OFFER_NAME[o.k]); return n.length < 2 ? n.join('') : n.slice(0, -1).join(', ') + ' and ' + n[n.length - 1]; }
+// one gift after another, each with its own moment
+function offerAll() {
+  if (V.offering) return;
+  const list = offerActions(); if (!list.length) return;
+  V.offering = true;
+  list.forEach((o, i) => after(i * 2.4, () => { if (!S.flags.paid) offer(o.k); if (i === list.length - 1) V.offering = false; }));
 }
 function offer(k) {
   const p = S.paid;
@@ -1581,8 +1590,11 @@ function registerInteractions() {
   // --- the Tío
   inter('tio', O.tio, { name: () => S.flags.paid ? 'The Tío, smoking' : 'The Tío', reach: 2.0, enabled: () => lampLit() || S.flags.paid, actions: () => {
     if (S.flags.paid) return [look('Back on his bench, smoking, your silver on his knee. His glass eyes follow you. You don\'t look at them for long.')];
-    const a = offerActions(); if (a.length > 2) a.length = 2;
-    if (a.length < 2) a.push(look(S.flags.tioKnown ? 'Clay, painted red, horned, grinning with glass teeth. Paper streamers on his shoulders. He was sitting down this afternoon. He isn\'t now.' : 'The Tío. Standing in the middle of the tunnel with his back to you, where his chair should be. Someone must have carried him. Nobody could have carried him.'));
+    // every offering you carry goes in one action, so nothing (the silver last of all) hides behind the first two
+    const offers = offerActions(), a = [];
+    if (offers.length === 1) a.push(offers[0]);
+    else if (offers.length > 1) a.push({ label: `Give him ${offerNames(offers)}`, run: offerAll });
+    a.push(look(S.flags.tioKnown ? 'Clay, painted red, horned, grinning with glass teeth. Paper streamers on his shoulders. He was sitting down this afternoon. He isn\'t now.' : 'The Tío. Standing in the middle of the tunnel with his back to you, where his chair should be. Someone must have carried him. Nobody could have carried him.'));
     return a;
   } });
   O.tioHit.userData.iid = 'tio';
@@ -1785,12 +1797,17 @@ function stepSound(v) {
 
 /* ---------------- state ---------------- */
 function defaults() {
-  return { flags: {}, inv: [], docs: [], heard: [], hints: 0, hintTiers: {}, wrong: 0, locks: {}, elapsed: 0, player: null,
+  // you start with what you came down with: the stolen silver and Don Teo's card
+  return { flags: {}, inv: ['silver', 'card'], docs: ['card', 'tasks'], heard: [], hints: 0, hintTiers: {}, wrong: 0, locks: {}, elapsed: 0, player: null,
     props: {}, held: null, ev: {}, fuel: 0.8, lamp: 0, paid: {}, cigsLeft: 3, smokeT: 0, tio: null, cart: 'top', points: 'main', drill: 0, drillTurned: true };
 }
 function applyState() {
   const f = S.flags;
-  Object.assign(V, { noStrike: false, catching: null, ladder: null, cartRun: null, enc: null, fuse: 0, ending: null, refill: 0, airT: 0, flicker: 0, sparkT: 0, black: 0, tioState: null, tioMoving: false, watchMouth: false, breachK: 0, phoneT: 0, paidLook: false, lampK: 0, stam: 1, winded: 0, gasp: 0, dirT: 30 });
+  // older saves could be written before the wake-up handed these over; the silver only leaves your pocket when you pay him
+  if (!(S.paid && S.paid.silver) && !S.inv.includes('silver')) S.inv.push('silver');
+  if (!S.inv.includes('card')) S.inv.push('card');
+  for (const d of ['card', 'tasks']) if (!S.docs.includes(d)) S.docs.push(d);
+  Object.assign(V, { noStrike: false, catching: null, ladder: null, cartRun: null, enc: null, fuse: 0, ending: null, refill: 0, airT: 0, flicker: 0, sparkT: 0, black: 0, tioState: null, tioMoving: false, watchMouth: false, breachK: 0, phoneT: 0, paidLook: false, lampK: 0, stam: 1, winded: 0, gasp: 0, dirT: 30, offering: false });
   if (!V.tio) V.tio = { pos: new THREE.Vector3(), yaw: 0, node: 'g5' };
   if (!V.cart) V.cart = { s: 0, route: 'main', wreck: false };
   if (S.cart === 'rolling') S.cart = 'top';
@@ -1926,9 +1943,9 @@ return {
     G.cutscene = true; $('#fx').className = 'lids';
     after(0.6, () => sayI('You come round on your back in the dark, with grit in your mouth and your ears ringing. Somewhere, rock is still settling.', 6500));
     after(3.0, () => { G.cutscene = false; $('#fx').className = ''; flag('woke'); give('silver', true); give('card', true); renderInv(); updatePrompt(true); toast(`Your lamp is out. ${G.touch ? 'Tap <b>Strike the flint</b>' : 'Press <kbd>E</kbd> to strike the flint'}.`, 8000); });
-    V.memDone = false; S.docs.push('card', 'tasks');
+    V.memDone = false;
     after(4.2, async () => { const o = { fx: 'tape', volume: 0.9 }; sayI('You remember the guide this afternoon, in the lamplight, laughing at nobody.', 3500); await wait(2400); await line('rule1', TEO + ', this afternoon', 'Inside the mountain, everything belongs to the Tío.', o); await line('rule2', TEO + ', this afternoon', 'Don\'t take anything. And if you take something, you have to pay.', o); await line('rule3', TEO + ', this afternoon', 'And never let your lamp go out. In the dark, the Tío walks.', o); heard('rules'); V.memDone = true; after(1.5, () => { if (!S.ev.toldMove) { S.ev.toldMove = true; toast(G.touch ? 'Crouch and Jump are buttons on the right. The notebook has Don Teo\'s card.' : '<kbd>Tab</kbd> notebook (Don Teo\'s card is in it) &middot; <kbd>C</kbd> crouch &middot; <kbd>H</kbd> hints', 7000); } }); });
   },
-  debug: { faceInfo: () => { O.faceHit.updateMatrixWorld(true); ray.setFromCamera(new THREE.Vector2(0, 0), camera); const hs = ray.intersectObject(O.faceHit, false); const p = new THREE.Vector3(); O.faceHit.getWorldPosition(p); return { hits: hs.length, d: hs[0] && hs[0].distance, wp: p.toArray(), vis: O.faceHit.visible, shown: isShown(O.faceHit), layers: O.faceHit.layers.mask, rl: ray.layers.mask, parent: O.faceHit.parent && O.faceHit.parent.type, near: ray.near, far: ray.far, origin: ray.ray.origin.toArray(), dir: ray.ray.direction.toArray() }; }, camInfo: () => { camera.updateMatrixWorld(); const f = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion); return { pos: camera.position.toArray().map(v => +v.toFixed(2)), f: f.toArray().map(v => +v.toFixed(2)), n: RAYLIST ? RAYLIST.length : -1, face: RAYLIST ? RAYLIST.includes(O.faceHit) : null, keysHit: RAYLIST ? RAYLIST.filter(o => o.userData.iid === 'minerKeys').length : null, far: ray.far, mode: G.mode, ui: UI.kind, cut: G.cutscene, eye: G.eye }; }, rayHits: () => { ray.setFromCamera(new THREE.Vector2(0, 0), camera); if (!RAYLIST) buildRayList(); return ray.intersectObjects(RAYLIST, false).slice(0, 6).map(h => ({ d: +h.distance.toFixed(2), iid: h.object.userData.iid || null, geo: h.object.geometry && h.object.geometry.type, noRay: !!h.object.userData.noRay, vis: isShown(h.object), layer: h.object.layers.mask, p: [h.object.getWorldPosition(new THREE.Vector3()).x.toFixed(2), h.object.getWorldPosition(new THREE.Vector3()).y.toFixed(2), h.object.getWorldPosition(new THREE.Vector3()).z.toFixed(2)] })); }, O, L, V, T, M, BODY, DRAG, HOLD, NV, pathTo, setTio, poseTio, strike, relight, lampOut, refillAt, offer, paidSequence, kickChock, setPoints, smashBoards, pushCartBack, climb, stageCrawlMouth, openValve, takeKeys, openBox, strikeSteel, turnSteel, charge, lightFuse, blast, openBreach, caught, endFrame, firstEncounter, minersTalk, lookPhone, pickUp, isDark },
+  debug: { faceInfo: () => { O.faceHit.updateMatrixWorld(true); ray.setFromCamera(new THREE.Vector2(0, 0), camera); const hs = ray.intersectObject(O.faceHit, false); const p = new THREE.Vector3(); O.faceHit.getWorldPosition(p); return { hits: hs.length, d: hs[0] && hs[0].distance, wp: p.toArray(), vis: O.faceHit.visible, shown: isShown(O.faceHit), layers: O.faceHit.layers.mask, rl: ray.layers.mask, parent: O.faceHit.parent && O.faceHit.parent.type, near: ray.near, far: ray.far, origin: ray.ray.origin.toArray(), dir: ray.ray.direction.toArray() }; }, camInfo: () => { camera.updateMatrixWorld(); const f = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion); return { pos: camera.position.toArray().map(v => +v.toFixed(2)), f: f.toArray().map(v => +v.toFixed(2)), n: RAYLIST ? RAYLIST.length : -1, face: RAYLIST ? RAYLIST.includes(O.faceHit) : null, keysHit: RAYLIST ? RAYLIST.filter(o => o.userData.iid === 'minerKeys').length : null, far: ray.far, mode: G.mode, ui: UI.kind, cut: G.cutscene, eye: G.eye }; }, rayHits: () => { ray.setFromCamera(new THREE.Vector2(0, 0), camera); if (!RAYLIST) buildRayList(); return ray.intersectObjects(RAYLIST, false).slice(0, 6).map(h => ({ d: +h.distance.toFixed(2), iid: h.object.userData.iid || null, geo: h.object.geometry && h.object.geometry.type, noRay: !!h.object.userData.noRay, vis: isShown(h.object), layer: h.object.layers.mask, p: [h.object.getWorldPosition(new THREE.Vector3()).x.toFixed(2), h.object.getWorldPosition(new THREE.Vector3()).y.toFixed(2), h.object.getWorldPosition(new THREE.Vector3()).z.toFixed(2)] })); }, O, L, V, T, M, BODY, DRAG, HOLD, NV, pathTo, setTio, poseTio, strike, relight, lampOut, refillAt, offer, offerAll, offerActions, paidSequence, kickChock, setPoints, smashBoards, pushCartBack, climb, stageCrawlMouth, openValve, takeKeys, openBox, strikeSteel, turnSteel, charge, lightFuse, blast, openBreach, caught, endFrame, firstEncounter, minersTalk, lookPhone, pickUp, isDark },
 };
 })();
