@@ -9,6 +9,16 @@ The site runs on Vercel, and its data lives in a Neon Postgres database. Both ha
 - **Google** only handles the sign-in step.
 - **GitHub Actions** makes an encrypted backup of the database every night (`.github/workflows/backup.yml`).
 
+## Where things are now
+
+| | |
+|---|---|
+| Live site | https://deadbolt-pi.vercel.app (Vercel project `deadbolt`, team "mananaggrawal's projects") |
+| Staging | https://deadbolt-staging.vercel.app (branch `staging`) |
+| Database | Neon `neon-red-garden`, connected through Vercel > Storage, with a branch per preview deployment |
+| Google sign-in | Google Cloud project `deadbolt-511009`, client "Web client 1", published |
+| Code | github.com/mananaggrawal/deadbolt |
+
 ## What you need
 
 - A domain, about ₹800 to ₹1,500 a year for a `.com` or `.in`. You can start on the free `*.vercel.app` address and add the domain later.
@@ -39,7 +49,7 @@ git push origin main:staging
 1. In the project, open **Storage > Create Database > Neon**.
 2. Choose the region **Singapore** (`aws-ap-southeast-1`). It's the closest to India, and the function runs in Singapore too (`regions` in `vercel.json`).
 3. Choose the free plan and name the database `deadbolt`.
-4. When it asks which environments to connect, tick **Production** and **Development**. Leave **Preview** and any "branch per preview deployment" option off; staging gets its own database in step 7.
+4. Connect it to the project for **Production** and **Preview**. Under **Create database branch for deployment**, tick **Preview**. Each preview deployment, staging included, then gets its own copy of the database, so tests never touch live data.
 
 Vercel then adds `DATABASE_URL` (pooled, which the app uses) and `DATABASE_URL_UNPOOLED` (direct, which the migrations use) to the project by itself.
 
@@ -67,7 +77,7 @@ At [console.cloud.google.com](https://console.cloud.google.com), signed in as yo
 7. **Audience > Publish app**, so anyone can sign in. While the app is in "Testing", only listed test users can.
 8. **Branding > Verify branding**, then **Publish branding**. The automatic check usually takes minutes, and a manual review 2 to 3 business days. Sign-in works in the meantime.
 
-If you start on the `vercel.app` address, use `https://<project>.vercel.app` in place of `https://yourdomain` above. Skip steps 3 and 4 until you have the domain.
+If you start on the free addresses, use `https://<project>.vercel.app` for the live site and a second `vercel.app` name for staging (Settings > Domains > Add, connected to Preview, branch `staging`). Skip steps 3 and 4 until you have the domain.
 
 ## 5. Settings (environment variables)
 
@@ -93,8 +103,6 @@ Then add these for **Preview** only, with **Git branch** set to `staging`:
 | `GOOGLE_CLIENT_SECRET` | the same as production |
 | `ADMIN_EMAILS` | the same as production |
 | `PUBLIC_URL` | `https://staging.yourdomain` |
-| `DATABASE_URL` | from step 7 |
-| `DATABASE_URL_UNPOOLED` | from step 7 |
 
 Every preview deployment, staging included, lets in only `ADMIN_EMAILS`. The code does this by itself, so there is no switch to forget.
 
@@ -106,12 +114,7 @@ Every preview deployment, staging included, lets in only `ADMIN_EMAILS`. The cod
 
 ## 7. The staging database
 
-1. Go to **Vercel > Storage**, click the `deadbolt` database, then **Open in Neon**.
-2. Open **Branches > Create branch**. Name it `staging`, with parent `main`. It starts as a copy of the live data at that moment.
-3. On the new branch, click **Connect** and copy two strings:
-   - the **pooled** one, which has `-pooler` in the host, for `DATABASE_URL`;
-   - the direct one (turn **Connection pooling** off) for `DATABASE_URL_UNPOOLED`.
-4. Paste both into the Preview (`staging`) settings from step 5.
+Nothing to do: the Neon connection from step 3 gives every preview deployment its own database branch. To start staging over from a fresh copy of live data, delete its branch in Neon (**Vercel > Storage > Open in Neon > Branches**) and redeploy `staging`.
 
 ## 8. Deploy
 
