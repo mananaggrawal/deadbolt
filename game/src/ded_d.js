@@ -57,7 +57,7 @@ function paintThings() {
 
 /* ---------------- items ---------------- */
 const ITEMS = {
-  torch: { name: 'Your torch', short: 'Torch', desc: 'A flat battery torch from the hardware shop in Ust-Ilimsk. The battery is going: the light is yellow and weak. F turns it on and off.' },
+  torch: { name: 'Your torch', short: 'Torch', get desc() { return `A flat battery torch from the hardware shop in Ust-Ilimsk. The battery is going: the light is yellow and weak. ${G.touch ? 'The Torch button, top right,' : 'F'} turns it on and off.`; } },
   bread: { name: 'A loaf of black bread', short: 'Bread', desc: 'Rye bread from the bakery by the hospital, wrapped in newspaper. You brought it because Babushka said to.' },
   letter: { name: 'Babushka\'s letter', short: 'Letter', doc: 'letter' },
   thread: { name: 'A reel of red thread', short: 'Red thread', desc: 'Red cotton thread on a wooden reel, from her sewing tin.' },
@@ -139,7 +139,7 @@ const HINTS = [
     'She has to be the right way up, down at the water, with both oars in her.',
     'She\'s too heavy to lift. The boat hook leaning on the fence will lever her over.',
     'Roll her down on logs: there are two round ones in the grass near her. Lay them in front of her bow and push.',
-    'Take the boat hook from the west fence and lever her over. Carry the two round logs from the grass and lay them in front of her bow, one at a time. Push her down to the water. Then put both oars in her.'] },
+    'Take the boat hook leaning on the fence near the bank (on your right as you face the river) and lever her over. Carry the two round logs from the grass and lay them in front of her bow, one at a time. Push her down to the water. Then put both oars in her.'] },
   { id: 'basket', title: 'Dedushka\'s basket', when: s => !s.flags.stoveLit ? 'hidden' : s.flags.ritual ? 'solved' : 'open', tiers: [
     'Follow her letter: embers in the pot, bread in the shoe, both in her basket, then ask him at the stove.',
     'The clay pot is on the bottom shelf behind the curtain in the kitchen corner. Wait for the stove to burn down to embers.',

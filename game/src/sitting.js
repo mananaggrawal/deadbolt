@@ -1288,7 +1288,7 @@ function endSequence() {
   after(3.4, () => { subtitle('', '<i>The landing is dark and cold. The stairs go down to the street door.</i>', 3200); });
   after(5.0, () => {
     // behind you, the camera goes off by itself
-    L.flash.intensity = 900; G.flash = 0.55; sFlash(); tween(0.5, k => { L.flash.intensity = 900 * (1 - k); });
+    L.flash.intensity = 900; G.flash = 0.55; sFlash(); tween(0.5, k => { L.flash.intensity = 900 * (1 - k); G.flash = 0.55 * (1 - k); });
     subtitle('', '<i>Behind you there is a soft thump and a white flash: the camera\'s flash powder has gone off, all by itself.</i>', 4200);
   });
   after(7.0, () => tween(1.4, k => { G.yaw = yOut - Math.PI * k; }));

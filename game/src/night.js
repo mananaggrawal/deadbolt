@@ -1414,6 +1414,8 @@ function applyState() {
   O.sdrawer.position.x = O.sdrawer.userData.base + (f.trayOut ? -0.42 : 0); O.sdrawer.visible = S.drawer === 'out'; O.winKey.visible = !f.winKey;
   // window, keys, umbrella
   O.drop.position.y = O.dropTop - (S.win === 'open' ? 0.5 : 0); O.strap.visible = S.win !== 'open';
+  // saved in the second between losing the umbrella and the keys landing: they landed
+  if (f.umbLost && !f.keys) { f.keys = true; if (!S.inv.includes('keys')) S.inv.push('keys'); }
   O.ring.visible = !f.keys; O.umb.visible = !took('umbrella') && !f.umbLost;
   // washroom
   O.wcPivot.rotation.y = S.wcOpen ? -1.45 : 0; O.colWc.on = !S.wcOpen;
