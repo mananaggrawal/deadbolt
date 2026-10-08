@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""One-off: turn the door landing page preview (an artifact) into site/public/landing.html.
-Kept for the record; edit site/public/landing.html directly from now on."""
+"""One-off: turn the door landing page preview (an artifact) into the landing page (now site/templates/landing.html).
+Kept for the record; edit site/templates/landing.html directly from now on."""
 import re, sys
 src, out = sys.argv[1], sys.argv[2]
 s = open(src, encoding='utf-8').read()

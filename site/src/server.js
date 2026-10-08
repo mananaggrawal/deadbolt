@@ -1,15 +1,15 @@
-// Mystery Rooms web server: landing page, the game, Google sign-in, tracking, share pages, dashboard.
+// Deadbolt web server: landing page, the game, Google sign-in, tracking, share pages, dashboard.
+// On Vercel this file's default export is the function; locally `node src/local.js` serves it.
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { Hono } from 'hono';
-import { serve } from '@hono/node-server';
 import { bodyLimit } from 'hono/body-limit';
-import { Resvg } from '@resvg/resvg-js';
 import { cfg } from './config.js';
 import { pool, q, one, rows } from './db.js';
 import { auth, sessionOf, isAdmin } from './auth.js';
-import { migrate } from './migrate.js';
+import { runMaintenance } from './maintenance.js';
+import { landingHtml as LANDING, playHtml as PLAY } from './generated/assets.js';
 import * as R from './rooms.js';
 import * as og from './og.js';
 import { headTags, resultPage, privacyPage, termsPage, gatePage, notFoundPage } from './pages.js';
@@ -60,14 +60,13 @@ async function touchPlayer(anon, userId, c) {
 }
 
 /* ---------- headers on every response ---------- */
-const umamiOrigin = (() => { try { return cfg.umami.src ? new URL(cfg.umami.src).origin : ''; } catch (e) { return ''; } })();
 const CSP = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline' ${umamiOrigin}`.trim(),
+  "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: blob: https://*.googleusercontent.com",
-  `connect-src 'self' ${umamiOrigin}`.trim(),
+  "connect-src 'self'",
   "media-src 'self' data: blob:",
   "worker-src 'self' blob:",
   "frame-ancestors 'self'",
@@ -84,7 +83,7 @@ app.use('*', async (c, next) => {
 app.use('/api/*', bodyLimit({ maxSize: 64 * 1024, onError: c => c.json({ error: 'too large' }, 413) }));
 
 /* ---------- staging: only admin emails get in ---------- */
-const OPEN_PATHS = /^\/(api\/auth\/|api\/me$|healthz$|mr\.js$|favicon\.svg$|icon-\d+\.png$|art\/|privacy$|terms$)/;
+const OPEN_PATHS = /^\/(api\/auth\/|api\/me$|api\/cron\/|healthz$|mr\.js$|favicon\.svg$|icon-\d+\.png$|art\/|privacy$|terms$)/;
 app.use('*', async (c, next) => {
   if (!cfg.staging || OPEN_PATHS.test(c.req.path)) return next();
   const s = await session(c);
@@ -100,7 +99,9 @@ app.on(['GET', 'POST'], '/api/auth/*', c => {
   return auth.handler(c.req.raw);
 });
 
-/* ---------- static files ---------- */
+/* ---------- static files ----------
+   On Vercel, everything in public/ is served by the CDN before a request reaches this function
+   (cache headers in vercel.json). These routes only answer when running locally. */
 const TYPES = { '.js': 'text/javascript; charset=utf-8', '.json': 'application/json', '.jpg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml', '.css': 'text/css; charset=utf-8', '.webmanifest': 'application/manifest+json' };
 function sendFile(c, file, cache) {
   if (!fs.existsSync(file)) return c.html(notFoundPage(), 404);
@@ -111,20 +112,15 @@ function sendFile(c, file, cache) {
   return c.body(fs.readFileSync(file));
 }
 const YEAR = 'public, max-age=31536000, immutable';
-app.get('/mr.js', c => sendFile(c, path.join(cfg.publicDir, 'mr.js'), 'public, max-age=300'));
-app.get('/favicon.svg', c => sendFile(c, path.join(cfg.publicDir, 'favicon.svg'), 'public, max-age=86400'));
-app.get('/art/:file{[a-z0-9_-]+\\.jpg}', c => sendFile(c, path.join(cfg.publicDir, 'art', c.req.param('file')), 'public, max-age=2592000'));
-app.get('/vendor/three-0.160.0.module.js', c => sendFile(c, cfg.threeFile, YEAR));
-app.get('/game/:file{vo\\.[0-9a-f]{12}\\.json}', c => sendFile(c, path.join(cfg.gameDir, c.req.param('file')), YEAR));
+const pub = (...p) => path.join(cfg.publicDir, ...p);
+app.get('/mr.js', c => sendFile(c, pub('mr.js'), 'public, max-age=300'));
+app.get('/favicon.svg', c => sendFile(c, pub('favicon.svg'), 'public, max-age=86400'));
+app.get('/icon-192.png', c => sendFile(c, pub('icon-192.png'), 'public, max-age=86400'));
+app.get('/icon-512.png', c => sendFile(c, pub('icon-512.png'), 'public, max-age=86400'));
+app.get('/art/:file{[a-z0-9_-]+\\.jpg}', c => sendFile(c, pub('art', c.req.param('file')), 'public, max-age=2592000'));
+app.get('/vendor/three-0.160.0.module.js', c => sendFile(c, pub('vendor', 'three-0.160.0.module.js'), YEAR));
+app.get('/game/:file{(vo\\.[0-9a-f]{12}\\.json|app\\.[0-9a-f]{12}\\.js)}', c => sendFile(c, pub('game', c.req.param('file')), YEAR));
 
-const icons = new Map();
-app.get('/icon-192.png', c => icon(c, 192));
-app.get('/icon-512.png', c => icon(c, 512));
-function icon(c, size) {
-  if (!icons.has(size)) icons.set(size, new Resvg(fs.readFileSync(path.join(cfg.publicDir, 'favicon.svg')), { fitTo: { mode: 'width', value: size } }).render().asPng());
-  c.header('Cache-Control', 'public, max-age=86400'); c.header('Content-Type', 'image/png');
-  return c.body(icons.get(size));
-}
 app.get('/manifest.webmanifest', c => {
   c.header('Content-Type', 'application/manifest+json'); c.header('Cache-Control', 'public, max-age=86400');
   return c.body(JSON.stringify({ name: cfg.siteName, short_name: cfg.siteName, start_url: '/', display: 'fullscreen', orientation: 'landscape',
@@ -141,14 +137,12 @@ app.get('/healthz', async c => {
 });
 
 /* ---------- the landing page (/, and /m/<id> opening one room's door) ---------- */
-let landingTpl = null;
-const landing = () => (!landingTpl || !cfg.production ? (landingTpl = fs.readFileSync(path.join(cfg.publicDir, 'landing.html'), 'utf8')) : landingTpl);
 function landingHtml(room) {
   const rel = R.released().map(m => m.id);
   const head = room
     ? headTags({ title: `${room.title} · ${cfg.siteName}`, description: room.tagline || room.hook, path: `/m/${room.id}`, image: `/og/m/${room.id}.png`, page: 'site', room: room.id })
     : headTags({ title: `${cfg.siteName} · Horror escape rooms in your browser`, description: 'First-person horror escape rooms you play alone in your browser. A real place on one night, something in it that follows a rule, and one way out. Free, no download.', path: '/' });
-  return landing().replace('<!--MR_HEAD-->', `${head}\n<script>window.MR_RELEASED=${JSON.stringify(rel)};${room ? `window.MR_OPEN=${JSON.stringify(room.id)};` : ''}</script>`);
+  return LANDING.replace('<!--MR_HEAD-->', `${head}\n<script>window.MR_RELEASED=${JSON.stringify(rel)};${room ? `window.MR_OPEN=${JSON.stringify(room.id)};` : ''}</script>`);
 }
 app.get('/', c => { c.header('Cache-Control', 'no-cache'); return c.html(landingHtml(null)); });
 app.get('/m/:id', c => {
@@ -159,24 +153,17 @@ app.get('/m/:id', c => {
 });
 
 /* ---------- the game (/play/<id>) ---------- */
-let playTpl = null, playMtime = 0;
-function playPage() {
-  const f = path.join(cfg.gameDir, 'play.html'), st = fs.statSync(f);
-  if (!playTpl || st.mtimeMs !== playMtime) { playTpl = fs.readFileSync(f, 'utf8').replace(/<title>[^<]*<\/title>\n?/, ''); playMtime = st.mtimeMs; }
-  return { html: playTpl, mtime: playMtime };
-}
 app.get('/play', c => c.redirect('/#rooms'));
 app.get('/play/:id', async c => {
   const m = R.roomById(c.req.param('id'));
   if (!m) return c.html(notFoundPage(), 404);
   if (!R.isReleased(m.id)) return c.redirect('/#rooms');
   if (cfg.requireLogin && !(await session(c))) return c.redirect(`/?signin=required&next=${encodeURIComponent(`/play/${m.id}`)}`);
-  const { html, mtime } = playPage();
-  const etag = `"p-${m.id}-${cfg.version}-${Math.floor(mtime).toString(36)}"`;
+  const etag = `"p-${m.id}-${cfg.version}"`;
   c.header('ETag', etag); c.header('Cache-Control', 'no-cache');
   if (c.req.header('if-none-match') === etag) return c.body(null, 304);
   const head = headTags({ title: `${m.title} · ${cfg.siteName}`, description: m.tagline || m.hook, path: `/m/${m.id}`, image: `/og/m/${m.id}.png`, page: 'game', room: m.id });
-  return c.html(html.replace('<!--MR_HEAD-->', head));
+  return c.html(PLAY.replace('<!--MR_HEAD-->', head));
 });
 
 /* ---------- share pages and preview cards ---------- */
@@ -278,7 +265,7 @@ app.get('/me/export', async c => {
     plays: await rows('select room, started_at, ended_at, outcome, steps_done, hints, wrong, seconds, device, country from plays where user_id = $1 order by started_at', [uid]),
     feedback: await rows('select created_at, room, kind, rating, difficulty, text from feedback where user_id = $1 order by created_at', [uid]),
   };
-  c.header('Content-Disposition', 'attachment; filename="mystery-rooms-my-data.json"');
+  c.header('Content-Disposition', 'attachment; filename="deadbolt-my-data.json"');
   return c.json(data);
 });
 
@@ -409,13 +396,13 @@ app.get('/admin/export/:file{[a-z]+\\.csv}', async c => {
   return c.body(csv);
 });
 
+/* ---------- nightly upkeep (Vercel Cron calls this; see vercel.json) ---------- */
+app.get('/api/cron/maintenance', async c => {
+  if (!cfg.cronSecret || c.req.header('authorization') !== `Bearer ${cfg.cronSecret}`) return c.json({ error: 'forbidden' }, 403);
+  return c.json(await runMaintenance());
+});
+
 app.notFound(c => c.html(notFoundPage(), 404));
 app.onError((e, c) => { console.error(c.req.method, c.req.path, e); return c.req.path.startsWith('/api/') ? c.json({ error: 'server error' }, 500) : c.html(notFoundPage(), 500); });
 
-/* ---------- start ---------- */
-if (import.meta.url === `file://${process.argv[1]}`) {
-  await migrate();
-  serve({ fetch: app.fetch, port: cfg.port, hostname: '0.0.0.0' }, i => console.log(`${cfg.siteName} on :${i.port} (${cfg.baseURL}, version ${cfg.version}${cfg.staging ? ', staging' : ''})`));
-  const stop = () => pool.end().finally(() => process.exit(0));
-  process.on('SIGTERM', stop); process.on('SIGINT', stop);
-}
+export default app;

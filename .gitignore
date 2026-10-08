@@ -15,3 +15,9 @@ deploy/.env
 deploy/certs/
 *.log
 .DS_Store
+site/src/generated/
+site/public/game/
+site/public/vendor/
+site/public/icon-*.png
+.vercel/
+landing-src/

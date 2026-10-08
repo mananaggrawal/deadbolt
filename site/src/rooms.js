@@ -1,17 +1,9 @@
-// The rooms, as the game build describes them (game/dist/site/rooms.json, made from series.js).
-import fs from 'node:fs';
-import path from 'node:path';
+// The rooms, as the game build describes them (MYSTERIES in game/src/series.js, via rooms.json).
 import { cfg } from './config.js';
+import { rooms } from './generated/assets.js';
 
-let cache = null, mtime = 0;
-function load() {
-  const f = path.join(cfg.gameDir, 'rooms.json');
-  const st = fs.statSync(f);
-  if (!cache || st.mtimeMs !== mtime) { cache = JSON.parse(fs.readFileSync(f, 'utf8')); mtime = st.mtimeMs; }
-  return cache;
-}
-export const voFile = () => load().vo;
-export const allRooms = () => load().mysteries;
+export const voFile = () => rooms.vo;
+export const allRooms = () => rooms.mysteries;
 export const roomById = id => allRooms().find(m => m.id === id) || null;
 
 // today's date where the site lives (rooms open on their date there)

@@ -1,4 +1,4 @@
-/* Mystery Rooms: the website's browser client, loaded on every page.
+/* Deadbolt: the website's browser client, loaded on every page.
    - an anonymous id per browser, and Google sign-in through the site's own server
    - results synced to the player's account (localStorage stays the game's source)
    - play tracking: starts, squares done, hints, wrong guesses, escapes, shares
@@ -301,7 +301,7 @@
       try { const r = await api('/api/share', { anon, room: d.room, time: d.time, hints: d.hints, wrong: d.wrong, marks: d.marks }); code = r.code; LS.set('mr.share.' + d.room, code); } catch (e) {}
     }
     const url = `${location.origin}/${code ? 'r/' + code : 'm/' + d.room}`;
-    const text = `${String(d.text).replace(/^Mystery #/, 'Mystery Rooms #')}\n${url}`;
+    const text = `${String(d.text).replace(/^Mystery #/, `${CFG.siteName || 'Deadbolt'} #`)}\n${url}`;
     const coarse = matchMedia('(pointer: coarse)').matches;
     if (coarse && navigator.share) {
       try { await navigator.share({ text }); track('share_click', { channel: 'sheet', code }, d.room); return { msg: '' }; }

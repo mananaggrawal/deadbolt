@@ -1,28 +1,15 @@
 // Link-preview cards (1200x630 PNG) for the site, each room and each shared result.
 // Drawn with satori (layout -> SVG) and resvg (SVG -> PNG); no browser needed.
-import fs from 'node:fs';
-import path from 'node:path';
 import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
 import { cfg } from './config.js';
 import { roomById, fmtTime, wrongWords, released } from './rooms.js';
+import { art as ART, fonts as FONT_B64 } from './generated/assets.js';
 
-const fontDir = path.resolve(cfg.publicDir, '../node_modules/@fontsource/geist-sans/files');
-const font = w => fs.readFileSync(path.join(fontDir, `geist-sans-latin-${w}-normal.woff`));
-const FONTS = [
-  { name: 'Geist', data: font(400), weight: 400, style: 'normal' },
-  { name: 'Geist', data: font(500), weight: 500, style: 'normal' },
-  { name: 'Geist', data: font(600), weight: 600, style: 'normal' },
-];
+const FONTS = [400, 500, 600].map(w => ({ name: 'Geist', data: Buffer.from(FONT_B64[w], 'base64'), weight: w, style: 'normal' }));
 const C = { bg: '#0b0a09', ink: '#ede8de', ink2: '#c8c1b4', muted: '#8d867b', faint: '#534e47', lamp: '#f0c27a', sq: ['#4d8a4a', '#c9a13b', '#a83a30'], line: '#24211e' };
 
-const artCache = new Map();
-function art(id) {
-  if (artCache.has(id)) return artCache.get(id);
-  const f = path.join(cfg.publicDir, 'art', `${id}.jpg`);
-  const v = fs.existsSync(f) ? `data:image/jpeg;base64,${fs.readFileSync(f).toString('base64')}` : null;
-  artCache.set(id, v); return v;
-}
+const art = id => (ART[id] ? `data:image/jpeg;base64,${ART[id]}` : null);
 
 // a tiny element helper: h('div', {style}, ...children)
 const h = (type, style, ...children) => ({ type, props: { style: { display: 'flex', ...style }, children: children.flat().filter(c => c !== null && c !== false && c !== undefined) } });

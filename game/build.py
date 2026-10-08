@@ -140,20 +140,25 @@ def build_site():
     loader = ("var VO;\n"
               f"fetch('/game/{vo_name}').then(r => r.json()).then(j => {{ VO = j; "
               "try { if (A.ctx) { A.voLoading = false; loadVO(); } } catch (e) {} }).catch(() => {});\n")
-    script = strip_debug(loader + THREE_SITE + code)
+    script = escape_js(strip_debug(loader + THREE_SITE + code))
+    # the game code is its own file (hashed, so the CDN can cache it for good); the page is a small shell
+    app_name = 'app.%s.js' % hashlib.sha256(script.encode()).hexdigest()[:12]
     shell = '<!doctype html>\n<html lang="en">\n<meta charset="utf-8">\n<!--MR_HEAD-->\n' + head
-    page = shell + '<script type="module">\n' + escape_js(script) + rd('shell_tail.html')
+    page = (shell + '<link rel="modulepreload" href="/vendor/three-0.160.0.module.js">\n'
+            f'<script type="module" src="/game/{app_name}"></script>\n')
     for tok in ('__lethe', '__efs', '/*DEBUG*/', 'cdn.jsdelivr.net'):
-        assert tok not in page, f'{tok} leaked into the site build'
+        assert tok not in page and tok not in script, f'{tok} leaked into the site build'
     out = os.path.join(DIST, 'site')
     os.makedirs(out, exist_ok=True)
     for f in os.listdir(out):
-        if f.startswith('vo.') and f.endswith('.json') and f != vo_name: os.remove(os.path.join(out, f))
+        if (f.startswith('vo.') and f.endswith('.json') and f != vo_name) or (f.startswith('app.') and f.endswith('.js') and f != app_name):
+            os.remove(os.path.join(out, f))
     open(os.path.join(out, 'play.html'), 'w', encoding='ascii').write(page)
+    open(os.path.join(out, app_name), 'w', encoding='ascii').write(script)
     open(os.path.join(out, vo_name), 'w', encoding='ascii').write(vo_txt)
-    json.dump({'vo': vo_name, 'mysteries': mysteries_json()},
+    json.dump({'vo': vo_name, 'app': app_name, 'mysteries': mysteries_json()},
               open(os.path.join(out, 'rooms.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
-    print(f'wrote {out}/play.html ({len(page):,} bytes), {vo_name} ({len(vo_txt):,} bytes), rooms.json')
+    print(f'wrote {out}/play.html ({len(page):,} bytes), {app_name} ({len(script):,} bytes), {vo_name} ({len(vo_txt):,} bytes), rooms.json')
 
 def check():
     page = build('prod')

@@ -446,9 +446,9 @@ footer.site { padding-block: 96px 64px; border-top: 1px solid var(--line); }
 <nav class="nav" id="nav" aria-label="Main">
   <div class="wrap">
     <div class="nav-left">
-      <a class="logo" href="#top" aria-label="Mystery Rooms, back to top">
+      <a class="logo" href="#top" aria-label="Deadbolt, back to top">
         <svg class="mark" viewBox="0 0 22 22" aria-hidden="true"><rect x="4" y="2" width="14" height="19" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="5.6" y="3.6" width="10.8" height="17.4" fill="#f0c27a" opacity=".85"/><rect class="lf" x="5.6" y="3.6" width="10.8" height="17.4" fill="currentColor"/><circle cx="14.2" cy="12.4" r=".9" fill="#0b0a09"/></svg>
-        <span>Mystery Rooms</span>
+        <span>Deadbolt</span>
       </a>
       <div class="nav-links"><a href="#how">How it works</a><a href="#rooms">The rooms</a><a href="#faq">Questions</a></div>
     </div>
@@ -520,8 +520,8 @@ footer.site { padding-block: 96px 64px; border-top: 1px solid var(--line); }
           <div class="hud" aria-hidden="true">
             <img src="/art/tik.jpg" alt="">
             <span class="ret"></span>
-            <span class="pr"><b>Wooden crate</b><kbd>E</kbd>Drag it</span>
-            <span class="inv"><em>Pockets</em><span>Matches</span><span class="new">Bowl of salt</span><span>Bolo</span></span>
+            <span class="pr"><b>Old trunk</b><kbd>E</kbd>Open it</span>
+            <span class="inv"><em>Pockets</em><span>Torch</span><span class="new">Brass key</span><span>Torn note</span></span>
           </div>
         </div>
         <div class="txt"><h4>You get out with your hands</h4><p>Pick things up, carry them, drag furniture, climb, crouch, light the lamp. Look closely at everything: the answer is always somewhere in the room.</p></div>
@@ -554,12 +554,12 @@ footer.site { padding-block: 96px 64px; border-top: 1px solid var(--line); }
       <article class="card">
         <div class="panel">
           <div class="mock hints">
-            <h5>Light the lamp <small>The Lamp Room</small></h5>
+            <h5>Open the cellar door <small>An example</small></h5>
             <ol>
-              <li><span class="t">The keeper left his coat on the hook.</span></li>
-              <li><span class="t">There are matches in it, but the burner needs paraffin under pressure.</span></li>
-              <li class="hidden"><span class="t">Pump the paraffin tank until the needle reaches the red.</span><button class="rv" type="button">Show hint 3</button></li>
-              <li class="hidden"><span class="t">Take the matches, pump the tank to the red, then light the lamp.</span><button class="rv" type="button">Show the answer</button></li>
+              <li><span class="t">Look closely at everything near the door.</span></li>
+              <li><span class="t">One thing in this room isn't where it belongs.</span></li>
+              <li class="hidden"><span class="t">It's the thing you walked straight past.</span><button class="rv" type="button">Show hint 3</button></li>
+              <li class="hidden"><span class="t">In a real room, the last hint is the answer.</span><button class="rv" type="button">Show the answer</button></li>
             </ol>
           </div>
         </div>
@@ -571,7 +571,7 @@ footer.site { padding-block: 96px 64px; border-top: 1px solid var(--line); }
             <div class="top"><div><div class="rt">Mystery #9 · El Tío</div><div class="rs">Escaped in 31:20 · 2 hints</div></div><span class="pill">Example</span></div>
             <div class="sqs" aria-label="Seven puzzles: five solved alone, one with hints, one answer taken"><i class="l0"></i><i class="l0"></i><i class="l1"></i><i class="l0"></i><i class="l2"></i><i class="l0"></i><i class="l0"></i></div>
             <div class="legend"><span><i class="l0"></i>Solved alone</span><span><i class="l1"></i>With hints</span><span><i class="l2"></i>Took the answer</span></div>
-            <div class="share" id="shareTxt">Mystery Rooms #9 · El Tío
+            <div class="share" id="shareTxt">Deadbolt #9 · El Tío
 Escaped in 31:20 · 2 hints
 🟩🟩🟨🟩🟥🟩🟩</div>
             <button class="btn btn-sm" type="button" id="copyBtn">Copy result</button>
@@ -616,7 +616,7 @@ Escaped in 31:20 · 2 hints
   <div class="wrap">
     <div class="footer-top">
       <div class="footer-col">
-        <span class="logo"><svg class="mark" viewBox="0 0 22 22" aria-hidden="true"><rect x="4" y="2" width="14" height="19" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="5.6" y="3.6" width="10.8" height="17.4" fill="#f0c27a" opacity=".85"/><rect class="lf" x="5.6" y="3.6" width="10.8" height="17.4" fill="currentColor"/></svg><span>Mystery Rooms</span></span>
+        <span class="logo"><svg class="mark" viewBox="0 0 22 22" aria-hidden="true"><rect x="4" y="2" width="14" height="19" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="5.6" y="3.6" width="10.8" height="17.4" fill="#f0c27a" opacity=".85"/><rect class="lf" x="5.6" y="3.6" width="10.8" height="17.4" fill="currentColor"/></svg><span>Deadbolt</span></span>
         <span class="muted">Horror escape rooms you play in your browser.</span>
       </div>
       <div class="footer-col" id="footRooms"><span class="label">Newest rooms</span></div>
@@ -907,7 +907,7 @@ function fillRoom(r) {
   $('#rKeys').textContent = touch
     ? 'Hold your phone sideways · Thumbstick to walk · Drag to look · Headphones recommended'
     : 'WASD to move · Mouse to look · E to use · H for hints · Headphones recommended';
-  document.title = `${r.title} · Mystery Rooms`;
+  document.title = `${r.title} · Deadbolt`;
 }
 function showRoom() {
   inRoom = true;
@@ -920,7 +920,7 @@ async function leave() {
   busy = true; inRoom = false;
   stopDrone();
   room.classList.remove('show');
-  document.title = 'Mystery Rooms';
+  document.title = 'Deadbolt';
   await wait(reduce ? 50 : 380);
   room.hidden = true;
   if (lastDoor && !reduce) {

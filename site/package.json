@@ -1,17 +1,22 @@
 {
-  "name": "mystery-rooms-site",
+  "name": "deadbolt-site",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
-    "start": "node src/server.js",
-    "migrate": "node src/migrate.js",
-    "dev": "node --watch src/server.js"
+    "build": "python3 ../game/build.py site && node tools/prepare.mjs",
+    "migrate": "MIGRATE=1 node src/migrate.js",
+    "vercel-build": "npm run build && npm run migrate",
+    "dev": "npm run build && node src/local.js",
+    "start": "node src/local.js"
   },
   "dependencies": {
     "@fontsource/geist-sans": "5.3.0",
     "@hono/node-server": "2.1.4",
     "@resvg/resvg-js": "2.6.2",
+    "@vercel/functions": "^3.9.11",
     "better-auth": "1.7.7",
     "hono": "4.13.13",
     "pg": "8.23.1",

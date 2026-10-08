@@ -1,116 +1,175 @@
-# Putting Mystery Rooms on your own server
+# Putting Deadbolt online (Vercel + Neon)
 
-The site runs on one DigitalOcean server in Bangalore, with Cloudflare in front. Every push to `main` on GitHub deploys the live site; every push to `staging` deploys `staging.<your-domain>`, which only your Google account can open. Setting it up takes about two hours of clicks, once.
+The site runs on Vercel, and its data lives in a Neon Postgres database. Both have free plans. Every push to `main` on GitHub updates the live site. Every push to `staging` updates `staging.<your-domain>`, which only your Google account can open. Setup takes about an hour of clicks, once.
 
-**What runs where:** the server runs Caddy (HTTPS), the app (`site/`), Postgres and Umami (visitor stats) under Docker Compose (`deploy/`). GitHub builds the app image and deploys it (`.github/workflows/deploy.yml`). Google only handles the sign-in step. Cloudflare R2 holds encrypted nightly database backups.
+**What runs where**
+- **Vercel** serves the static files from its CDN: the game code, voices, three.js and art.
+- One **Vercel Function** (`site/src/server.js`) handles everything else: pages, sign-in, `/api/*`, preview cards and `/admin`.
+- **Neon** holds players, plays, events, results, shares and feedback.
+- **Google** only handles the sign-in step.
+- **GitHub Actions** makes an encrypted backup of the database every night (`.github/workflows/backup.yml`).
 
 ## What you need
 
-- A domain (about ₹800 to ₹1,500 a year for a `.com` or `.in`).
-- Accounts: GitHub, Cloudflare (free plan), DigitalOcean (needs a card), Google Cloud (free).
-- On your Mac: the GitHub CLI (`brew install gh`, then `gh auth login`).
+- A domain, about ₹800 to ₹1,500 a year for a `.com` or `.in`. You can start on the free `*.vercel.app` address and add the domain later.
+- Accounts on:
+  - GitHub (the `deadbolt` repo);
+  - Vercel (sign up with GitHub; the Hobby plan is free);
+  - Google Cloud (free).
+- `openssl` on your Mac, which is already there, to make random secrets.
 
-## 1. Put the code on GitHub
+## 1. The code on GitHub
 
-Unzip this over your `mystery-rooms` repo folder (it adds `site/`, `deploy/`, `.github/` and this file, and updates `game/`), then:
+The repo needs this code on `main`, plus a `staging` branch:
 
 ```
-cd mystery-rooms
-git add -A && git commit -m "Self-hosted site"
 git push origin main
 git push origin main:staging
 ```
 
-The first deploy run will fail with "secret DOMAIN is not set". That's expected until step 5.
+## 2. The Vercel project
 
-If the repo isn't on GitHub yet, follow `PORTING.md` step 1 first.
+1. Go to [vercel.com/new](https://vercel.com/new) and **import** the `deadbolt` repo.
+2. **Root Directory:** click **Edit** and choose `site`. Vercel should detect the framework as **Hono**. Leave the build and output settings as they are; `site/vercel.json` sets them.
+3. Click **Deploy**. This first build fails at the `migrate` step, because there is no database yet. That's expected.
+4. Open **Settings > Build and Deployment** and check that **Include files outside the root directory in the Build Step** is on. It is on by default, and the build needs it to reach `game/`.
 
-## 2. Domain and Cloudflare
+## 3. The database
 
-1. Buy the domain anywhere (Cloudflare's own registrar sells many endings at cost).
-2. In Cloudflare: **Add a domain**, pick the **Free** plan, and change the nameservers at your registrar to the two Cloudflare gives you.
-3. **SSL/TLS > Overview:** set the mode to **Full (strict)**.
-4. **SSL/TLS > Origin Server > Create Certificate:** keep "RSA" and the hostnames `yourdomain` and `*.yourdomain`, 15 years. Save the certificate as `origin.pem` and the private key as `origin.key` on your Mac. The key is shown only once.
-5. **Caching > Cache Rules > Create rule** named "Game files": when *URI Path* starts with `/game/`, or starts with `/vendor/`, or starts with `/art/`, or starts with `/og/`, then **Eligible for cache**, Edge TTL "Use cache-control header if present". This keeps the 4.5 MB of voices and three.js on Cloudflare's edge instead of your server.
+1. In the project, open **Storage > Create Database > Neon**.
+2. Choose the region **Singapore** (`aws-ap-southeast-1`). It's the closest to India, and the function runs in Singapore too (`regions` in `vercel.json`).
+3. Choose the free plan and name the database `deadbolt`.
+4. When it asks which environments to connect, tick **Production** and **Development**. Leave **Preview** and any "branch per preview deployment" option off; staging gets its own database in step 7.
 
-## 3. The server
-
-1. Make a key for GitHub to log in with:
-   ```
-   ssh-keygen -t ed25519 -f ~/.ssh/mystery-rooms-deploy -N "" -C github-deploy
-   ```
-   If you don't have a key of your own yet, run `ssh-keygen -t ed25519` too.
-2. DigitalOcean > **Create > Droplets**:
-   - Region **Bangalore (BLR1)**, image **Ubuntu 24.04 LTS**.
-   - **Basic > Regular**, **$24/mo (2 vCPU, 4 GB)**. ($12/mo, 2 GB, is enough to start; you can resize later.)
-   - **Authentication > SSH keys:** add both public keys (`cat ~/.ssh/mystery-rooms-deploy.pub` and `cat ~/.ssh/id_ed25519.pub`).
-   - **Backups:** weekly, if you want whole-server snapshots too (adds 20%).
-   - **Advanced options > Add initialization scripts:** paste all of `deploy/cloud-init.yaml`.
-   - Hostname `mystery-rooms`, then **Create Droplet**. Note its IP address.
-3. Wait about five minutes for the setup script, then check: `ssh deploy@<ip> docker ps` should print an empty table.
-4. **Networking > Firewalls > Create Firewall** (recommended): inbound SSH (22) from all addresses (GitHub's deploy machines change IPs; logins are key-only), HTTP (80) and HTTPS (443) only from Cloudflare's addresses at [cloudflare.com/ips](https://www.cloudflare.com/ips/). Apply it to the Droplet.
-5. Back in Cloudflare **DNS > Records**, add four **A** records pointing at the Droplet's IP, all **Proxied** (orange cloud): `@`, `www`, `staging`, `stats`.
+Vercel then adds `DATABASE_URL` (pooled, which the app uses) and `DATABASE_URL_UNPOOLED` (direct, which the migrations use) to the project by itself.
 
 ## 4. Google sign-in
 
-In [console.cloud.google.com](https://console.cloud.google.com), signed in as you:
+At [console.cloud.google.com](https://console.cloud.google.com), signed in as you:
 
-1. Create a project called **Mystery Rooms**.
-2. Open **Google Auth Platform** and click **Get started**: app name "Mystery Rooms", your support email, audience **External**, your contact email.
-3. **Branding:** home page `https://yourdomain`, privacy policy `https://yourdomain/privacy`, terms `https://yourdomain/terms`, authorized domain `yourdomain`. A logo is optional (`site/public/favicon.svg`, exported as a 120×120 PNG, works).
-4. Verify the domain in [Google Search Console](https://search.google.com/search-console) with the same Google account: choose **Domain**, and add the TXT record it gives you in Cloudflare DNS.
-5. **Clients > Create client**, type **Web application**:
-   - Authorized JavaScript origins: `https://yourdomain` and `https://staging.yourdomain`
-   - Authorized redirect URIs: `https://yourdomain/api/auth/callback/google` and `https://staging.yourdomain/api/auth/callback/google`
-   - Copy the client ID and secret.
-6. **Data access:** leave it as it is. The site only asks for name, email and profile picture, which need no review.
-7. **Audience > Publish app**, so anyone can sign in (in "Testing", only listed test users can).
-8. **Branding > Verify branding**, then **Publish branding**. The automatic check usually takes minutes; a manual review takes 2 to 3 business days. Sign-in works meanwhile.
+1. Create a project called **Deadbolt**.
+2. Open **Google Auth Platform > Get started** and fill in:
+   - app name "Deadbolt";
+   - your support email;
+   - audience **External**;
+   - your contact email.
+3. **Branding:** fill in:
+   - home page `https://yourdomain`;
+   - privacy policy `https://yourdomain/privacy`;
+   - terms `https://yourdomain/terms`;
+   - authorized domain `yourdomain`.
+4. Verify the domain in [Google Search Console](https://search.google.com/search-console) with the same Google account: choose **Domain**, then add the TXT record it gives you at your domain's DNS.
+5. **Clients > Create client**, with type **Web application**:
+   - Authorized JavaScript origins: `https://yourdomain` and `https://staging.yourdomain`.
+   - Authorized redirect URIs: `https://yourdomain/api/auth/callback/google` and `https://staging.yourdomain/api/auth/callback/google`.
+   - Copy the client ID and the secret.
+6. **Data access:** leave it as it is. The site asks only for name, email and profile picture, which need no review.
+7. **Audience > Publish app**, so anyone can sign in. While the app is in "Testing", only listed test users can.
+8. **Branding > Verify branding**, then **Publish branding**. The automatic check usually takes minutes, and a manual review 2 to 3 business days. Sign-in works in the meantime.
 
-## 5. Secrets
+If you start on the `vercel.app` address, use `https://<project>.vercel.app` in place of `https://yourdomain` above. Skip steps 3 and 4 until you have the domain.
 
-From the repo folder on your Mac:
+## 5. Settings (environment variables)
 
-```
-bash deploy/setup-secrets.sh
-```
+Open **Vercel > project > Settings > Environment Variables**. Add each of these for **Production** and mark it **Sensitive**:
 
-It asks for the domain, the Droplet's IP, the deploy key (`~/.ssh/mystery-rooms-deploy`), the Google client ID and secret, your admin email, a contact email and the two Cloudflare certificate files, and generates the rest. **It prints a backup passphrase once: save it in your password manager.** You need it to restore a backup.
+| Name | Value |
+|---|---|
+| `BETTER_AUTH_SECRET` | the output of `openssl rand -base64 32` |
+| `GOOGLE_CLIENT_ID` | from step 4.5 |
+| `GOOGLE_CLIENT_SECRET` | from step 4.5 |
+| `ADMIN_EMAILS` | your Gmail address. To add more, separate them with commas. These addresses can open `/admin` and staging. |
+| `CONTACT_EMAIL` | the address shown on the privacy page |
+| `PUBLIC_URL` | `https://yourdomain` |
+| `CRON_SECRET` | the output of `openssl rand -hex 24`. Vercel's nightly tidy-up job sends it, and nobody else can trigger the job without it. |
+| `REQUIRE_LOGIN` | optional. `true` makes a Google sign-in necessary to play, not just to save results. Leave it unset to let guests play. |
 
-## 6. Deploy
+Then add these for **Preview** only, with **Git branch** set to `staging`:
 
-GitHub > **Actions > deploy > Run workflow** on `main` (about five minutes), then again on `staging`. Then:
+| Name | Value |
+|---|---|
+| `BETTER_AUTH_SECRET` | a second `openssl rand -base64 32` |
+| `GOOGLE_CLIENT_ID` | the same as production |
+| `GOOGLE_CLIENT_SECRET` | the same as production |
+| `ADMIN_EMAILS` | the same as production |
+| `PUBLIC_URL` | `https://staging.yourdomain` |
+| `DATABASE_URL` | from step 7 |
+| `DATABASE_URL_UNPOOLED` | from step 7 |
 
-- `https://yourdomain` shows the corridor of doors. Sign in from the top right.
-- `https://yourdomain/admin` is the dashboard (only `ADMIN_EMAILS`).
-- `https://staging.yourdomain` asks you to sign in, and lets only you in.
+Every preview deployment, staging included, lets in only `ADMIN_EMAILS`. The code does this by itself, so there is no switch to forget.
 
-## 7. Visitor stats (Umami)
+## 6. The domain
 
-1. Open `https://stats.yourdomain` and log in as `admin` / `umami`. **Change the password at once** (Settings > Profile).
-2. **Settings > Websites > Add website** (your domain), and copy its **Website ID**.
-3. `gh secret set UMAMI_WEBSITE_ID`, paste it, then re-run the deploy.
+1. Go to **Settings > Domains > Add** and add `yourdomain`. Accept the suggestion to redirect `www.yourdomain` to it.
+2. At your registrar, add the DNS records Vercel shows: usually an **A** record for `@` and a **CNAME** for `www`. HTTPS turns on by itself within minutes.
+3. **Add** `staging.yourdomain` as well. Open it, choose **Connect to an environment > Preview**, and set the Git branch to `staging`. Add the **CNAME** Vercel shows.
 
-## 8. Backups (recommended)
+## 7. The staging database
 
-1. Cloudflare > **R2 > Create bucket** `mystery-rooms-backups`.
-2. **R2 > Manage API tokens > Create API token:** "Object Read & Write", limited to that bucket. Copy the access key ID, the secret access key and your account ID.
-3. Run `bash deploy/setup-secrets.sh` again, fill in the four R2 questions (Enter skips the rest), and re-run the deploy.
+1. Go to **Vercel > Storage**, click the `deadbolt` database, then **Open in Neon**.
+2. Open **Branches > Create branch**. Name it `staging`, with parent `main`. It starts as a copy of the live data at that moment.
+3. On the new branch, click **Connect** and copy two strings:
+   - the **pooled** one, which has `-pooler` in the host, for `DATABASE_URL`;
+   - the direct one (turn **Connection pooling** off) for `DATABASE_URL_UNPOOLED`.
+4. Paste both into the Preview (`staging`) settings from step 5.
 
-Backups run at 2:30 a.m. India time. The next day, `ssh deploy@<ip> tail /opt/mystery-rooms/backup.log` should show two files.
+## 8. Deploy
+
+1. **Production:** open **Deployments**, then on the failed first deployment choose **⋯ > Redeploy**. It takes about two minutes. The build log shows "Database schema mismatch" followed by "auth tables ready". That's the sign-in tables being created, and it happens only once.
+2. **Staging:** push anything to `staging`, or redeploy its latest deployment.
+
+Then check that:
+- `https://yourdomain` shows the corridor of doors, and **Sign in** at the top right works;
+- `https://yourdomain/admin` shows the dashboard, for `ADMIN_EMAILS` only;
+- `https://yourdomain/healthz` says `{"ok":true,...}`;
+- `https://staging.yourdomain` asks you to sign in, and lets only you in. Vercel may ask you to log in to Vercel first; that's its own protection for preview deployments.
+- Pasting `https://yourdomain/m/tio` into WhatsApp shows the room's preview card.
+
+## 9. Backups
+
+Neon keeps its own short history: on the free plan you can restore to any moment in the last 6 hours. For anything older, the nightly GitHub backup keeps 30 days.
+
+1. Make a passphrase with `openssl rand -base64 24` and **save it in your password manager**. A backup can't be opened without it.
+2. Go to **GitHub > repo > Settings > Secrets and variables > Actions > New repository secret** and add two secrets:
+   - `BACKUP_DATABASE_URL`: the **direct** (unpooled) connection string of Neon's `main` branch. Neon > Connect, with **Connection pooling** off.
+   - `BACKUP_PASSPHRASE`: the passphrase from step 1.
+3. Go to **Actions > backup > Run workflow** to test it. The run ends with an artifact called `deadbolt-db-<date>`.
+
+It then runs every night at 2:30 a.m. India time. The files are encrypted, so they're safe even if the repo is public.
 
 ## Day to day
 
-- **A new room:** Claude builds it, adds its door (`site/ROOMS.md`), and pushes to `staging`. Play it on `staging.yourdomain`, then put it live: `git checkout main && git merge staging && git push`.
-- **Logs:** `ssh deploy@<ip> 'cd /opt/mystery-rooms && docker compose logs --tail 100 app'`
-- **Roll back:** Actions > deploy > open an earlier successful run on `main` > **Re-run all jobs**. A deploy whose new version fails its health check rolls itself back.
-- **Make sign-in required to play:** `gh secret set REQUIRE_LOGIN` with `true`, then re-run the deploy.
-- **Restore a backup:** `ssh deploy@<ip>`, `cd /opt/mystery-rooms`, `./restore.sh` lists the backups, and `./restore.sh daily/<file>` restores one (it asks for the passphrase).
+- **A new room:** Claude builds it, adds its door (`site/ROOMS.md`), and pushes to `staging`. Play it on `staging.yourdomain`, then put it live:
+  ```
+  git checkout main && git merge staging && git push
+  ```
+- **Logs:** Vercel > project > **Logs**. Filter by `/api/` or by errors.
+- **Roll back:** Vercel > **Deployments**, pick an earlier production deployment, then **⋯ > Instant Rollback**. It takes seconds. Database changes are not rolled back; they only ever add tables and columns.
+- **Make sign-in necessary to play:** set `REQUIRE_LOGIN` to `true` for Production, then redeploy.
+- **Restore from the last 6 hours:** Neon > **Restore**, then pick the branch and the time.
+- **Restore an older backup:**
+  1. Download the artifact from the backup run on GitHub and unzip it.
+  2. Decrypt it and restore it into a new Neon branch first, to check it:
+     ```
+     openssl enc -d -aes-256-cbc -pbkdf2 -in deadbolt-<date>.dump.enc -out deadbolt.dump   # asks for the passphrase
+     pg_restore --clean --if-exists --no-owner -d "<direct connection string>" deadbolt.dump
+     ```
+     `pg_restore` comes with `brew install libpq` and needs version 18 or later.
+  3. Once the data looks right, restore it into `main` the same way.
+
+## Limits and cost
+
+- **Vercel Hobby:** free, for non-commercial use.
+  - Each month it includes 100 GB of transfer, 1 million function calls and 4 hours of function CPU.
+  - A play loads about 6 MB from the CDN the first time, mostly voices. After that, browsers keep it cached for a year.
+  - If Deadbolt starts making money (ads, paid rooms, sponsors), Vercel's terms need the **Pro** plan, at $20 a month.
+- **Neon free:** one project with a small database and limited compute hours. It sleeps when nobody plays, and wakes in about half a second. The tables are small, and a year of plays fits easily. Vercel > Storage shows usage; Neon's paid plan starts at about $5 a month if you outgrow it.
+- **Total:** about ₹100 a month, which is the domain.
 
 ## Good to know
 
-- `POSTGRES_PASSWORD` can't be changed after the first deploy: the database keeps the one it was created with.
-- On the very first start the app logs "Database schema mismatch", followed by "auth tables ready". That's the sign-in tables being created.
-- Progress players had on the old claude.ai link doesn't carry over: browsers keep it per site address.
-- If Google says `redirect_uri_mismatch`, the redirect URI in step 4.5 doesn't exactly match the address you're on.
-- Cost: about $29 a month ($24 server, $4.80 weekly server backups, ~$1 domain). Cloudflare, R2 under 10 GB, Google sign-in and Umami cost nothing.
+- The nightly tidy-up runs once a day, some time between 2:45 and 3:45 a.m. India time. On Hobby, Vercel picks the minute. It rolls events older than 13 months into daily totals and deletes expired sign-ins.
+- If Google says `redirect_uri_mismatch`, the redirect URI from step 4.5 doesn't exactly match the address you're on, or `PUBLIC_URL` is wrong.
+- If the build says it can't find `../game/build.py`, the setting from step 2.4 is off.
+- Progress players made on the old claude.ai link doesn't carry over, because browsers keep it per site address.
+- Earlier VPS deploy files (Docker, Caddy, DigitalOcean) are in git history (commit `5acbaac`), in case you ever want to move off Vercel.

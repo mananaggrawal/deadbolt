@@ -3,7 +3,7 @@
    them all; each has its own title screen, game and end page. Replays are
    allowed, and your first escape is the result that counts.
    ===================================================================== */
-const SERIES = { name: 'Mystery Rooms', tagline: 'A new horror escape room every day. The same room for everybody.' };
+const SERIES = { name: 'Deadbolt', tagline: 'A new horror escape room every day. The same room for everybody.' };
 // Add each new mystery here with the local date it opens. Dates are compared in the player's own time zone.
 const MYSTERIES = [
   { n: 1, id: '406', title: 'Dead Air', date: '2026-09-26', place: 'Pinecrest Motor Lodge', era: '30 October 1983', theme: 'tv',

@@ -7,7 +7,7 @@ export const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '
 // meta tags, favicon, analytics and the site client, shared by every page
 export function headTags({ title, description, path = '/', image = '/og/site.png', page = 'site', room = null, noindex = false }) {
   const url = cfg.baseURL + path, img = image.startsWith('http') ? image : cfg.baseURL + image;
-  const mrCfg = { version: cfg.version, requireLogin: cfg.requireLogin, page, room };
+  const mrCfg = { version: cfg.version, requireLogin: cfg.requireLogin, page, room, siteName: cfg.siteName };
   return `<title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
 <link rel="canonical" href="${esc(url)}">
@@ -25,7 +25,6 @@ ${noindex ? '<meta name="robots" content="noindex">' : ''}
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <link rel="manifest" href="/manifest.webmanifest">
-${cfg.umami.src && cfg.umami.websiteId ? `<script defer src="${esc(cfg.umami.src)}" data-website-id="${esc(cfg.umami.websiteId)}"></script>` : ''}
 <script>window.MR_CFG=${JSON.stringify(mrCfg).replace(/</g, '\\u003c')};</script>
 <script src="/mr.js?v=${esc(cfg.version)}"></script>`;
 }
@@ -105,7 +104,7 @@ export function privacyPage() {
 <li>Your progress and results are saved in your own browser (local storage), not on our server.</li>
 <li>Your browser gets a random ID so we can count plays. It isn't linked to your name or email.</li>
 <li>While you play we record what happens in each room: when you start, which puzzles you finish, hints you take, wrong guesses, your time, and whether you escaped. We also record your type of device (phone or computer, and its browser) and your country. We don't store your IP address.</li>
-<li>Our visitor statistics (which pages are visited and where visitors came from) use Umami, which sets no cookies.</li>
+<li>We count page visits and which site a visitor came from ourselves. There are no third-party trackers or advertising cookies.</li>
 </ul>
 <h2>If you sign in with Google</h2>
 <ul>
@@ -119,7 +118,7 @@ export function privacyPage() {
 <p>To run the game, keep your results across devices, make share links work, and see which rooms are too hard, too easy or broken so we can fix them. Nothing is used for advertising.</p>
 <h2>Where it's kept, and for how long</h2>
 <ul>
-<li>On our own server in Bangalore, India (DigitalOcean), behind Cloudflare. Backups are encrypted and kept for up to 12 months.</li>
+<li>The site runs on Vercel and the database on Neon (Postgres). Database backups are encrypted and kept for 30 days.</li>
 <li>Play-by-play records are kept for 13 months, then reduced to daily totals with nothing that identifies anyone.</li>
 <li>Account data is kept until you delete your account.</li>
 </ul>
