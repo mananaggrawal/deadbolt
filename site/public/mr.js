@@ -450,7 +450,7 @@
         <textarea id="mrTxt" maxlength="2000" placeholder="Optional. A line or two is plenty"${face ? ' autofocus' : ''}></textarea>
         <button class="b" type="button" id="mrSend">Send</button>
       </div>
-      <p class="fine">${room ? 'We attach the room and the step you were on.' : 'Every message is read.'}</p>`, el => {
+      ${room ? '<p class="fine">We attach the room and the step you were on.</p>' : ''}`, el => {
       const more = el.querySelector('#mrMore'), txt = el.querySelector('#mrTxt'), send = el.querySelector('#mrSend');
       el.querySelector('.faces').onclick = e => {
         const b = e.target.closest('.face'); if (!b) return;
@@ -468,7 +468,7 @@
         send.disabled = true; sent = true;
         post(txt.value.trim())
           .then(() => {
-            el.querySelector('.box').innerHTML = `<h2>Thank you</h2><p>${txt.value.trim() ? 'Got it. Every message is read.' : 'Noted. That helps more than you’d think.'}</p><button class="b" type="button" id="mrDone" autofocus>Close</button>`;
+            el.querySelector('.box').innerHTML = `<h2>Thank you</h2><p>${txt.value.trim() ? 'Got it, thanks.' : 'Noted. That helps more than you’d think.'}</p><button class="b" type="button" id="mrDone" autofocus>Close</button>`;
             el.querySelector('#mrDone').onclick = closeModal; el.querySelector('#mrDone').focus();
           })
           .catch(() => { sent = false; send.disabled = false; send.textContent = 'Couldn’t send. Try again'; });
