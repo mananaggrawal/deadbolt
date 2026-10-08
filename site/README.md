@@ -54,7 +54,7 @@ Every Share button (top bar, the bottom of the page, the footer, the account men
 
 - Each person (signed in, or a guest's browser) gets one link per room, one for the site, and one per result, kept in `shares` with its `kind` (`room`, `site`, `result`) and the place it was first shared from (`surface`). Results use `/r/<code>`; rooms and the site use `/i/<code>`, which goes on to that room (or the front page).
 - Each app adds `?via=` (`wa`, `tg`, `x`, `fb`, `em`, `cp` copied, `sh` share sheet).
-- Events: `share_open` (panel opened), `share_click` (an app chosen), `share_visit` (someone arrived through a link). A browser keeps the first link it arrived through for 30 days (`players.from_share`, `from_via`), and its plays carry it (`plays.from_share`, `from_via`), so the dashboard can show visitors, new players, plays, sign-ups and escapes per app, per room, per place and per person.
+- Events: `share_open` (panel opened), `share_click` (an app chosen), `share_visit` (someone arrived through a link). A browser keeps the first link it arrived through for 30 days (`players.from_share`, `from_via`), and its plays carry it (`plays.from_share`, `from_via`), so the dashboard's Sharing section can show times shared, visitors and players from links, and the app shared on most. The `sharing.csv` download has every share event (place, app, link) for anything deeper.
 
 ## Phones
 

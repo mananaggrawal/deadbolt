@@ -105,7 +105,8 @@ function describe(e) {
     case 'room_escape': return `<span class="good">escaped</span> ${room}${d.seconds ? ` in ${fmtTime(d.seconds)}` : ''}`;
     case 'room_quit': return `left ${room} on puzzle ${step ?? '?'}`;
     case 'page_hide': return `switched away from ${room || 'the site'}`;
-    case 'share_click': return `shared ${room || 'Deadbolt'}`;
+    case 'share_click': return `shared ${d.kind === 'site' || !room ? 'Deadbolt' : room}${d.kind === 'result' ? ' (their result)' : ''}${CHANNEL[d.channel] ? ` <span class="muted">on ${esc(CHANNEL[d.channel])}</span>` : ''}`;
+    case 'share_visit': return `arrived through a shared link${room ? ` to ${room}` : ''}${CHANNEL[d.via] ? ` <span class="muted">from ${esc(CHANNEL[d.via])}</span>` : ''}`;
     case 'feedback_sent': return `sent feedback${d.face ? ` ${faceTag(d.face)}` : ''}${room ? ` on ${room}` : ''}`;
     case 'signin_prompt': return 'saw the sign-in dialog';
     case 'signin_start': return 'went to Google to sign in';
@@ -115,6 +116,8 @@ function describe(e) {
   }
 }
 // the moments worth reading in "Latest"; page views and per-puzzle steps stay on the player pages
+// the app a link was shared through (?via=); older names from before the share panel
+const CHANNEL = { wa: 'WhatsApp', tg: 'Telegram', x: 'X', fb: 'Facebook', em: 'email', cp: 'a copied link', sh: 'the phone share sheet', li: 'LinkedIn', copy: 'a copied link', manual: 'a copied link', sheet: 'the phone share sheet' };
 const HEADLINE = ['room_start', 'room_escape', 'room_quit', 'share_click', 'feedback_sent'];   // errors have their own section
 
 /* ---------- one chart: server-drawn SVG bars, a hover title on every bucket ---------- */
@@ -175,7 +178,7 @@ export async function adminPage(opts) {
   // for Today, at everyone who signed up in the last 30 days
   const cs = ctx.range === 'today' ? new Date(Date.now() - 30 * 864e5) : ctx.since;
   const host = (() => { try { return new URL(cfg.baseURL).host; } catch (e) { return ''; } })();
-  const [k, sources, back, chart, roomStats, ratings, stops, players, playerCount, feedback, errors, live] = await Promise.all([
+  const [k, sources, back, chart, roomStats, ratings, stops, players, playerCount, feedback, errors, live, apps] = await Promise.all([
     O(`select
         (select count(distinct anon_id) from events where name = 'page_view' and ts > @since and ${notMe()})::int visitors,
         (select count(*) from "user" where "createdAt" > @since and not (id = any(@xu::text[])))::int signups,
@@ -185,8 +188,8 @@ export async function adminPage(opts) {
         (select round(percentile_cont(0.5) within group (order by seconds)) from plays where outcome = 'escaped' and ended_at > @since and ${notMe()})::int med,
         (select count(*) from events where name = 'share_click' and ts > @since and ${notMe()})::int shares,
         (select count(distinct coalesce(user_id, anon_id::text)) from events where name = 'share_click' and ts > @since and ${notMe()})::int sharers,
-        (select count(distinct anon_id) from events where name = 'page_view' and (data->>'path' like '/r/%' or data->>'path' like '/i/%') and ts > @since and ${notMe()})::int share_visitors,
-        (select count(distinct coalesce(user_id, anon_id::text)) from plays where from_share is not null and started_at > @since and ${notMe()})::int share_players`, P),
+        (select count(distinct anon_id) from events where name = 'share_visit' and ts > @since and ${notMe()})::int share_visitors,
+        (select count(distinct coalesce(user_id, anon_id::text)) from plays where (from_share is not null or from_via is not null) and started_at > @since and ${notMe()})::int share_players`, P),
     R(`select data->>'ref' ref, count(distinct anon_id)::int n from events where name = 'page_view' and data->>'ref' is not null and data->>'ref' <> @host
        and ts > @since and ${notMe()} group by 1 order by 2 desc limit 3`, { ...P, host }),
     O(`with act as (select coalesce(e.user_id, pl.user_id) uid, (e.ts at time zone @tz)::date d from events e left join players pl on pl.anon_id = e.anon_id
@@ -221,6 +224,7 @@ export async function adminPage(opts) {
          count(*)::int n, max(ts) last from events where name in ('client_error', 'server_error') and ts > @since and (name = 'server_error' or ${notMe()})
        group by 1 order by 3 desc limit 10`, P),
     livePanel(opts),
+    R(`select data->>'channel' ch, count(*)::int n from events where name = 'share_click' and ts > @since and ${notMe()} group by 1 order by 2 desc limit 3`, P),
   ]);
 
   const tile = (label, v, note, word) => `<div class="tile"><span>${label}</span><b${word ? ' class="word"' : ''}>${v}</b>${note ? `<small>${note}</small>` : ''}</div>`;
@@ -247,7 +251,9 @@ export async function adminPage(opts) {
   const sharing = section('Sharing',
     tile('Times shared', num(k.shares), k.sharers ? `by ${pl(k.sharers, 'person', 'people')}` : 'nobody shared yet')
     + tile('Visitors from shared links', num(k.share_visitors), 'opened a shared link')
-    + tile('Players from shared links', num(k.share_players), 'started a room from a link'));
+    + tile('Players from shared links', num(k.share_players), 'started a room from a link')
+    + tile('Shared most on', apps[0] ? esc(CHANNEL[apps[0].ch] || apps[0].ch || '–').replace(/^a |^the /, '').replace(/^./, c => c.toUpperCase()) : '–',
+      apps[0] ? `${pl(apps[0].n, 'time')}${apps[1] ? ` · then ${esc((CHANNEL[apps[1].ch] || apps[1].ch || '').replace(/^a |^the /, ''))}` : ''}` : 'nothing shared yet', true));
 
   // rooms: plays, escapes, typical time, the puzzle where most unfinished plays stopped, rating
   const roomRows = allRooms().slice().reverse().map(m => {
@@ -277,7 +283,7 @@ export async function adminPage(opts) {
 <section id="live" class="card" data-src="/admin/live?me=${ctx.me ? 1 : 0}">${live}</section>
 ${newPeople}${playing}${comingBack}${sharing}${rooms}${playersHtml}${feedbackHtml}${problems}
 <footer class="dfoot"><a href="${q({ me: ctx.me ? '0' : '1' })}">${ctx.me ? 'Hide my own activity' : 'Show my own activity'}</a>
-<span>Download: ${['plays', 'events', 'users', 'feedback', 'shares'].map(t => `<a href="/admin/export/${t}.csv${q({ me: ctx.me ? 1 : 0 })}">${t}</a>`).join(' · ')}</span>
+<span>Download: ${['plays', 'events', 'users', 'feedback', 'shares', 'sharing'].map(t => `<a href="/admin/export/${t}.csv${q({ me: ctx.me ? 1 : 0 })}">${t}</a>`).join(' · ')}</span>
 <span>Times are India time. Bots aren't counted.${ctx.me ? '' : ' Your own activity is hidden.'}</span></footer>
 </div>
 <script>
@@ -362,7 +368,7 @@ ${fbs.length ? `<section><h2>Feedback</h2><ol class="feed">${fbs.map(f => `<li><
 /* ---------- CSV exports ---------- */
 const EXPORTS = {
   plays: `select p.id, p.room, p.user_id, u.email, p.anon_id, p.started_at, p.last_seen, p.ended_at, p.outcome, p.resumed, p.steps_total, p.steps_done, p.hints, p.wrong,
-            p.seconds, p.marks, p.first_escape, p.from_share, p.device, p.country, p.app_version
+            p.seconds, p.marks, p.first_escape, p.from_share, p.from_via, p.device, p.country, p.app_version
           from plays p left join "user" u on u.id = p.user_id where p.started_at > @since and ${notMe('p.')} order by p.started_at`,
   events: `select e.id, e.ts, e.play_id, e.anon_id, e.user_id, e.room, e.name, e.step, e.data, e.device, e.country, e.app_version
            from events e where e.ts > @since and ${notMe('e.')} order by e.id`,
@@ -373,7 +379,7 @@ const EXPORTS = {
           from "user" u left join profiles pr on pr.user_id = u.id where not (u.id = any(@xu::text[])) order by u."createdAt"`,
   feedback: `select f.id, f.created_at, f.room, f.kind, f.face, f.rating, f.difficulty, f.text, f.context, f.device, f.user_id, u.email
              from feedback f left join "user" u on u.id = f.user_id where f.created_at > @since and ${notMe('f.')} order by f.id`,
-  shares: `select code, room, user_id, seconds, hints, wrong, marks, created_at, clicks, landings, plays_started from shares
+  shares: `select code, kind, room, surface, user_id, seconds, hints, wrong, marks, created_at, clicks, landings, plays_started from shares
            where created_at > @since and ${notMe()} order by created_at`,
   sharing: `select ts, name, room, data->>'kind' kind, data->>'surface' surface, coalesce(data->>'channel', data->>'via') channel, data->>'code' code, anon_id, user_id, device, country
             from events where name in ('share_open', 'share_click', 'share_visit') and ts > @since and ${notMe()} order by ts`,
