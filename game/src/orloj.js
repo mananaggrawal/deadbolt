@@ -342,7 +342,7 @@ function buildLoft() {
   for (const sx of [-1, 1]) bev(0.05, len, 0.07, M.wood, sx * 0.19, len / 2, 0, lg, 0.008);
   for (let i = 1; i < 12; i++) { const r = cyl(0.016, 0.016, 0.38, M.wood, 0, i * len / 12, 0, lg, 8); r.rotation.z = Math.PI / 2; }
   hb('ladder', O.ladder, 0.05);
-  O.loftEdgeHit = box(0.5, 0.2, 0.3, HITMAT, LADDER.x, LOFT.y + 0.1, LOFT.z1 - 0.2, g); O.loftEdgeHit.layers.set(2);
+  O.loftEdgeHit = box(0.62, 1.0, 0.42, HITMAT, LADDER.x, LOFT.y + 0.5, LOFT.z1 - 0.21, g); O.loftEdgeHit.layers.set(2);
   buildDrum();
 }
 
@@ -1370,7 +1370,7 @@ function climbUp() {
   G.cutscene = true; sCreak(new THREE.Vector3(LADDER.x, 1.2, -0.3), 1.0, 0.1, 110); const y0 = G.yaw, p0 = { x: P.x, z: P.z };
   tween(0.5, k => { P.x = lerp(p0.x, LADDER.x, k); P.z = lerp(p0.z, LADDER.z0 + 0.35, k); G.yaw = y0 + wrapA(0 - y0) * k; G.pitch = lerp(G.pitch, 0.5, k); });
   after(0.55, () => { for (let i = 0; i < 5; i++) after(i * 0.3, () => sStep(0.14)); tween(1.5, k => { G.eye = G.eyeT = lerp(1.62, LOFT.y + 1.2, k); P.z = lerp(LADDER.z0 + 0.35, LADDER.z1 + 0.1, k); G.pitch = lerp(0.5, 0.15, k); }); });
-  after(2.1, () => { S.onLoft = true; save(); tween(0.5, k => { P.z = lerp(LADDER.z1 + 0.1, -1.0, k); P.x = lerp(LADDER.x, LADDER.x + 0.3, k); G.eye = G.eyeT = lerp(LOFT.y + 1.2, EYE_LOFT, k); G.pitch = lerp(0.15, -0.05, k); }, () => { G.cutscene = false; updatePrompt(true); if (!S.ev.loftSeen) { S.ev.loftSeen = true; save(); sayI('A low loft under the vault. A painted wooden drum fills most of it: the apostles\' house. A little door at its back. Beyond it, the two windows over the square.', 7600); } }); });
+  after(2.1, () => { S.onLoft = true; save(); tween(0.5, k => { P.z = lerp(LADDER.z1 + 0.1, -1.0, k); P.x = lerp(LADDER.x, LADDER.x + 0.3, k); G.eye = G.eyeT = lerp(LOFT.y + 1.2, EYE_LOFT, k); G.pitch = lerp(0.15, -0.05, k); }, () => { G.cutscene = false; updatePrompt(true); if (!S.ev.loftSeen) { S.ev.loftSeen = true; save(); sayI('A low loft under the vault. A painted wooden drum fills most of it: the apostles\' house. A little door at its back. Beyond it, the two windows over the square. The top of the ladder is behind you.', 8200); } }); });
 }
 function climbDown(fast) {
   if (G.cutscene && !fast) return; if (!onLoft()) return;
@@ -1774,7 +1774,7 @@ function registerInteractions() {
   inter('cup', O.cup, { name: 'Iron cupboard', enabled: floorOnly, actions: cupActions });
   inter('door', O.door, { name: 'Stair door', enabled: floorOnly, actions: doorActions, note: () => loudNote() });
   inter('sidewin', O.sideWin, { name: 'Little window', enabled: floorOnly, actions: () => [look('Old diamond panes, thick and greenish. Through them, Old Town Square under snow, the lamps, the two black spires of Týn church across the roofs. Nobody about at this hour.')] });
-  inter('ladder', O.ladder, { name: 'Ladder to the loft', reach: 2.2, enabled: floorOnly, actions: () => [{ label: 'Climb up', run: climbUp }] });
+  inter('ladder', O.ladder, { name: () => onLoft() ? 'Ladder down' : 'Ladder to the loft', reach: 2.2, enabled: () => !V.finalOut && !V.escaping, actions: () => [onLoft() ? { label: 'Climb down', run: () => climbDown() } : { label: 'Climb up', run: climbUp }] });
   inter('loftEdge', O.loftEdgeHit, { name: 'Top of the ladder', reach: 2.2, enabled: loftOnly, actions: () => [{ label: 'Climb down', run: () => climbDown() }] });
   inter('crank', O.crank, { name: 'Handwheel for the apostles', enabled: loftOnly, actions: () => [{ label: 'Turn the apostle wheel', run: openWheelView }] });
   inter('housDoor', O.housDoorHit, { name: () => V.proc ? 'The apostles, going round' : 'Little door in the drum', reach: 2.2, enabled: loftOnly, actions: housDoorActions, note: () => V.proc ? (V.strike ? 'The windows are open.' : '') : '' });
@@ -1840,6 +1840,7 @@ function endFrame(keep) {
     const cam = camera, saved = { p: cam.position.clone(), q: cam.quaternion.clone(), fov: cam.fov };
     // the next morning, from the square: the dial, the scaffold, the apostles' left window (as the square sees it) open, and a face in it
     const SK =  {};
+    
     if (!SK.dawn) { if (!T.squareDawn) T.squareDawn = tex(canv(2048, 820, (g, w, h) => paintSquare(g, w, h, true)));
     O.back.material.map = T.squareDawn; O.back.material.needsUpdate = true; } O.sky.material.color.set(0x6a88b8);
     O.shutters.forEach(s => s.rotation.y = s.userData.s * -1.9);
@@ -1919,9 +1920,10 @@ return {
   backText: 'Back in the works.',
   keys: [['Move', 'W A S D'], ['Look', 'Mouse'], ['Interact', 'E or click'], ['Other action', 'R or right-click'], ['Run', 'Shift'], ['Notebook', 'Tab'], ['Hints', 'H']],
   constrain(p, r) { constrainTo(p, r); },
+  resumed() { if (onLoft()) { G.eye = G.eyeT = EYE_LOFT; } },
   actOverride(i) { if (V.still && V.still.t > 5 && !V.still.failed) { V.still.failed = true; O.han.visible = false; lungeScare('still'); after(3.2, endStill); return true; } return false; },
   onPanelClose() { if (V.view) { const s = V.view.saved; V.view = null; G.frozen = false; P.x = s.x; P.z = s.z; G.yaw = s.yaw; G.pitch = s.pitch; G.eye = G.eyeT = s.eye; } },
-  touchExtras() { return took('phone') && !S.flags.vmPlayed && !G.cutscene ? [{ label: 'Play the voicemail', run: playVoicemail }] : []; },
+  touchExtras() { const x = []; if (took('phone') && !S.flags.vmPlayed && !G.cutscene) x.push({ label: 'Play the voicemail', run: playVoicemail }); if (onLoft() && !G.cutscene && !V.view && !V.escaping && !V.finalOut) x.push({ label: 'Climb down', run: () => climbDown() }); return x; },
   update: roomUpdate,
   preRender() {
     if (V.envDue && (!G.cutscene || V.still)) { V.envDue = false; const hide = [O.face, O.hand, O.myHand, O.han]; const was = hide.map(o => o.visible); hide.forEach(o => o.visible = false); scene.environment = null; const rt = envFromScene(new THREE.Vector3(0, 1.7, 1.0)); scene.environment = rt.texture; if (V.envRT) V.envRT.dispose(); V.envRT = rt; hide.forEach((o, i) => o.visible = was[i]); }
