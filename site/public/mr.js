@@ -568,9 +568,10 @@
     const site = CFG.siteName || 'Deadbolt', origin = location.origin;
     let text, short, subject, heading, lead = '';
     if (o.kind === 'result') {
-      text = String(o.text || '').replace(/^Mystery #/, `${site} #`);
-      short = text; subject = `I got out of ${o.title || 'a room'} on ${site}. Can you?`;
-      heading = 'Share your result'; lead = 'Your time and squares, with a link to try the same room. Nothing that gives the puzzles away.';
+      // just that you got out, and a link to the same room: no time, squares or hints
+      text = `I got out of ${o.title || 'a room'} on ${site}. Can you?`;
+      short = text; subject = text;
+      heading = 'Share your result'; lead = 'Tell your friends you got out, with a link to try the same room. Nothing that gives the puzzles away.';
     } else if (o.kind === 'room') {
       text = `${o.title}${o.n ? ` · ${site} #${o.n}` : ''}\n${o.tagline || ''}\nThink you can get out?`.replace(/\n\n/g, '\n');
       short = `${o.title} (${site}). ${o.tagline || ''} Think you can get out?`.slice(0, 230);

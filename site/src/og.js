@@ -7,7 +7,7 @@ import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
 import jpeg from 'jpeg-js';
 import { cfg } from './config.js';
-import { roomById, fmtTime, wrongWords, released } from './rooms.js';
+import { roomById, released } from './rooms.js';
 import { art as ART, fonts as FONT_B64 } from './generated/assets.js';
 
 const FONTS = [400, 500, 600].map(w => ({ name: 'Geist', data: Buffer.from(FONT_B64[w], 'base64'), weight: w, style: 'normal' }));
@@ -45,7 +45,6 @@ function card(id, ...content) {
 // the logo and name, small, at the top of room and result cards
 const lockup = () => h('div', { alignItems: 'center', gap: 14 }, door(40), h('div', { fontSize: 32, fontWeight: 500, letterSpacing: -0.4 }, cfg.siteName));
 const caps = (text, style) => h('div', { fontSize: 24, letterSpacing: 5, textTransform: 'uppercase', ...style }, text);
-const squares = (marks, size = 42) => h('div', { gap: 10 }, ...String(marks || '').split('').map(c => h('div', { width: size, height: size, borderRadius: 5, background: C.sq[+c] || C.faint })));
 const titleSize = t => (t.length > 18 ? 72 : t.length > 13 ? 86 : 104);
 
 export function siteCard() {
@@ -74,14 +73,13 @@ export function roomCard(id) {
 
 export function resultCard(share) {
   const m = roomById(share.room); if (!m) return null;
-  const n = String(share.marks || '').length;
+  const line = `Got out of ${m.title}`;
+  // the picture under a shared result link: someone got out of this room (no time, squares or hints)
   return card(m.id,
     lockup(),
-    h('div', { flexDirection: 'column', alignItems: 'center', gap: 22 },
-      caps(`Mystery #${m.n} · ${m.title}`, { color: C.lamp }),
-      h('div', { fontSize: 72, lineHeight: 1.04, letterSpacing: -1.6 }, `Escaped in ${fmtTime(share.seconds)}`),
-      n ? squares(share.marks, n > 9 ? 34 : 42) : null,
-      h('div', { fontSize: 26, color: C.ink2 }, `${share.hints} hint${share.hints === 1 ? '' : 's'} · ${wrongWords(m, share.wrong)}`)),
+    h('div', { flexDirection: 'column', alignItems: 'center', textAlign: 'center' },
+      caps(`Mystery #${m.n}`, { color: C.lamp }),
+      h('div', { fontSize: line.length > 24 ? 64 : titleSize(line), lineHeight: 1.02, letterSpacing: -2, marginTop: 18, textAlign: 'center' }, line)),
     h('div', { fontSize: 32, fontWeight: 500 }, 'Can you get out?'),
   );
 }

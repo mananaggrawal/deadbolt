@@ -232,7 +232,9 @@ with sync_playwright() as p:
     pg.evaluate("""() => { MR.emit('room_escape', { room: 'lamp', first: true, day: '2026-10-08', time: 1290, hints: 1, wrong: 0, tiers: {}, marks: [{title:'a',lvl:0},{title:'b',lvl:1},{title:'c',lvl:0}] });
                      return MR.share({ room: 'lamp', n: 2, title: 'The Lamp Room', text: 'Mystery #2 · The Lamp Room\\nEscaped in 21:30 · 1 hint\\n\U0001F7E9\U0001F7E8\U0001F7E9', time: 1290, hints: 1, wrong: 0, marks: [0,1,0] }); }""")
     links = share_links(pg)
-    check('%2Fr%2F' in links.get('wa', '') and 'Deadbolt%20%232' in links.get('wa', ''), 'result share: the message has the squares and an /r/ link')
+    wa = links.get('wa', '')
+    check('%2Fr%2F' in wa and 'I%20got%20out%20of%20The%20Lamp%20Room%20on%20Deadbolt' in wa and '%F0%9F%9F%A9' not in wa and '21%3A30' not in wa,
+          'result share: just "I got out of The Lamp Room on Deadbolt" and an /r/ link, no squares or time')
     pg.screenshot(path=f'{SHOTS}/m06-share-result.png')
     ctx.close()
 
@@ -242,14 +244,14 @@ with sync_playwright() as p:
         ctx.add_cookies([{'name': 'better-auth.session_token', 'value': COOKIE, 'url': BASE}])
         pg, logs = page_with_logs(ctx)
         pg.goto(BASE + '/admin?range=all'); pg.wait_for_timeout(1500)
-        sec = pg.locator('section', has=pg.locator('h2', has_text='Sharing'))
-        check(sec.count() == 1, 'dashboard has a Sharing section')
+        # shares are counted under Acquisition since the dashboard became standard product analytics (4ae5fe6)
+        sec = pg.locator('section', has=pg.locator('h2', has_text='Acquisition'))
+        check(sec.count() == 1, 'dashboard has an Acquisition section')
         txt = sec.inner_text() if sec.count() else ''
         check(re.search(r'Times shared\s+[1-9]', txt) is not None, f'dashboard counts shares ({txt.splitlines()[:3]})')
-        check('WhatsApp' in txt, 'dashboard names the app shared on most (WhatsApp)')
         check(pg.evaluate('document.documentElement.scrollWidth <= innerWidth + 1'), 'dashboard: no sideways scroll on a phone')
         if sec.count(): sec.scroll_into_view_if_needed(); pg.wait_for_timeout(200)
-        pg.screenshot(path=f'{SHOTS}/m07-admin-sharing.png', full_page=False)
+        pg.screenshot(path=f'{SHOTS}/m07-admin-acquisition.png', full_page=False)
         ctx.close()
     b.close()
 

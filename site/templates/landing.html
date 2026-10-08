@@ -258,6 +258,7 @@ section.block { padding-top: 152px; }
 .step p { color: var(--muted); max-width: 34ch; }
 .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px; }
 .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px; }
+@supports (grid-template-rows: subgrid) { .grid2 > .card { display: grid; grid-row: span 2; grid-template-rows: subgrid; row-gap: 20px; } }
 .card { display: flex; flex-direction: column; gap: 20px; padding: 20px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); min-width: 0; }
 .card .txt { display: flex; flex-direction: column; gap: 6px; }
 .card p { color: var(--muted); }
@@ -280,16 +281,13 @@ kbd { display: inline-block; min-width: 16px; padding: 0 5px; border: 1px solid 
 .hints .rv:hover { color: var(--ink); background: var(--tag); }
 .hints li:not(.hidden) .rv { display: none; }
 
-/* the result, as your friends get it: a sent message with the squares in it, the way Wordle results look in a chat */
-.wshare { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 14px; }
-.bubble { align-self: flex-end; max-width: 100%; background: #2b261f; color: var(--ink); border-radius: 18px 18px 4px 18px; padding: 10px 14px 7px; box-shadow: 0 12px 32px rgba(0, 0, 0, .4); font-size: 15px; line-height: 22px; }
-.bubble .msg { margin: 0; color: var(--ink); }
-.bubble .msg span { display: block; }
-.bubble .msg .emo { font: 26px/34px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; letter-spacing: 2px; margin: 6px 0 4px; white-space: nowrap; }
-.bubble .url { display: block; color: var(--lamp); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(240, 194, 122, .4); overflow-wrap: anywhere; }
-.bubble .time { display: block; text-align: right; font-size: 11px; line-height: 14px; color: var(--muted); margin-top: 2px; }
-.wkey { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px 14px; margin: 0; font-size: 12.5px; line-height: 18px; color: var(--muted); }
-.wact { display: flex; justify-content: flex-end; align-items: center; gap: 12px; }
+/* "Send to a friend": the message you share when you get out, in the same frame as the hints example */
+.sharemock { max-width: 380px; }
+.sharemock h5 { margin: 0 0 12px; font-size: 15px; font-weight: 450; display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.sharemock h5 small { font: 400 12px var(--mono); color: var(--muted); white-space: nowrap; }
+.sbox { background: var(--bg-2); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; margin-bottom: 14px; }
+.card .smsg { margin: 0; color: var(--ink); font-size: 15px; line-height: 22px; }
+.surl { display: block; margin-top: 4px; color: var(--lamp); font-size: 13.5px; line-height: 20px; overflow-wrap: anywhere; }
 
 /* corridor */
 .corridor { padding: 72px 56px 48px; border-radius: 2px; }
@@ -522,17 +520,16 @@ footer.site { padding-block: 96px 64px; border-top: 1px solid var(--line); }
       </article>
       <article class="card">
         <div class="panel">
-          <div class="wshare">
-            <div class="bubble">
-              <p class="msg" id="shareTxt"><span>Deadbolt #9 · El Tío</span><span>Escaped in 31:20 · 2 hints · 0 times caught</span><span class="emo" role="img" aria-label="Seven squares: five solved alone, one with hints, one answer taken">🟩🟩🟨🟩🟥🟩🟩</span></p>
-              <span class="url" id="shareUrl">deadbolt-pi.vercel.app/m/tio</span>
-              <span class="time">11:42 pm</span>
+          <div class="mock sharemock">
+            <h5>Send to a friend <small>An example</small></h5>
+            <div class="sbox">
+              <p class="smsg" id="shareTxt">I got out of El Tío on Deadbolt. Can you?</p>
+              <span class="surl" id="shareUrl">deadbolt-pi.vercel.app/m/tio</span>
             </div>
-            <p class="wkey"><span>🟩 Solved alone</span><span>🟨 With hints</span><span>🟥 Took the answer</span></p>
-            <div class="wact"><span class="pill">Example</span><button class="btn btn-sm" type="button" id="copyBtn">Copy result</button></div>
+            <button class="btn btn-sm" type="button" id="copyBtn">Copy message</button>
           </div>
         </div>
-        <div class="txt"><h4>Share your result</h4><p>When you get out, each puzzle becomes a square. Share them with a link to your result, and your friends can try the same room without anything given away.</p></div>
+        <div class="txt"><h4>Share your result</h4><p>When you get out, tell your friends, with a link to try the same room. Nothing that gives the puzzles away.</p></div>
       </article>
     </div>
   </section>
@@ -902,7 +899,7 @@ document.addEventListener('click', e => {
 $$('.hints .rv').forEach(b => b.onclick = () => b.parentElement.classList.remove('hidden'));
 $('#shareUrl').textContent = location.host + '/m/tio';
 $('#copyBtn').onclick = async () => {
-  const txt = $$('#shareTxt > span').map(s => s.textContent).join('\n') + '\n' + location.origin + '/m/tio';
+  const txt = $('#shareTxt').textContent + '\n' + location.origin + '/m/tio';
   try { await navigator.clipboard.writeText(txt); toast('Copied. This one is only an example.'); }
   catch (e) { const r = document.createRange(); r.selectNodeContents($('#shareTxt')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast('Selected. Press Ctrl+C or Cmd+C to copy.'); }
 };

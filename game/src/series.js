@@ -137,10 +137,9 @@ function puzzleMarks(room, tiers) {
     return { title: h.title, lvl: t === 0 ? 0 : t >= h.tiers.length ? 2 : 1 };
   });
 }
-function shareText(m, r, marks) {
-  const sq = marks.map(x => ['\u{1f7e9}', '\u{1f7e8}', '\u{1f7e5}'][x.lvl]).join('');
-  const wr = m.wrongWords ? `${r.wrong} ${m.wrongWords[r.wrong === 1 ? 0 : 1]}` : `${r.wrong} wrong guess${r.wrong === 1 ? '' : 'es'}`;
-  return `Mystery #${m.n} · ${m.title}\nEscaped in ${fmtTime(r.time)} · ${r.hints} hint${r.hints === 1 ? '' : 's'} · ${wr}\n${sq}`;
+// what you send a friend: just that you got out (no time, squares or hints)
+function shareText(m) {
+  return `I got out of ${m.title} on ${SERIES.name}. Can you?`;
 }
 let cdTimer = null;
 function nextLine() {
@@ -186,7 +185,7 @@ function showResult(m, replay) {
   if (replay) $('#endReplay').innerHTML = `A replay. Your first escape, in <b>${fmtTime(first.time)}</b>, is the result that counts and the one you share.`;
   $('#endNext').innerHTML = nextLine() + archiveLine(m);
   $('#endNext').querySelectorAll('[data-open]').forEach(b => b.onclick = () => reloadInto(b.dataset.open));
-  const text = shareText(m, first, first.marks || marks);
+  const text = shareText(m);
   $('#shareMsg').textContent = ''; $('#shareText').hidden = true;
   $('#bShare').textContent = replay ? 'Copy first result' : 'Copy result';
   $('#bShare').onclick = () => {

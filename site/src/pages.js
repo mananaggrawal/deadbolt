@@ -1,6 +1,6 @@
 // Server-rendered pages other than the landing page and the game: result pages, legal pages, the staging gate.
 import { cfg } from './config.js';
-import { roomById, fmtTime, wrongWords } from './rooms.js';
+import { roomById } from './rooms.js';
 
 export const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -81,10 +81,10 @@ ${footer ? '' : '<!--'}<footer><div class="wrap"><span><a href="/#rooms">All the
 /* ---------- /r/<code>: someone's result ---------- */
 export function resultPage(share) {
   const m = roomById(share.room);
-  const marks = String(share.marks || '').split('').map(Number);
-  const title = `Escaped ${m.title} in ${fmtTime(share.seconds)}`;
+  // what a friend sees from a shared result: that someone got out of this room, and the way in (no time, squares or hints)
+  const title = `Got out of ${m.title}`;
   const desc = `Mystery #${m.n} · ${m.place}, ${m.era}. ${m.tagline || ''}`;
-  const head = headTags({ title: `${title} · ${cfg.siteName}`, description: desc, path: `/r/${share.code}`, image: `/og/r/${share.code}.jpg`, imageAlt: `${title}: ${m.title} on ${cfg.siteName}`, page: 'result', room: m.id, noindex: true });
+  const head = headTags({ title: `${title} · ${cfg.siteName}`, description: desc, path: `/r/${share.code}`, image: `/og/r/${share.code}.jpg`, imageAlt: `${title} on ${cfg.siteName}`, page: 'result', room: m.id, noindex: true });
   const body = `
 <style>
 .res{position:relative;min-height:calc(100dvh - 76px - 120px);display:flex;align-items:center;overflow:hidden;isolation:isolate}
@@ -98,10 +98,8 @@ export function resultPage(share) {
 </style>
 <section class="res"><div class="bg"><img src="/art/${esc(m.id)}.jpg" alt=""></div>
 <div class="wrap"><div class="in">
-  <p class="eyebrow">Mystery #${m.n} &middot; ${esc(m.title)}</p>
-  <h1>Escaped in ${fmtTime(share.seconds)}</h1>
-  <div class="sqs" aria-label="${marks.length} puzzles">${marks.map(l => `<i class="l${l}"></i>`).join('')}</div>
-  <p class="meta">${share.hints} hint${share.hints === 1 ? '' : 's'} &middot; ${esc(wrongWords(m, share.wrong))}</p>
+  <p class="eyebrow">Mystery #${m.n}</p>
+  <h1>Got out of ${esc(m.title)}</h1>
   <p class="place">${esc(m.place)} &middot; ${esc(m.era)}</p>
   <p class="hook">${esc(m.hook)}</p>
   <div class="actions"><a class="btn" href="/play/${esc(m.id)}?s=${esc(share.code)}">Can you get out? Go in</a><a class="btn btn-ghost" href="/#rooms">All the rooms</a></div>
