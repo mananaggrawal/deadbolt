@@ -56,7 +56,7 @@ export function layout(head, body, { nav = true, wide = false, footer = true } =
 ${head}<style>${CSS}</style></head><body${wide ? ' class="wide"' : ''}>
 ${nav ? `<div class="wrap nav"><a class="logo" href="/">${LOGO}<span>${esc(cfg.siteName)}</span></a><span id="mrAccount"></span></div>` : ''}
 ${body}
-${footer ? '' : '<!--'}<footer><div class="wrap"><span><a href="/#rooms">All the rooms</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a>${cfg.contactEmail ? `<a href="mailto:${esc(cfg.contactEmail)}">Contact</a>` : ''}</span><span>Horror escape rooms you play in your browser.</span></div></footer>${footer ? '' : '-->'}
+${footer ? '' : '<!--'}<footer><div class="wrap"><span><a href="/#rooms">All the rooms</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a>${cfg.contactEmail ? `<a href="mailto:${esc(cfg.contactEmail)}">Contact</a>` : ''}</span><span>Horror mystery rooms you play in your browser.</span></div></footer>${footer ? '' : '-->'}
 </body></html>`;
 }
 
@@ -98,7 +98,7 @@ export function privacyPage() {
   return layout(head, `<div class="wrap"><article class="legal">
 <p class="eyebrow">Privacy</p><h1>What we keep, and why</h1>
 <p class="muted">Last updated 8 October 2026.</p>
-<p>${esc(cfg.siteName)} is a set of horror escape rooms you play in your browser. We collect as little as we can, we never sell it, and there are no ads.</p>
+<p>${esc(cfg.siteName)} is a set of horror mystery rooms you play in your browser. We collect as little as we can, we never sell it, and there are no ads.</p>
 <h2>What we keep</h2>
 <ul>
 <li>You sign in with Google to play. Google tells us your name, email address and profile picture. We don't get access to your Gmail, Drive, contacts or anything else, and we don't keep Google's access tokens.</li>

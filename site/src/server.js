@@ -143,7 +143,7 @@ function landingHtml(room) {
   const rel = R.released().map(m => m.id);
   const head = room
     ? headTags({ title: `${room.title} · ${cfg.siteName}`, description: room.tagline || room.hook, path: `/m/${room.id}`, image: `/og/m/${room.id}.png`, page: 'site', room: room.id })
-    : headTags({ title: `${cfg.siteName} · Horror escape rooms in your browser`, description: 'First-person horror escape rooms you play alone in your browser. A real place on one night, something in it that follows a rule, and one way out. Free, no download.', path: '/' });
+    : headTags({ title: `${cfg.siteName} · Horror mystery rooms in your browser`, description: 'First-person horror mystery rooms you play alone in your browser. A real place on one night, something in it that follows a rule, and one way out. Free, no download.', path: '/' });
   // the doors' words come from the game's own room list, so the corridor and the room never disagree
   const words = Object.fromEntries(R.allRooms().map(m => [m.id, { title: m.title, place: m.place, era: m.era, hook: m.hook, tagline: m.tagline, start: m.start }]));
   const data = JSON.stringify({ rel, words }).replace(/</g, '\\u003c');

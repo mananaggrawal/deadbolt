@@ -42,7 +42,7 @@ export function siteCard() {
   return frame(artPanel(last ? last.id : 'tio'), [
     brand(host()),
     h('div', { flexDirection: 'column', gap: 18 },
-      h('div', { fontSize: 22, color: C.muted, letterSpacing: 2.5, textTransform: 'uppercase' }, 'Horror escape rooms · in your browser'),
+      h('div', { fontSize: 22, color: C.muted, letterSpacing: 2.5, textTransform: 'uppercase' }, 'Horror mystery rooms · in your browser'),
       h('div', { fontSize: 52, lineHeight: 1.1, fontWeight: 400, letterSpacing: -1.1 }, 'Every room has a way out.'),
       h('div', { fontSize: 30, lineHeight: 1.3, color: C.faint }, 'Not everything in it wants you to find it.')),
     h('div', { fontSize: 24, color: C.ink2 }, `${r.length} rooms open · 20 to 40 minutes each`),
