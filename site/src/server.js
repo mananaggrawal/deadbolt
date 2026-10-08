@@ -415,14 +415,21 @@ async function admin(c) {
   c.header('Cache-Control', 'no-store'); c.header('X-Robots-Tag', 'noindex');
   return isAdmin(s) ? s : null;
 }
+// the dashboard's "show my own activity" choice, remembered for a year
+function dashOptions(c) {
+  const saved = (/(?:^|;\s*)db_me=([01])/.exec(c.req.header('cookie') || '') || [])[1];
+  const opts = adminOptions(c.req.query(), saved), want = opts.me ? '1' : '0';
+  if (want !== (saved || '1')) c.header('Set-Cookie', `db_me=${want}; Path=/admin; Max-Age=31536000; SameSite=Lax; HttpOnly${cfg.baseURL.startsWith('https://') ? '; Secure' : ''}`);
+  return opts;
+}
 app.get('/admin', async c => {
   const s = await admin(c);
   if (!s) { const who = await session(c); return c.html(adminLoginPage(who && who.user.email), who ? 403 : 200); }
-  return c.html(await adminPage(adminOptions(c.req.query())));
+  return c.html(await adminPage(dashOptions(c)));
 });
 app.get('/admin/live', async c => {
   if (!(await admin(c))) return c.text('not found', 404);
-  return c.html(await livePanel(adminOptions(c.req.query())));
+  return c.html(await livePanel(adminOptions(c.req.query(), (/(?:^|;\s*)db_me=([01])/.exec(c.req.header('cookie') || '') || [])[1])));
 });
 app.get('/admin/players/:id{[A-Za-z0-9_-]{1,64}}', async c => {
   if (!(await admin(c))) return c.html(notFoundPage(), 404);
