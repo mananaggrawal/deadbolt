@@ -113,6 +113,7 @@ with sync_playwright() as p:
         pg2.click('#mrDiff button[data-v="Just right"]'); pg2.fill('#mrTxt', 'The lighthouse was great.')
         pg2.screenshot(path=f'{SHOTS}/05b-feedback.png')
         with pg2.expect_response(lambda r: '/api/feedback' in r.url) as rr: pg2.click('#mrSend')
+        pg2.wait_for_selector('.mrm h2:has-text("Thank you")', timeout=5000)
         check(rr.value.ok and pg2.locator('.mrm h2', has_text='Thank you').count() == 1, 'feedback form sends')
         pg2.click('#mrDone')
         # a face picked and then closed still counts
