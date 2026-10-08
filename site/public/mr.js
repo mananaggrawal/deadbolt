@@ -599,7 +599,11 @@
     const sent = channel => { track('share_click', { channel, code: m.code, kind: o.kind, surface: o.surface || CFG.page }, room); flush(true); };
     const app = (id, label, tag = 'a') => `<${tag} ${tag === 'a' ? 'href="#"' : 'type="button"'} data-ch="${id}"><span class="mrs-ic mrs-${id}">${ICON[id]}</span><span>${esc(label)}</span></${tag}>`;
     const apps = CHANNELS.map(c => app(c.id, c.label).replace('<a ', `<a ${c.self ? '' : 'target="_blank" rel="noopener" '}`));
-    if (canSheet) apps.push(app('sh', 'More', 'button'));
+    // On phones that can share files, every app sends the picture with the text and link as its caption, through
+    // the phone's share sheet (a web page can't attach a picture to a WhatsApp or X link). Elsewhere the apps get
+    // the link, and the picture arrives as its preview.
+    const canPic = coarse && canSheet && !!navigator.canShare && (() => { try { return navigator.canShare({ files: [new File([new Uint8Array(8)], 'x.jpg', { type: 'image/jpeg' })] }); } catch (e) { return false; } })();
+    if (canSheet && !canPic) apps.push(app('sh', 'More', 'button'));
     const copyLabel = o.kind === 'result' ? 'Copy result' : 'Copy link';
     modal(`<div class="mrs-head">${DOOR}<h2>${esc(m.heading)}</h2></div>${m.lead ? `<p class="lead">${esc(m.lead)}</p>` : ''}
       <div class="mrs-card"><img class="mrs-img" id="mrCi" src="${esc(m.image())}" alt="" width="1200" height="630" decoding="async"><div class="mrs-text">${esc(m.text)}</div></div>
@@ -612,7 +616,15 @@
         // a result's own card (time and squares) once its link exists; swap only when it has loaded
         const ci = el.querySelector('#mrCi'), want = m.image();
         if (ci && !ci.src.endsWith(want)) { const pre = new Image(); pre.onload = () => { if (openModal === el) ci.src = want; }; pre.src = want; }
+        if (canPic && want !== picUrl && (o.kind !== 'result' || m.code)) {
+          picUrl = want;
+          fetch(want).then(r => (r.ok ? r.blob() : null)).then(b => {
+            if (!b || openModal !== el || picUrl !== want) return;
+            pic = new File([b], `${(CFG.siteName || 'deadbolt').toLowerCase()}-${o.room || 'rooms'}.jpg`, { type: 'image/jpeg' });
+          }).catch(() => {});
+        }
       };
+      let pic = null, picUrl = null;
       paint();
       getCode(o).then(code => { if (code) { m.code = code; if (openModal === el) paint(); } }).catch(() => {});
       el.querySelector('.box').addEventListener('click', e => {
@@ -626,6 +638,13 @@
             if (ok) { t.classList.add('done'); t.innerHTML = `${ICON.check}<span>Copied</span>`; setTimeout(() => { if (openModal === el) { t.classList.remove('done'); t.innerHTML = `${ICON.link}<span>${copyLabel}</span>`; } }, 2400); }
             else { const box = el.querySelector('#mrCp'); box.hidden = false; box.value = what; box.focus(); box.select(); t.lastElementChild.textContent = 'Copy below'; }
           });
+          return;
+        }
+        // the picture and the link together (until the picture has loaded, the app's own link is used)
+        const withPic = canPic && pic && CHANNELS.some(c => c.id === ch) && { files: [pic], text: `${m.text}\n${m.url(ch)}` };
+        if (withPic && navigator.canShare(withPic)) {
+          e.preventDefault();
+          navigator.share(withPic).then(() => sent(ch), err => { if (!err || err.name !== 'AbortError') track('share_fail', { channel: ch, kind: o.kind, pic: 1 }, room); });
           return;
         }
         if (ch === 'sh') {

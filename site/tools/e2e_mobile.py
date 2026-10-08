@@ -91,6 +91,8 @@ with sync_playwright() as p:
     pg, logs = page_with_logs(ctx)
     pg.goto(BASE + '/'); pg.wait_for_timeout(2000)
     check(pg.evaluate('document.documentElement.scrollWidth <= innerWidth + 1'), 'phone: the landing page has no sideways scroll')
+    robots = pg.evaluate("fetch('/robots.txt').then(r => r.text())")
+    check(not re.search(r'^Disallow: /(i|r)/', robots, re.M), 'robots.txt lets link-preview bots read share links (/i/, /r/)')
     check(pg.locator('.nav .shr').is_visible(), 'phone: the top bar has a Share button')
     pg.locator('.nav .shr').tap(); pg.wait_for_timeout(300)
     links = share_links(pg)
@@ -126,6 +128,48 @@ with sync_playwright() as p:
     check(inroom, 'phone: Open the newest door goes to that room\'s screen')
     check(not errors(logs), 'landing: no script errors' + (f': {errors(logs)[:3]}' if errors(logs) else ''))
     ctx.close()
+
+    # ---- a phone that can share files: each app gets the picture with the text and link as its caption ----
+    ctx = b.new_context(**PHONE)
+    ctx.add_init_script("""(() => {
+      navigator.canShare = d => !!d && (!d.files || d.files.every(f => f instanceof File));
+      navigator.share = async d => { window.__shared = { text: d.text || '', url: d.url || '', files: (d.files || []).map(f => ({ name: f.name, type: f.type, size: f.size })) }; };
+    })()""")
+    pg, logs = page_with_logs(ctx)
+    pg.goto(BASE + '/'); pg.wait_for_timeout(800)
+    pg.locator('.nav .shr').tap()
+    pg.wait_for_function("() => /\\/i\\/[a-z0-9]{6}/.test((document.getElementById('mrLu') || {}).textContent || '')", timeout=8000)
+    pg.wait_for_timeout(1200)   # the picture loads with the panel
+    check(pg.locator('.mrm [data-ch=sh]').count() == 0 and pg.locator('.mrm .mrs-apps [data-ch]').count() == 5, 'phone that shares files: one row of apps, no separate "More"')
+    pg.locator('.mrm [data-ch=wa]').tap(); pg.wait_for_timeout(400)
+    sh = pg.evaluate('window.__shared') or {}
+    f = (sh.get('files') or [{}])[0]
+    check(f.get('type') == 'image/jpeg' and f.get('size', 0) > 20000 and re.search(r'/i/[a-z0-9]{6}\?via=wa$', sh.get('text', '')) and sh['text'].startswith('Deadbolt: horror mystery rooms.'),
+          f'WhatsApp gets the picture with the text and link together ({f}, {sh.get("text")!r})')
+    pg.evaluate("window.__shared = null; MR.openShare({ kind: 'result', room: 'tik', n: 8, title: 'Tik-Tik', text: 'Deadbolt #8 \u00b7 Tik-Tik\\nEscaped in 18:02', result: { time: 1082, hints: 0, wrong: 1, marks: [0,0,1] } })")
+    pg.wait_for_function("() => /\\/r\\/[a-z0-9]{6}/.test((document.getElementById('mrLu') || {}).textContent || '')", timeout=8000)
+    pg.wait_for_timeout(1500)
+    pg.locator('.mrm [data-ch=tg]').tap(); pg.wait_for_timeout(400)
+    sh = pg.evaluate('window.__shared') or {}
+    check(re.search(r'/r/[a-z0-9]{6}\?via=tg$', sh.get('text', '')) and (sh.get('files') or [{}])[0].get('type') == 'image/jpeg', f'a result sends its own picture and /r/ link ({sh.get("text")!r})')
+    check(not errors(logs), 'picture sharing: no script errors' + (f': {errors(logs)[:3]}' if errors(logs) else ''))
+    pg.locator('.mrm .x').tap(); pg.wait_for_timeout(200)
+    pg.evaluate("MR.openShare({ kind: 'room', room: 'tik', n: 8, title: 'Tik-Tik', tagline: 'A stilt house in a typhoon.' })"); pg.wait_for_timeout(1500)
+    pg.screenshot(path=f'{SHOTS}/m01b-share-picture.png')
+    ctx.close()
+
+    # ---- what WhatsApp sees for that link: the page (kept out of search) and its picture ----
+    import urllib.request
+    req = urllib.request.Request(f'{BASE}/i/{room_code}?via=wa', headers={'User-Agent': 'WhatsApp/2.24.20.80 A'})
+    with urllib.request.urlopen(req) as r:
+        html, noindex = r.read().decode(), (r.headers.get('X-Robots-Tag') or '')
+    img = re.search(r'<meta property="og:image" content="([^"]+)"', html)
+    check(img and '/og/m/tik.jpg' in img.group(1) and 'noindex' in noindex, f'a share link names its room picture and asks not to be indexed ({img and img.group(1)})')
+    if img:
+        with urllib.request.urlopen(urllib.request.Request(img.group(1).replace(re.match(r'https?://[^/]+', img.group(1)).group(0), BASE), headers={'User-Agent': 'WhatsApp/2.24.20.80 A'})) as r:
+            body = r.read()
+            check(r.headers.get('Content-Type') == 'image/jpeg' and int(r.headers.get('Content-Length') or 0) == len(body) and 20_000 < len(body) < 300_000,
+                  f'the picture is a JPEG with its size, under WhatsApp\'s limit ({len(body)} bytes)')
 
     # ---- arriving through that link, on another phone ----
     ctx = b.new_context(**PHONE)

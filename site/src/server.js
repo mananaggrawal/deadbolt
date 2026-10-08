@@ -136,7 +136,10 @@ app.get('/manifest.webmanifest', c => {
   return c.body(JSON.stringify({ name: cfg.siteName, short_name: cfg.siteName, start_url: '/', display: 'fullscreen', orientation: 'any',
     background_color: '#0b0a09', theme_color: '#0b0a09', icons: [192, 512].map(s => ({ src: `/icon-${s}.png`, sizes: `${s}x${s}`, type: 'image/png' })) }));
 });
-app.get('/robots.txt', c => c.text(cfg.staging ? 'User-agent: *\nDisallow: /\n' : `User-agent: *\nDisallow: /admin\nDisallow: /api/\nDisallow: /r/\nDisallow: /i/\nSitemap: ${cfg.baseURL}/sitemap.xml\n`));
+// Share links (/i/, /r/) stay open here: WhatsApp, Facebook, X and LinkedIn read robots.txt before building a
+// link preview, and a Disallow there leaves a shared link with no picture. Search engines are kept off them by
+// the noindex header those pages send instead.
+app.get('/robots.txt', c => c.text(cfg.staging ? 'User-agent: *\nDisallow: /\n' : `User-agent: *\nDisallow: /admin\nDisallow: /api/\nSitemap: ${cfg.baseURL}/sitemap.xml\n`));
 app.get('/sitemap.xml', c => {
   const urls = ['/', ...R.released().map(m => `/m/${m.id}`), '/privacy', '/terms'];
   c.header('Content-Type', 'application/xml');
@@ -232,14 +235,14 @@ app.get('/r/:code', async c => {
   const code = c.req.param('code').toLowerCase();
   const s = CODE.test(code) ? await one('select * from shares where code = $1', [code]) : null;
   if (!s || s.kind !== 'result' || !R.roomById(s.room)) return s ? c.redirect(`/i/${code}`) : c.html(notFoundPage(), 404);
-  c.header('Cache-Control', 'no-cache');   // visits are counted by the page itself (share_visit), so link previews don't count
+  c.header('Cache-Control', 'no-cache'); c.header('X-Robots-Tag', 'noindex');   // visits are counted by the page itself (share_visit), so link previews don't count
   return c.html(resultPage(s));
 });
 // preview cards: .jpg is what pages point at; .png answers links already shared in apps before the switch
 async function sendCard(c, key, build, cache, fmt) {
   const buf = await og.image(key, build, fmt);
   if (!buf) return c.text('not found', 404);
-  c.header('Content-Type', fmt === 'png' ? 'image/png' : 'image/jpeg'); c.header('Cache-Control', cache);
+  c.header('Content-Type', fmt === 'png' ? 'image/png' : 'image/jpeg'); c.header('Content-Length', String(buf.length)); c.header('Cache-Control', cache);
   return c.body(buf);
 }
 const fmtOf = file => (file.endsWith('.png') ? 'png' : 'jpg');
