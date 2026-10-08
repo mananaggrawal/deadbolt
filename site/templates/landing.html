@@ -316,6 +316,16 @@ kbd { display: inline-block; min-width: 16px; padding: 0 5px; border: 1px solid 
 .cap2 .cg { font-size: 13px; line-height: 19px; color: var(--ink-2); margin-top: 8px; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .dbtn:hover .ct, .dbtn:focus-visible .ct { color: var(--lamp); }
 .swipe { display: none; margin-top: 18px; color: var(--muted); font-size: 13px; }
+.doors li[hidden] { display: none; }
+.doors li.in { animation: doorIn .55s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i, 0) * 60ms); }
+@keyframes doorIn { from { opacity: 0; transform: translateY(10px); } }
+.pager { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 64px; }
+.pager[hidden] { display: none; }
+.pager .btn:disabled { opacity: .3; cursor: default; background: transparent; }
+.pg-nums { display: flex; gap: 4px; }
+.pg-nums button { font: 500 12px/16px var(--mono); letter-spacing: .08em; color: var(--muted); background: none; border: 0; padding: 8px 12px; border-radius: 999px; cursor: pointer; min-height: 32px; }
+.pg-nums button:hover { color: var(--ink); }
+.pg-nums button[aria-current="page"] { color: var(--ink); background: var(--bg-3); }
 
 /* before you go in + faq */
 .plain { list-style: none; margin: 0; padding: 0; }
@@ -504,6 +514,11 @@ footer.site { padding-block: 96px 64px; border-top: 1px solid var(--line); }
       <div class="corridor wall-tex" style="--bx: 50%">
         <ul class="doors" id="doors"></ul>
         <p class="swipe">Swipe along the corridor &rarr;</p>
+        <nav class="pager" id="pager" aria-label="More doors" hidden>
+          <button class="btn btn-ghost btn-sm" type="button" id="pgPrev"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M10 6H2M5.5 2.5 2 6l3.5 3.5"/></svg>Newer</button>
+          <span class="pg-nums" id="pgNums"></span>
+          <button class="btn btn-ghost btn-sm" type="button" id="pgNext">Older<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 6h8M6.5 2.5 10 6l-3.5 3.5"/></svg></button>
+        </nav>
       </div>
     </div>
   </section>
@@ -526,7 +541,7 @@ footer.site { padding-block: 96px 64px; border-top: 1px solid var(--line); }
             </ol>
           </div>
         </div>
-        <div class="txt"><h4>As many hints as you need</h4><p>Press H at any time. Every puzzle has four hints, from where to look to the answer itself, and you only see as many as you ask for.</p></div>
+        <div class="txt"><h4>As many hints as you need</h4><p>Press H at any time. The hints go from where to look to the answer itself, and you only see as many as you ask for.</p></div>
       </article>
       <article class="card">
         <div class="panel">
@@ -540,7 +555,7 @@ Escaped in 31:20 · 2 hints
             <button class="btn btn-sm" type="button" id="copyBtn">Copy result</button>
           </div>
         </div>
-        <div class="txt"><h4>Your night, in squares</h4><p>When you get out, each puzzle becomes a square. Share them with a link to your result, and your friends can try the same room without anything given away.</p></div>
+        <div class="txt"><h4>Share your result</h4><p>When you get out, each puzzle becomes a square. Share them with a link to your result, and your friends can try the same room without anything given away.</p></div>
       </article>
     </div>
   </section>
@@ -560,9 +575,9 @@ Escaped in 31:20 · 2 hints
         <div class="section-head"><p class="eyebrow">Questions</p><h2>Asked at the door.</h2></div>
         <details class="faq"><summary>Is it free?</summary><p>Yes. There's nothing to install. You sign in with Google once, then open a door and you're in. Your escapes and squares are kept on every device you sign in on.</p></details>
         <details class="faq"><summary>How scary is it?</summary><p>Scary enough to make you jump: sudden faces, things moving in the dark and some unsettling images. It isn't meant for young children.</p></details>
-        <details class="faq"><summary>What if I get stuck?</summary><p>Press H, or tap Hints on a phone. Every puzzle has four hints, ending with the answer. Using them only changes the colour of that puzzle's square.</p></details>
+        <details class="faq"><summary>What if I get stuck?</summary><p>Press H, or tap Hints on a phone. The hints go from a nudge to the answer itself. Using them only changes the colour of that puzzle's square.</p></details>
         <details class="faq"><summary>Does it work on my phone?</summary><p>Yes, held sideways. You get a thumbstick to walk, drag to look around, and buttons for whatever you can do next.</p></details>
-        <details class="faq"><summary>How often do new rooms open?</summary><p>New rooms open regularly, and the newest one is always the first door in the corridor.</p></details>
+        <details class="faq"><summary>How often do new rooms open?</summary><p>New rooms open regularly, and the newest one is always the first open door in the corridor.</p></details>
         <details class="faq"><summary>Can I continue on another device?</summary><p>Your results can. Sign in with Google on each device and your escapes and squares follow you. A room you leave halfway picks up again on the device you were playing on.</p></details>
         <details class="faq"><summary>What do you keep about me?</summary><p>Your name, email address and results, and a record of how each room went, so we can see where people get stuck. The <a href="/privacy" style="text-decoration:underline;text-underline-offset:3px">privacy page</a> has the details.</p></details>
       </div>
@@ -642,13 +657,43 @@ function doorHTML(r, state = '') {
 
 /* corridor */
 const SOON = { n: newest.n + 1, id: 'soon', leaf: 'soon', glow: '#000000', pos: '50%' };
-$('#doors').innerHTML = order.map(r => `<li><button class="dbtn" type="button" data-id="${r.id}" aria-label="Go in: Mystery #${r.n}, ${esc(r.title)}">
-    ${doorHTML(r)}
-    <span class="cap2"><span class="cn">No. ${r.n}${r === newest ? '<span class="pill new">New</span>' : ''}<span class="cm">${esc(r.mins)}</span></span><span class="ct">${esc(r.title)}</span><span class="cp">${esc(r.short)}</span><span class="cg">${esc(r.tagline)}</span></span>
-  </button></li>`).join('') + `<li><button class="dbtn" type="button" data-id="soon" aria-label="Door No. ${SOON.n} is locked. It opens soon.">
+/* newest first: the locked door, then the open ones counting down */
+$('#doors').innerHTML = `<li><button class="dbtn" type="button" data-id="soon" aria-label="Door No. ${SOON.n} is locked. It opens soon.">
     ${doorHTML(SOON)}
     <span class="cap2"><span class="cn">No. ${SOON.n}</span><span class="ct">Coming soon</span><span class="cp">Locked for now</span><span class="cg">The next room is still being built. It will be the first door here when it opens.</span></span>
-  </button></li>`;
+  </button></li>` + order.map(r => `<li><button class="dbtn" type="button" data-id="${r.id}" aria-label="Go in: Mystery #${r.n}, ${esc(r.title)}">
+    ${doorHTML(r)}
+    <span class="cap2"><span class="cn">No. ${r.n}${r === newest ? '<span class="pill new">New</span>' : ''}<span class="cm">${esc(r.mins)}</span></span><span class="ct">${esc(r.title)}</span><span class="cp">${esc(r.short)}</span><span class="cg">${esc(r.tagline)}</span></span>
+  </button></li>`).join('');
+
+/* corridor pages: five doors at a time */
+const PER_PAGE = 5, doorLis = $$('#doors > li'), pages = Math.ceil(doorLis.length / PER_PAGE);
+const doorNo = li => li.querySelector('.lintel').textContent.replace(/\D/g, '');
+let page = 0;
+function showPage(p, animate) {
+  page = Math.max(0, Math.min(pages - 1, p));
+  doorLis.forEach((li, i) => {
+    const on = Math.floor(i / PER_PAGE) === page;
+    li.hidden = !on; li.classList.remove('in');
+    if (on && animate && !reduce) { li.style.setProperty('--i', i % PER_PAGE); void li.offsetWidth; li.classList.add('in'); }
+  });
+  $('#doors').scrollLeft = 0;
+  $('#pgPrev').disabled = page === 0;
+  $('#pgNext').disabled = page === pages - 1;
+  $$('#pgNums button').forEach((b, i) => b.setAttribute('aria-current', i === page ? 'page' : 'false'));
+}
+const pageOf = id => Math.max(0, Math.floor(doorLis.findIndex(li => $('.dbtn', li).dataset.id === id) / PER_PAGE));
+if (pages > 1) {
+  $('#pgNums').innerHTML = Array.from({ length: pages }, (_, p) => {
+    const lis = doorLis.slice(p * PER_PAGE, (p + 1) * PER_PAGE), a = doorNo(lis[0]), b = doorNo(lis[lis.length - 1]);
+    return `<button type="button" data-page="${p}" aria-label="Doors ${a} to ${b}">${a === b ? a : `${a}–${b}`}</button>`;
+  }).join('');
+  $('#pager').hidden = false;
+  $('#pgPrev').onclick = () => showPage(page - 1, true);
+  $('#pgNext').onclick = () => showPage(page + 1, true);
+  $('#pgNums').onclick = e => { const b = e.target.closest('[data-page]'); if (b) showPage(+b.dataset.page, true); };
+}
+showPage(0);
 
 /* TV static behind door 406 */
 let statics = [], staticRaf = 0;
@@ -865,7 +910,7 @@ document.addEventListener('click', e => {
   const k = e.target.closest('.kcard');
   if (k) { const r = byId[k.dataset.id]; if (heroRoom !== r) setHero(r); enter(r, $('.dbtn', heroDoor)); return; }
   const f = e.target.closest('.footer-col [data-id]');
-  if (f) { const r = byId[f.dataset.id]; const b = $(`#doors .dbtn[data-id="${r.id}"]`); b.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center', inline: 'center' }); setTimeout(() => enter(r, b), reduce ? 0 : 650); return; }
+  if (f) { const r = byId[f.dataset.id]; showPage(pageOf(r.id)); const b = $(`#doors .dbtn[data-id="${r.id}"]`); b.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center', inline: 'center' }); setTimeout(() => enter(r, b), reduce ? 0 : 650); return; }
   const d = e.target.closest('.dbtn');
   if (d) {
     if (d.dataset.id === 'soon') {
