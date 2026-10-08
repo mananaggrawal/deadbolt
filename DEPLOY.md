@@ -144,16 +144,17 @@ It then runs every night at 2:30 a.m. India time. The files are encrypted, so th
   ```
   git checkout main && git merge staging && git push
   ```
-- **What's happening:** open `/admin`. Signed out, it shows a single **Sign in with Google** button; sign in as manan190303@gmail.com and the dashboard opens. It shows:
-  - who is on the site and in which room right now, refreshing every 15 seconds, and a feed of what just happened;
-  - visitors, new accounts, plays and escapes over 24 hours, 7, 30 or 90 days, or all time;
-  - the funnel from first visit to first escape, and whether new players come back;
-  - each room's numbers and where players stop;
-  - every player, each with a page of everything they did;
-  - browser and server errors, feedback, pages, referrers, countries and devices;
-  - CSV exports.
+- **What's happening:** open `/admin`. Signed out, it shows a single **Sign in with Google** button; sign in as manan190303@gmail.com and the dashboard opens. One period switch (Today, 7 days, 30 days, All time) sets every number. It answers one question per section:
+  - **Right now:** who is on the site and in which room, and the last few moments (sign-ups, starts, escapes, shares, feedback). It refreshes itself.
+  - **New people:** visitors, sign-ups (and what share of visitors sign up), where most came from.
+  - **Playing:** plays, the share that escape, typical escape time, plays per day.
+  - **Coming back:** returning players, the share of new sign-ups who came back another day, the share who played two or more rooms.
+  - **Sharing:** times shared and by how many people, visitors and players from shared links.
+  - **Rooms:** plays, escape rate, typical time, the puzzle where most people stop, and how many rated it good.
+  - **Players:** each links to a page of everything they did.
+  - **Feedback**, then **Problems** (browser and server errors), shown only when there are any.
 
-  Your own activity is hidden unless you switch it on. Bots, link previews and headless browsers aren't counted.
+  Your own activity is included and shows as "You"; the link at the bottom hides it. Bots, link previews and headless browsers aren't counted.
 - **Logs:** Vercel > project > **Logs**. Filter by `/api/` or by errors. Server errors also show on the dashboard.
 - **Roll back:** Vercel > **Deployments**, pick an earlier production deployment, then **⋯ > Instant Rollback**. It takes seconds. Database changes are not rolled back; they only ever add tables and columns.
 - **Sign-in to play** is on by default. To let guests play, set `REQUIRE_LOGIN` to `false` for Production, then redeploy.
