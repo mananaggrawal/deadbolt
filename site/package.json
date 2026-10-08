@@ -19,6 +19,7 @@
     "@vercel/functions": "^3.9.11",
     "better-auth": "1.7.7",
     "hono": "4.13.13",
+    "jpeg-js": "0.4.4",
     "pg": "8.23.1",
     "satori": "0.37.1",
     "three": "0.160.0"

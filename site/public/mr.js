@@ -228,8 +228,10 @@
   .mrm h2{margin:0 0 6px;font-size:22px;line-height:28px;font-weight:400;letter-spacing:-.2px;padding-right:28px}
   .mrm p{margin:0 0 14px;color:#c8c1b4;font-size:14px;line-height:21px}
   .mrm .box:focus{outline:none}
-  .mrm .x{position:absolute;right:6px;top:4px;background:none;border:0;color:#8d867b;font-size:24px;line-height:1;cursor:pointer;padding:10px;min-width:44px;min-height:44px}
-  .mrm .x:hover{color:#ede8de}
+  .mrm .x{position:absolute;right:12px;top:12px;width:36px;height:36px;display:grid;place-items:center;background:transparent;border:0;border-radius:999px;color:#8d867b;font-size:22px;line-height:1;cursor:pointer;padding:0}
+  .mrm .x:hover{color:#ede8de;background:#221f1c}
+  .mrm .x:focus-visible{outline:2px solid #f0c27a;outline-offset:1px}
+  .mrm .x::after{content:"";position:absolute;inset:-4px}
   .mrm .b{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:44px;padding:8px 18px;border-radius:999px;border:0;cursor:pointer;font:500 15px/24px inherit;font-family:inherit;background:#ede8de;color:#0b0a09;width:100%;text-decoration:none;text-transform:none;letter-spacing:0}
   .mrm .b:hover{background:#fff5e2}.mrm .b:disabled{opacity:.4;cursor:default}
   .mrm .b.ghost{background:transparent;color:#ede8de;border:1px solid #312d29}.mrm .b.ghost:hover{background:#1a1816}
@@ -242,23 +244,39 @@
   .mrm .seg button[aria-pressed=true]{background:#ede8de;color:#0b0a09;border-color:#ede8de}
   .mrm .lab{font:500 11px/16px "Geist Mono",ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:#8d867b;margin:0 0 8px;display:block}
   .mrm textarea{width:100%;min-height:84px;resize:vertical;background:#0b0a09;color:#ede8de;border:1px solid #312d29;border-radius:6px;padding:10px 12px;font:inherit;font-size:16px;margin:0 0 14px}
-  .mrm textarea:focus,.mrm .seg button:focus-visible,.mrm .b:focus-visible,.mrm .sh a:focus-visible,.mrm .sh button:focus-visible{outline:2px solid #f0c27a;outline-offset:2px}
+  .mrm textarea:focus,.mrm .seg button:focus-visible,.mrm .b:focus-visible{outline:2px solid #f0c27a;outline-offset:2px}
   .mrm .g{width:18px;height:18px;flex:none}
-  .mrm .pv{font:12.5px/19px "Geist Mono",ui-monospace,monospace;color:#c8c1b4;background:#0b0a09;border:1px solid #24211e;border-radius:6px;padding:10px 12px;margin:2px 0 16px;white-space:pre-wrap;word-break:break-word}
-  .mrm .pv .u{color:#f0c27a}
-  .mrm .sh{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-  .mrm .sh a,.mrm .sh button{display:flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:6px 10px;border-radius:10px;border:1px solid #312d29;background:#1a1816;color:#ede8de;font:inherit;font-size:14px;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent;text-align:center;line-height:18px}
-  .mrm .sh a:hover,.mrm .sh button:hover{border-color:#534e47;background:#221f1c}
-  .mrm .sh .wide{grid-column:1/-1}
-  .mrm .sh .main{background:#ede8de;color:#0b0a09;border-color:#ede8de;font-weight:500}
-  .mrm .sh .main:hover{background:#fff5e2}
-  .mrm .sh svg{width:16px;height:16px;flex:none}
-  .mrm .sh .done{border-color:#4d8a4a;color:#9fc59a}
+  .mrm .mrs-head{display:flex;align-items:center;gap:12px;margin:0 0 4px;padding-right:36px}
+  .mrm .mrs-head h2{margin:0;padding:0}
+  .mrm .mrs-head .mrs-logo{width:20px;height:26px;flex:none}
+  .mrm .mrs-head + .lead{margin:8px 0 0}
+  .mrm .mrs-card{margin:18px 0 18px;border:1px solid #2a2622;border-radius:12px;overflow:hidden;background:#0b0a09}
+  .mrm .mrs-card .mrs-img{display:block;width:100%;height:auto;max-width:none;aspect-ratio:1200/630;object-fit:cover;background:#15130f}
+  .mrm .mrs-card .mrs-text{padding:11px 14px 12px;font-size:14px;line-height:20px;color:#c8c1b4;white-space:pre-line;word-break:break-word}
+  .mrm .mrs-apps{display:grid;grid-template-columns:repeat(var(--n,6),minmax(0,1fr));gap:2px;margin:0 -6px}
+  .mrm .mrs-apps a,.mrm .mrs-apps button{display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px 2px 6px;border:0;border-radius:10px;background:none;color:#c8c1b4;font:inherit;font-size:12.5px;line-height:16px;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent;min-width:0}
+  .mrm .mrs-apps a:hover,.mrm .mrs-apps button:hover{background:#1c1a17;color:#ede8de}
+  .mrm .mrs-apps a > span:last-child,.mrm .mrs-apps button > span:last-child{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mrm .mrs-apps a:focus-visible,.mrm .mrs-apps button:focus-visible,.mrm .mrs-link button:focus-visible{outline:2px solid #f0c27a;outline-offset:2px}
+  .mrm .mrs-ic{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;flex:none;transition:transform .15s}
+  .mrm .mrs-apps a:hover .mrs-ic,.mrm .mrs-apps button:hover .mrs-ic{transform:scale(1.06)}
+  .mrm .mrs-ic svg{display:block}
+  .mrm .mrs-ic.mrs-wa{background:#25d366}.mrm .mrs-ic.mrs-wa svg{width:26px;height:26px}
+  .mrm .mrs-ic.mrs-tg svg,.mrm .mrs-ic.mrs-fb svg{width:48px;height:48px}
+  .mrm .mrs-ic.mrs-x{background:#000;box-shadow:inset 0 0 0 1px #3a3530}.mrm .mrs-ic.mrs-x svg{width:19px;height:19px}
+  .mrm .mrs-ic.mrs-em,.mrm .mrs-ic.mrs-sh{background:#26231f;box-shadow:inset 0 0 0 1px #3a3530;color:#ede8de}.mrm .mrs-ic.mrs-em svg,.mrm .mrs-ic.mrs-sh svg{width:21px;height:21px}
+  .mrm .mrs-link{display:flex;align-items:center;gap:8px;margin:16px 0 0;padding:5px 5px 5px 16px;border:1px solid #312d29;border-radius:999px;background:#0b0a09}
+  .mrm .mrs-link .mrs-url{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:13px/20px "Geist Mono",ui-monospace,monospace;color:#f0c27a}
+  .mrm .mrs-link button{display:inline-flex;align-items:center;gap:8px;flex:none;min-height:38px;padding:6px 16px;border:0;border-radius:999px;background:#ede8de;color:#0b0a09;font:500 14px/20px inherit;font-family:inherit;cursor:pointer;white-space:nowrap}
+  .mrm .mrs-link button:hover{background:#fff5e2}
+  .mrm .mrs-link button svg{width:15px;height:15px}
+  .mrm .mrs-link button.done{background:#4d8a4a;color:#f3f7f1}
   .mrm .cpbox{width:100%;margin:10px 0 0;font:12.5px "Geist Mono",ui-monospace,monospace;background:#0b0a09;color:#ede8de;border:1px solid #312d29;border-radius:6px;padding:8px 10px}
-  .mrm .sh.c2{grid-template-columns:repeat(2,minmax(0,1fr))}
   @media (max-height:520px){.mrm{padding:8px}.mrm .box{width:min(560px,100%);padding:14px 18px 14px;max-height:calc(100dvh - 16px)}.mrm h2{font-size:19px;line-height:24px}.mrm .lead{display:none}
-    .mrm .pv{margin:6px 0 10px;padding:8px 10px;max-height:84px;overflow:auto}.mrm .sh,.mrm .sh.c2{grid-template-columns:repeat(4,minmax(0,1fr))}.mrm .sh .wide{grid-column:span 2}.mrm .sh a,.mrm .sh button{min-height:42px}}
-  @media (max-width:380px){.mrm .sh{grid-template-columns:repeat(2,minmax(0,1fr))}.mrm .box{padding:20px 16px 16px}}
+    .mrm .x{top:6px;right:6px}.mrm .mrs-card{display:flex;align-items:center;margin:10px 0}.mrm .mrs-card .mrs-img{width:132px;height:auto;flex:none}.mrm .mrs-card .mrs-text{padding:0 12px;margin:6px 0;font-size:13px;line-height:18px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+    .mrm .mrs-apps a,.mrm .mrs-apps button{gap:4px;padding:4px 2px}.mrm .mrs-ic{width:40px;height:40px}.mrm .mrs-ic.mrs-tg svg,.mrm .mrs-ic.mrs-fb svg{width:40px;height:40px}.mrm .mrs-link{margin-top:10px}}
+  @media (max-width:430px){.mrm .box{padding:20px 16px 16px}.mrm .mrs-apps{margin:0 -8px;gap:0}.mrm .mrs-apps a,.mrm .mrs-apps button{font-size:11px;letter-spacing:-.1px;gap:7px;padding:8px 0 6px}.mrm .mrs-ic{width:44px;height:44px}.mrm .mrs-ic.mrs-tg svg,.mrm .mrs-ic.mrs-fb svg{width:44px;height:44px}.mrm .mrs-ic.mrs-wa svg{width:24px;height:24px}}
+  @media (max-width:340px){.mrm .mrs-apps{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:6px}}
   .mrm .faces{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0 4px}
   .mrm .face{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 6px 12px;border-radius:10px;border:1px solid #312d29;background:transparent;color:#8d867b;cursor:pointer;font:inherit;font-size:13px;line-height:18px;transition:background .15s,border-color .15s,color .15s}
   .mrm .face svg{width:36px;height:36px;transition:transform .15s}
@@ -310,7 +328,7 @@
     ['pointerdown', 'mousedown'].forEach(t => el.addEventListener(t, e => e.stopPropagation()));
     el._onClose = opts && opts.onClose;
     onMount && onMount(el);
-    if (!coarse) setTimeout(() => { const f = el.querySelector('[autofocus]') || el.querySelector('button,input,textarea,a[href]'); f && f.focus(); }, 30);
+    if (!coarse) setTimeout(() => { const f = el.querySelector('[autofocus]') || el.querySelector('.box'); f && f.focus({ preventScroll: true }); }, 30);
     return el;
   }
   function closeModal() {
@@ -511,10 +529,19 @@
     { id: 'fb', label: 'Facebook', href: m => `https://www.facebook.com/sharer/sharer.php?u=${enc(m.url('fb'))}` },
     { id: 'em', label: 'Email', href: m => `mailto:?subject=${enc(m.subject)}&body=${enc(m.text + '\n\n' + m.url('em'))}`, self: true },
   ];
+  // each app's own mark (shapes from Simple Icons, CC0); email and the phone's share sheet get plain glyphs
   const ICON = {
-    share: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 10V2M5 4.8 8 1.8l3 3M3.5 7.5v6h9v-6"/></svg>',
-    link: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6.6 9.4l2.8-2.8M7.3 4.3l1.3-1.3a2.8 2.8 0 0 1 4 4l-1.3 1.3M8.7 11.7 7.4 13a2.8 2.8 0 0 1-4-4l1.3-1.3"/></svg>',
+    wa: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>',
+    tg: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11.4" fill="#fff"/><path fill="#26a5e4" d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>',
+    x: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg>',
+    fb: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11.4" fill="#fff"/><path fill="#0866ff" d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036 26.805 26.805 0 0 0-.733-.009c-.707 0-1.259.096-1.675.309a1.686 1.686 0 0 0-.679.622c-.258.42-.374.995-.374 1.752v1.297h3.919l-.386 2.103-.287 1.564h-3.246v8.245C19.396 23.238 24 18.179 24 12.044c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.628 3.874 10.35 9.101 11.647Z"/></svg>',
+    em: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="m3.8 6.6 8.2 6.4 8.2-6.4"/></svg>',
+    sh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3.5M8 7.2l4-4 4 4M5.5 11v9.5h13V11"/></svg>',
+    link: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6.6 9.4l2.8-2.8M7.3 4.3l1.3-1.3a2.8 2.8 0 0 1 4 4l-1.3 1.3M8.7 11.7 7.4 13a2.8 2.8 0 0 1-4-4l1.3-1.3"/></svg>',
+    check: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 8.4 3.2 3.1L13 4.6"/></svg>',
   };
+  // the site's logo, the white door
+  const DOOR = '<svg class="mrs-logo" viewBox="3.2 1.2 15.6 20.6" aria-hidden="true"><rect x="4" y="2" width="14" height="19" rx="1" fill="none" stroke="#ede8de" stroke-width="1.6"/><rect x="5.6" y="3.6" width="10.8" height="17.4" fill="#ede8de"/><circle cx="14.2" cy="12.4" r=".95" fill="#161412"/></svg>';
   async function copyText(t) {
     try { await navigator.clipboard.writeText(t); return true; } catch (e) {}
     try { const a = document.createElement('textarea'); a.value = t; a.setAttribute('readonly', ''); a.style.cssText = 'position:fixed;top:0;left:0;opacity:0'; document.body.appendChild(a); a.select(); const ok = document.execCommand('copy'); a.remove(); return ok; } catch (e) { return false; }
@@ -531,7 +558,7 @@
   }
   function message(o) {
     const site = CFG.siteName || 'Deadbolt', origin = location.origin;
-    let text, short, subject, heading, lead;
+    let text, short, subject, heading, lead = '';
     if (o.kind === 'result') {
       text = String(o.text || '').replace(/^Mystery #/, `${site} #`);
       short = text; subject = `I got out of ${o.title || 'a room'} on ${site}. Can you?`;
@@ -542,14 +569,17 @@
       subject = `Try this: ${o.title} on ${site}`;
       heading = 'Send this room to a friend'; lead = 'They get the door and the story, nothing that gives the puzzles away.';
     } else {
-      text = `${site}: horror escape rooms you play alone, in your browser. Free, no download, 20 to 40 minutes a room. Headphones on.`;
-      short = text; subject = `${site}: horror escape rooms in your browser`;
-      heading = `Share ${site}`; lead = 'Free horror escape rooms, played alone in the browser.';
+      text = `${site}: horror mystery rooms you play alone.`;
+      short = text; subject = `${site}: horror mystery rooms`;
+      heading = `Share ${site}`;
     }
     const fallback = o.kind === 'site' ? origin + '/' : `${origin}/m/${o.room}`;
     const m = { text, short, subject, heading, lead, code: null };
     m.base = () => (m.code ? `${origin}/${o.kind === 'result' ? 'r' : 'i'}/${m.code}` : fallback);
     m.url = via => m.base() + (via ? `${m.base().includes('?') ? '&' : '?'}via=${via}` : '');
+    // the same picture the apps will show under the link
+    const v = 'v=' + encodeURIComponent(CFG.version || '');
+    m.image = () => (o.kind === 'result' && m.code ? `/og/r/${m.code}.jpg?${v}` : o.kind === 'site' ? `/og/site.jpg?${v}` : `/og/m/${o.room}.jpg?${v}`);
     return m;
   }
   function openShare(o) {
@@ -558,20 +588,25 @@
     const m = message(o), room = o.room || null, canSheet = !!navigator.share;
     track('share_open', { kind: o.kind, surface: o.surface || CFG.page }, room);
     const sent = channel => { track('share_click', { channel, code: m.code, kind: o.kind, surface: o.surface || CFG.page }, room); flush(true); };
-    const btns = CHANNELS.map(c => `<a href="#" data-ch="${c.id}" ${c.self ? '' : 'target="_blank" rel="noopener"'}${c.id === 'wa' && coarse ? ' class="wide main"' : ''}>${esc(c.label)}</a>`);
-    const sheet = canSheet ? `<button type="button" data-ch="sh" class="${coarse ? 'wide' : ''}">${ICON.share}<span>${coarse ? 'More apps' : 'More'}</span></button>` : '';
-    const copy = `<button type="button" data-ch="cp" class="wide">${ICON.link}<span>${o.kind === 'result' ? 'Copy result and link' : 'Copy link'}</span></button>`;
-    modal(`<h2>${esc(m.heading)}</h2><p class="lead">${esc(m.lead)}</p>
-      <div class="pv" id="mrPv"></div>
-      <div class="sh${coarse ? ' c2' : ''}">${coarse ? btns[0] + sheet + btns.slice(1).join('') : btns.join('') + sheet}${copy}</div>
+    const app = (id, label, tag = 'a') => `<${tag} ${tag === 'a' ? 'href="#"' : 'type="button"'} data-ch="${id}"><span class="mrs-ic mrs-${id}">${ICON[id]}</span><span>${esc(label)}</span></${tag}>`;
+    const apps = CHANNELS.map(c => app(c.id, c.label).replace('<a ', `<a ${c.self ? '' : 'target="_blank" rel="noopener" '}`));
+    if (canSheet) apps.push(app('sh', 'More', 'button'));
+    const copyLabel = o.kind === 'result' ? 'Copy result' : 'Copy link';
+    modal(`<div class="mrs-head">${DOOR}<h2>${esc(m.heading)}</h2></div>${m.lead ? `<p class="lead">${esc(m.lead)}</p>` : ''}
+      <div class="mrs-card"><img class="mrs-img" id="mrCi" src="${esc(m.image())}" alt="" width="1200" height="630" decoding="async"><div class="mrs-text">${esc(m.text)}</div></div>
+      <div class="mrs-apps" style="--n:${apps.length}">${apps.join('')}</div>
+      <div class="mrs-link"><span class="mrs-url" id="mrLu"></span><button type="button" data-ch="cp">${ICON.link}<span>${copyLabel}</span></button></div>
       <input class="cpbox" id="mrCp" readonly hidden aria-label="Link to copy">`, el => {
       const paint = () => {
-        el.querySelector('#mrPv').innerHTML = `${esc(m.text)}\n<span class="u">${esc(m.base().replace(/^https?:\/\//, ''))}</span>`;
+        el.querySelector('#mrLu').textContent = m.base().replace(/^https?:\/\//, '');
         CHANNELS.forEach(c => { const a = el.querySelector(`[data-ch="${c.id}"]`); if (a) a.href = c.href(m); });
+        // a result's own card (time and squares) once its link exists; swap only when it has loaded
+        const ci = el.querySelector('#mrCi'), want = m.image();
+        if (ci && !ci.src.endsWith(want)) { const pre = new Image(); pre.onload = () => { if (openModal === el) ci.src = want; }; pre.src = want; }
       };
       paint();
       getCode(o).then(code => { if (code) { m.code = code; if (openModal === el) paint(); } }).catch(() => {});
-      el.querySelector('.sh').addEventListener('click', e => {
+      el.querySelector('.box').addEventListener('click', e => {
         const t = e.target.closest('[data-ch]'); if (!t) return;
         const ch = t.dataset.ch;
         if (ch === 'cp') {
@@ -579,8 +614,8 @@
           const what = o.kind === 'result' ? `${m.text}\n${m.url('cp')}` : m.url('cp');
           copyText(what).then(ok => {
             sent('cp');
-            if (ok) { t.classList.add('done'); t.lastElementChild.textContent = 'Copied. Paste it anywhere'; }
-            else { const box = el.querySelector('#mrCp'); box.hidden = false; box.value = what; box.focus(); box.select(); t.lastElementChild.textContent = 'Copy the text below'; }
+            if (ok) { t.classList.add('done'); t.innerHTML = `${ICON.check}<span>Copied</span>`; setTimeout(() => { if (openModal === el) { t.classList.remove('done'); t.innerHTML = `${ICON.link}<span>${copyLabel}</span>`; } }, 2400); }
+            else { const box = el.querySelector('#mrCp'); box.hidden = false; box.value = what; box.focus(); box.select(); t.lastElementChild.textContent = 'Copy below'; }
           });
           return;
         }
@@ -592,7 +627,7 @@
         }
         sent(ch);   // the link itself opens WhatsApp, X... (a real link, so phones hand it to the app)
       });
-    });
+    }, { focusBox: true });
   }
   // the game's end screen ("Share your result")
   async function share(d) {
