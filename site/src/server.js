@@ -13,7 +13,7 @@ import { landingHtml as LANDING, playHtml as PLAY } from './generated/assets.js'
 import * as R from './rooms.js';
 import * as og from './og.js';
 import { headTags, resultPage, privacyPage, termsPage, gatePage, notFoundPage, esc } from './pages.js';
-import { adminOptions, adminPage, adminLoginPage, livePanel, playerPage, exportCsv } from './admin.js';
+import { adminOptions, adminPage, adminLoginPage, exportCsv } from './admin.js';
 
 export const app = new Hono();
 
@@ -461,15 +461,6 @@ app.get('/admin', async c => {
   const s = await admin(c);
   if (!s) { const who = await session(c); return c.html(adminLoginPage(who && who.user.email), who ? 403 : 200); }
   return c.html(await adminPage(dashOptions(c)));
-});
-app.get('/admin/live', async c => {
-  if (!(await admin(c))) return c.text('not found', 404);
-  return c.html(await livePanel(adminOptions(c.req.query(), (/(?:^|;\s*)db_me=([01])/.exec(c.req.header('cookie') || '') || [])[1])));
-});
-app.get('/admin/players/:id{[A-Za-z0-9_-]{1,64}}', async c => {
-  if (!(await admin(c))) return c.html(notFoundPage(), 404);
-  const html = await playerPage(c.req.param('id'), adminOptions(c.req.query()));
-  return html ? c.html(html) : c.html(notFoundPage(), 404);
 });
 app.get('/admin/export/:file{[a-z]+\\.csv}', async c => {
   if (!(await admin(c))) return c.html(notFoundPage(), 404);

@@ -144,17 +144,17 @@ It then runs every night at 2:30 a.m. India time. The files are encrypted, so th
   ```
   git checkout main && git merge staging && git push
   ```
-- **What's happening:** open `/admin`. Signed out, it shows a single **Sign in with Google** button; sign in as manan190303@gmail.com and the dashboard opens. One period switch (Today, 7 days, 30 days, All time) sets every number. It answers one question per section:
-  - **Right now:** who is on the site and in which room, and the last few moments (sign-ups, starts, escapes, shares, feedback). It refreshes itself.
-  - **New people:** visitors, sign-ups (and what share of visitors sign up), where most came from.
-  - **Playing:** plays, the share that escape, typical escape time, plays per day.
-  - **Coming back:** returning players, the share of new sign-ups who came back another day, the share who played two or more rooms.
-  - **Sharing:** times shared and by how many people, visitors and players from shared links.
-  - **Rooms:** plays, escape rate, typical time, the puzzle where most people stop, and how many rated it good.
-  - **Players:** each links to a page of everything they did.
-  - **Feedback**, then **Problems** (browser and server errors), shown only when there are any.
+- **What's happening:** open `/admin`. Signed out, it shows a single **Sign in with Google** button; sign in as manan190303@gmail.com and the dashboard opens. It is standard product analytics for a free consumer site, for a chosen period (7, 30 or 90 days, or all time), in India time:
+  - **Overview:** visitors, new users, active users and plays, each against the previous period.
+  - **Usage:** daily, weekly and monthly active users and stickiness (average daily ÷ monthly active); charts of active and new users; a daily or weekly table of visitors, new users, active users, plays and escapes.
+  - **Retention:** D1, D7, D30 and M1 across all sign-ups old enough for each, and a weekly cohort grid (the share of each week's sign-ups active in weeks 1–6 after joining).
+  - **Engagement:** completion rate, plays per player, typical play length, hints per escape.
+  - **Rooms:** players, plays, completion, typical time, where most drop off, and how many rated it good.
+  - **Acquisition:** new visitors, sign-up rate, times shared, and a table of where new visitors came from (shared links, each site, direct) with how many signed up.
+  - **Feedback:** the share of good, okay and bad faces, and the latest comments.
+  - **Errors:** a one-line count.
 
-  Your own activity is included and shows as "You"; the link at the bottom hides it. Bots, link previews and headless browsers aren't counted.
+  "Active user" means a signed-in person who visited or played that day. Your own activity is included; the link at the bottom leaves it out. Bots, link previews and headless browsers aren't counted.
 - **Logs:** Vercel > project > **Logs**. Filter by `/api/` or by errors. Server errors also show on the dashboard.
 - **Roll back:** Vercel > **Deployments**, pick an earlier production deployment, then **⋯ > Instant Rollback**. It takes seconds. Database changes are not rolled back; they only ever add tables and columns.
 - **Sign-in to play** is on by default. To let guests play, set `REQUIRE_LOGIN` to `false` for Production, then redeploy.
