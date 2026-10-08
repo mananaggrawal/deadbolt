@@ -636,7 +636,7 @@ function openPause() {
   $('#pNb').onclick = () => openNotebook();
   $('#pHint').onclick = () => openHints();
   $('#pVol').oninput = e => setVolume(+e.target.value);
-  if ($('#pFb')) $('#pFb').onclick = () => { UI.close(); HOST.mr().feedback({ room: ROOM.id, from: 'pause', state: hostState() }); };
+  if ($('#pFb')) $('#pFb').onclick = () => HOST.mr().feedback({ room: ROOM.id, from: 'pause', state: hostState() });
   $('#pRestart').onclick = () => {
     const b = $('#pRestart');
     if (b.dataset.sure) { store.del(ROOM.saveKey); G.mode = 'end'; reloadInto(ROOM.id); }

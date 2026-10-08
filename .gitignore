@@ -1,0 +1,9 @@
+node_modules/
+game/dist/dev.html
+game/dist/dead-air.html
+game/tools/home.png
+site/tools/shots/
+deploy/.env
+deploy/certs/
+*.log
+.DS_Store
