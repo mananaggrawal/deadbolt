@@ -129,7 +129,7 @@ def mysteries_json():
     arr = js[i:j + 1]
     out = subprocess.run(['node', '-e', f'process.stdout.write(JSON.stringify({arr}))'],
                          capture_output=True, text=True, check=True).stdout
-    keep = ('n', 'id', 'title', 'date', 'place', 'era', 'hook', 'tagline', 'start', 'endTitle', 'wrongLabel')
+    keep = ('n', 'id', 'title', 'date', 'place', 'era', 'hook', 'tagline', 'start', 'loading', 'theme', 'endTitle', 'wrongLabel')
     return [{k: m[k] for k in keep if k in m} for m in json.loads(out)]
 
 def build_site():
@@ -140,13 +140,19 @@ def build_site():
     loader = ("var VO;\n"
               f"fetch('/game/{vo_name}').then(r => r.json()).then(j => {{ VO = j; "
               "try { if (A.ctx) { A.voLoading = false; loadVO(); } } catch (e) {} }).catch(() => {});\n")
-    script = escape_js(strip_debug(loader + THREE_SITE + code))
+    # MR_KEEP_DEBUG=1 keeps the window.__lethe test handle, for local headless checks only (never deploy it)
+    keep = os.environ.get('MR_KEEP_DEBUG') == '1'
+    script = escape_js((lambda x: x if keep else strip_debug(x))(loader + THREE_SITE + code))
     # the game code is its own file (hashed, so the CDN can cache it for good); the page is a small shell
     app_name = 'app.%s.js' % hashlib.sha256(script.encode()).hexdigest()[:12]
+    # the website's look over the game's own screens: Geist, and src/deadbolt.css after every room's styles
+    geist = '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..600&family=Geist+Mono:wght@400;500&display=swap">\n'
+    head = head.replace('<style>', geist + '<style>', 1)
+    i = head.rindex('</style>'); head = head[:i] + rd('deadbolt.css') + head[i:]
     shell = '<!doctype html>\n<html lang="en">\n<meta charset="utf-8">\n<!--MR_HEAD-->\n' + head
     page = (shell + '<link rel="modulepreload" href="/vendor/three-0.160.0.module.js">\n'
             f'<script type="module" src="/game/{app_name}"></script>\n')
-    for tok in ('__lethe', '__efs', '/*DEBUG*/', 'cdn.jsdelivr.net'):
+    for tok in (() if keep else ('__lethe', '__efs', '/*DEBUG*/', 'cdn.jsdelivr.net')):
         assert tok not in page and tok not in script, f'{tok} leaked into the site build'
     out = os.path.join(DIST, 'site')
     os.makedirs(out, exist_ok=True)

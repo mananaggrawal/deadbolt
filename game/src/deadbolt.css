@@ -1,0 +1,144 @@
+/* ---------- Deadbolt: the website's look over the game's own screens (site build only) ----------
+   The series speaks in one quiet voice (Geist), like the corridor. Each room keeps its title font and colour,
+   its title-screen picture, and everything inside the fiction: papers, phones, locks, the final photograph. */
+:root{
+  --db-bg:#0b0a09; --db-card:#161412; --db-bg3:#1a1816; --db-line:#24211e; --db-line2:#312d29;
+  --db-ink:#ede8de; --db-ink2:#c8c1b4; --db-muted:#8d867b; --db-faint:#534e47;
+  --db-btn:#ede8de; --db-btn-hover:#fff5e2; --db-btn-ink:#0b0a09; --db-lamp:#f0c27a;
+  --db-sans:"Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --db-mono:"Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --paper:var(--db-ink); --paper-dim:var(--db-ink2); --mute:var(--db-muted); --lamp:var(--db-lamp); --panel:var(--db-card);
+  --ui:var(--db-sans);
+}
+html,body{font-family:var(--db-sans);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
+/* in-world bits that were typed in the interface font stay monospaced */
+.doc-title,.pager,.pager button,.photo .cap,.pcard,.morse span,.share-text{font-family:var(--db-mono);}
+
+/* buttons: the corridor's pills */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:8px 18px;border-radius:999px;border:1px solid var(--db-line2);background:transparent;color:var(--db-ink);font:450 15px/24px var(--db-sans);letter-spacing:0;text-transform:none;white-space:nowrap;transition:background .15s ease-out,color .15s ease-out,border-color .15s ease-out;}
+.btn:hover,.btn:focus-visible{background:var(--db-bg3);color:var(--db-ink);border-color:var(--db-line2);outline:none;}
+.btn:focus-visible{box-shadow:0 0 0 2px var(--db-lamp);}
+.btn.primary{background:var(--db-btn);color:var(--db-btn-ink);border-color:var(--db-btn);}
+.btn.primary:hover,.btn.primary:focus-visible{background:var(--db-btn-hover);color:var(--db-btn-ink);border-color:var(--db-btn-hover);}
+.btn:disabled,.btn.primary:disabled{opacity:.45;cursor:default;}
+.btn.primary:disabled{background:var(--db-btn);color:var(--db-btn-ink);}
+.btn:disabled:not(.primary){background:transparent;color:var(--db-ink);}
+.t-actions .btn{padding:8px 20px;font-size:15px;}
+.linkbtn{font:400 14px var(--db-sans);color:var(--db-muted);text-decoration-color:var(--db-faint);}
+.linkbtn:hover,.linkbtn:focus-visible{color:var(--db-ink);text-decoration-color:var(--db-ink);}
+.alink{color:var(--db-ink);text-decoration-color:var(--db-faint);}
+.alink:hover{color:var(--db-ink);text-decoration-color:var(--db-ink);}
+.x{font:400 13px var(--db-sans);letter-spacing:0;text-transform:none;color:var(--db-muted);right:14px;top:12px;}
+.x:hover,.x:focus-visible{color:var(--db-ink);}
+kbd{font:500 11px/1.4 var(--db-mono);border:1px solid rgba(237,232,222,.38);border-radius:4px;background:rgba(11,10,9,.5);}
+
+/* the one screen before a room: the corridor's door panel, with the room's own moving picture behind it */
+#app #title::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(5,4,4,.93) 0,rgba(5,4,4,.72) 48%,rgba(5,4,4,.15) 100%),linear-gradient(0deg,rgba(5,4,4,.6),transparent 40%);}
+#app #title .t-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.8);z-index:0;}
+#app #title #static{z-index:0;}
+#app #title .t-inner{z-index:2;background:none;max-width:900px;padding:48px max(16px,7vw);}
+#app #title .t-inner > *{max-width:none;}
+#app #title .osd,#app #title #tPhones{display:none;}
+#app #title .homelink{font:400 14px var(--db-sans);letter-spacing:0;text-transform:none;color:var(--db-muted);padding:6px 0;margin:0 0 40px;}
+#app #title .homelink:hover,#app #title .homelink:focus-visible{color:var(--db-ink);}
+#app #title .tnum{font:500 12px/16px var(--db-mono);letter-spacing:.2em;color:var(--db-lamp);}
+#app #title h1.big{font-size:clamp(52px,8.5vw,112px);line-height:.95;margin:18px 0 20px;}
+#app #title .eyebrow{font:400 14px/20px var(--db-sans);letter-spacing:.06em;color:var(--db-ink2);margin:0;}
+#app #title .hook{font:400 18px/29px var(--db-sans);color:var(--db-ink);max-width:600px;margin:22px 0 36px;}
+#app #title .t-actions{margin:0;gap:12px;}
+#app #title .t-note{margin:18px 0 0;font-size:13px;line-height:20px;color:var(--db-muted);max-width:560px;}
+#app #title #tKeys{margin:44px 0 0;font:400 13px/20px var(--db-mono);color:var(--db-muted);}
+#app #title #tDone{margin:-14px 0 24px;}
+.done-line{font-size:15px;line-height:24px;color:var(--db-ink2);}
+.done-line b{color:var(--db-ink);font-weight:500;}
+
+/* cards: pause, hints, notebook, things you pick up */
+#overlay{background:rgba(5,4,4,.72);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);}
+.ui-card{background:var(--db-card);border:1px solid var(--db-line2);border-radius:8px;padding:26px 28px 24px;box-shadow:0 1px 2px rgba(0,0,0,.4),0 18px 50px rgba(0,0,0,.55);}
+.ui-card h2{font:360 28px/36px var(--db-sans);letter-spacing:-.3px;margin:0 0 6px;}
+.ui-card .sub{font-size:14px;line-height:22px;color:var(--db-muted);letter-spacing:0;margin:0 0 20px;}
+.pkeys{font-size:14px;}
+.pkeys div{border-bottom-color:var(--db-line);}
+.pkeys b{font-weight:450;color:var(--db-ink);}
+.pvol{font-size:14px;color:var(--db-muted);}
+.pvol input{accent-color:var(--db-lamp);}
+.plinks{gap:20px;}
+.nb h3{font:500 11px/16px var(--db-mono);letter-spacing:.14em;color:var(--db-muted);}
+.nb li{font-size:14px;line-height:22px;border-bottom-color:var(--db-line);}
+.nb li button{color:var(--db-ink);text-decoration-color:var(--db-faint);}
+.nb .tr{font-size:13px;color:var(--db-ink2);}
+.hint{border-top-color:var(--db-line);}
+.hint h4{font:450 17px/24px var(--db-sans);}
+.hint h4 small{font:400 12px var(--db-mono);color:var(--db-muted);}
+.hint ol{font-size:14px;line-height:22px;color:var(--db-ink2);}
+.hint ol li:last-child{color:var(--db-lamp);}
+.list .it,.list{border-color:var(--db-line);}
+.list .it .nm{font-size:15px;}
+.list .it .ds{font-size:13px;color:var(--db-muted);}
+.list .it .done{font:400 12px var(--db-mono);color:var(--db-muted);letter-spacing:.06em;}
+#panel{background:var(--db-card);border:1px solid var(--db-line2);border-radius:8px;}
+#panel h3{font:450 17px/24px var(--db-sans);}
+#panel .grp{border-top-color:var(--db-line);}
+#panel .lbl{font:500 11px var(--db-mono);letter-spacing:.12em;}
+#panel .tapes .btn,#panel .btn{min-height:30px;padding:4px 12px;font-size:13px;}
+#panel .btn.sel{background:var(--db-btn);color:var(--db-btn-ink);border-color:var(--db-btn);}
+.lockmsg{font-size:13px;}
+
+/* in play: words over the picture */
+#prompt{font:400 13px var(--db-sans);letter-spacing:0;}
+#prompt .nm{font:450 18px/24px var(--db-sans);letter-spacing:0;}
+#prompt .note{font-style:normal;color:var(--db-ink2);}
+#toast div{font:400 13px/20px var(--db-sans);padding:8px 12px;background:rgba(11,10,9,.8);border:1px solid var(--db-line2);border-left:2px solid var(--db-lamp);border-radius:6px;}
+#subs{font:400 16px/25px var(--db-sans);background:rgba(11,10,9,.78);border-radius:8px;padding:8px 16px;}
+#subs b{color:var(--db-lamp);font-weight:500;}
+#inv span{font:400 12px/18px var(--db-sans);letter-spacing:0;text-transform:none;color:var(--db-ink2);padding:3px 10px;border-radius:999px;border-color:var(--db-line2);background:rgba(11,10,9,.62);}
+#inv span.new{color:var(--db-ink);border-color:var(--db-lamp);}
+#inv em{font:500 10.5px var(--db-mono);letter-spacing:.14em;color:var(--db-muted);}
+#keys{font-size:12px;letter-spacing:0;color:var(--db-muted);}
+#clickhint{font:400 14px var(--db-sans);letter-spacing:0;padding:10px 18px;border-radius:999px;background:rgba(11,10,9,.8);border:1px solid var(--db-line2);}
+#rotate{font:400 15px/24px var(--db-sans);letter-spacing:0;background:var(--db-bg);}
+#rotate .ph{border-color:var(--db-ink);}
+/* on a phone held upright you can still read a room's screen and its ending; only playing needs it sideways */
+#title:not([hidden]) ~ #rotate,#end:not([hidden]) ~ #rotate{display:none!important;}
+#nogl{font:400 15px/24px var(--db-sans);color:var(--db-ink2);background:var(--db-bg);}
+#tc .tcb{font:450 13px var(--db-sans);letter-spacing:0;text-transform:none;border-radius:999px;background:rgba(11,10,9,.6);border:1px solid rgba(237,232,222,.28);color:var(--db-ink);}
+#tc .tc-acts .tcb{font-size:14px;padding:0 20px;}
+#tc .tc-acts .tcb.main{font-size:15px;background:rgba(240,194,122,.2);border-color:var(--db-lamp);color:#fff;}
+#tc .tcb.small{font-size:12px;}
+
+/* the end of a room: the corridor's voice, the room's title and its last photograph */
+#app #end{background:var(--db-bg);}
+#app .end-info .tnum,#app #endEyebrow{font:500 12px/16px var(--db-mono);letter-spacing:.2em;color:var(--db-lamp);}
+.end-info .epi{font:400 17px/28px var(--db-sans);color:var(--db-ink2);}
+.stats{gap:36px;}
+.stats b{font:400 34px/40px var(--db-mono);color:var(--db-ink);font-variant-numeric:tabular-nums;}
+.stats span{font:500 11px/16px var(--db-mono);letter-spacing:.14em;color:var(--db-muted);}
+.marks .fine{font-size:13px;}
+.fine{font-size:13px;line-height:20px;color:var(--db-muted);}
+.next{border:1px solid var(--db-line);border-radius:8px;background:rgba(22,20,18,.7);font-size:14px;line-height:22px;color:var(--db-muted);padding:16px 18px;}
+.next b{font:450 17px/24px var(--db-sans);color:var(--db-ink);}
+.also{font-size:14px;color:var(--db-muted);}
+.share-text{background:var(--db-card);border:1px solid var(--db-line2);border-radius:6px;color:var(--db-ink);}
+.end-tv figcaption{font:400 13px var(--db-sans);letter-spacing:0;color:var(--db-muted);}
+.end-replay{color:var(--db-ink2);}
+#shareMsg{color:var(--db-ink2);}
+.end-links{margin:16px 0 0;}
+#app #title .t-actions .btn.primary:not(:disabled)::after{content:"\2192";font-size:14px;margin-left:2px;}
+
+@media (max-width:768px){
+  #app #title .t-inner{padding-block:32px;}
+  #app #title .homelink{margin-bottom:24px;}
+  #app #title .hook{font-size:16px;line-height:26px;margin:16px 0 28px;}
+}
+@media (max-height:520px){
+  #app #title .t-inner{padding:18px max(16px,5vw);justify-content:flex-start;}
+  #app #title .homelink{margin-bottom:12px;}
+  #app #title h1.big{font-size:min(11vw,18vh)!important;margin:8px 0 10px;}
+  #app #title .hook{font-size:14px;line-height:22px;margin:12px 0 16px;}
+  #app #title #tKeys{margin-top:14px;}
+  #app #title .t-note{margin-top:10px;}
+  .ui-card{padding:16px 20px 14px;}
+  .ui-card h2{font-size:22px;line-height:28px;}
+  .stats b{font-size:26px;line-height:32px;}
+  .end-info .epi{font-size:14px;line-height:22px;margin-bottom:14px;}
+}

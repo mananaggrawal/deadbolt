@@ -56,7 +56,7 @@ export function layout(head, body, { nav = true, wide = false, footer = true } =
 ${head}<style>${CSS}</style></head><body${wide ? ' class="wide"' : ''}>
 ${nav ? `<div class="wrap nav"><a class="logo" href="/">${LOGO}<span>${esc(cfg.siteName)}</span></a><span id="mrAccount"></span></div>` : ''}
 ${body}
-${footer ? '' : '<!--'}<footer><div class="wrap"><span><a href="/">All the rooms</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a>${cfg.contactEmail ? `<a href="mailto:${esc(cfg.contactEmail)}">Contact</a>` : ''}</span><span>Horror escape rooms you play in your browser.</span></div></footer>${footer ? '' : '-->'}
+${footer ? '' : '<!--'}<footer><div class="wrap"><span><a href="/#rooms">All the rooms</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a>${cfg.contactEmail ? `<a href="mailto:${esc(cfg.contactEmail)}">Contact</a>` : ''}</span><span>Horror escape rooms you play in your browser.</span></div></footer>${footer ? '' : '-->'}
 </body></html>`;
 }
 
@@ -86,7 +86,7 @@ export function resultPage(share) {
   <p class="meta">${share.hints} hint${share.hints === 1 ? '' : 's'} &middot; ${esc(wrongWords(m, share.wrong))}</p>
   <p class="place">${esc(m.place)} &middot; ${esc(m.era)}</p>
   <p class="hook">${esc(m.hook)}</p>
-  <div class="actions"><a class="btn" href="/play/${esc(m.id)}?s=${esc(share.code)}">Can you get out? Go in</a><a class="btn btn-ghost" href="/m/${esc(m.id)}">See the door first</a></div>
+  <div class="actions"><a class="btn" href="/play/${esc(m.id)}?s=${esc(share.code)}">Can you get out? Go in</a><a class="btn btn-ghost" href="/#rooms">All the rooms</a></div>
 </div></div></section>`;
   return layout(head, body);
 }

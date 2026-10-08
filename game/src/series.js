@@ -65,7 +65,7 @@ const MYSTERIES = [
     epilogue: 'The neighbours come when the rain stops. They find you at the gate with Tatay\'s bolo across your knees, and a thing in the mud that they cover with banana leaves before anyone can see its face. Under the house there is a pair of legs in Nanay\'s good skirt, the navy one with the little white flowers, folded at the knees as if she had knelt to pray. Lorna\'s daughter was born as the sun came up. She is forty-six now. Everyone says she has her grandmother\'s eyes. She has never once eaten garlic.' },
   { n: 9, id: 'tio', title: 'El Tío', date: '2026-10-07', place: 'Cerro Rico, Potosí', era: '31 July 1998', theme: 'tio',
     osd: '<span class="bm">BOCAMINA SANTA RITA</span><span class="nv">NIVEL 3 &middot; 4.200 m.s.n.m.</span>',
-    hook: 'Potosí, 1998. On the afternoon mine tour you slipped a lump of silver from the Tío\'s offerings into your pocket while the guide\'s back was turned. The miners say everything inside the mountain belongs to him, and nothing leaves it unpaid. Then the mountain shook. You wake alone on Level 3 with your lamp out and the way back full of rock, and the Tío\'s chair is empty.',
+    hook: 'Potosí, 1998. On the afternoon mine tour you slipped a lump of silver from the Tío\'s offerings into your pocket while the guide\'s back was turned. The miners say everything inside the mountain belongs to him, and nothing leaves it unpaid. Then the mountain shook. You wake alone in the dark, deep inside the mine, with your lamp out and the way back full of rock. And the Tío\'s chair is empty.',
     tagline: 'A silver mine in the Bolivian Andes, 1998. You stole from the devil who owns the inside of the mountain. He only moves in the dark, and your lamp is running out.',
     start: 'Go down', loading: 'Charging the lamp…', endTitle: 'Paid in full', endCaption: 'The mine mouth, Santa Rita, 1 August 2026, 6:40 a.m.', frame: 'photo',
     endAlt: 'A colour photograph at dawn of a timber mine entrance in red rock, stained dark with old blood, a small wooden cross above it. On the left post, a sun-bleached poster reading DESAPARECIDO beside a bright new party flyer for August 2026. In the black of the tunnel, two glass eyes catch the light, and the tip of a cigarette glows.',
@@ -165,7 +165,7 @@ function finishRoom(frame) {
 function showResult(m, replay) {
   const first = results().rooms[m.id], r = replay || first; if (!r) return;
   const marks = r.marks || puzzleMarks(ROOM, r.tiers || {});
-  $('#home').hidden = true; $('#title').hidden = true; $('#end').hidden = false; G.mode = 'end'; document.title = m.title;
+  $('#home').hidden = true; $('#title').hidden = true; $('#end').hidden = false; G.mode = 'end'; document.title = HOST.mr() ? `${m.title} · ${SERIES.name}` : m.title;
   $('#endEyebrow').innerHTML = `Mystery #${m.n} &middot; ${esc(m.title)}${replay ? ' &middot; replay' : ''}`;
   $('#endTitle').textContent = m.endTitle;
   $('#endFrame').src = r.frame || first?.frame || ''; $('#endFrame').alt = m.endAlt || ''; $('#endTv').hidden = !(r.frame || first?.frame);
@@ -198,6 +198,7 @@ function showResult(m, replay) {
         }, () => { $('#shareMsg').textContent = 'Select the text below and copy it.'; const t = $('#shareText'); t.hidden = false; t.value = text; t.select(); });
     };
   }
+  $('#bLobby').textContent = mr ? 'Back to the corridor' : 'All mysteries';
   $('#bLobby').onclick = () => reloadInto(null);
   $('#bAgain').onclick = () => reloadInto(m.id);
   tickCountdowns();
@@ -251,9 +252,9 @@ function drawHome(t) { for (const c of CARD_FX) { try { c.fx(c.cv, c.g, t); } ca
 
 /* ---------- a mystery's title screen ---------- */
 function renderLobby(m, startGame) {
-  const R = results(), r = R.rooms[m.id];
-  ROOM.n = m.n; document.title = m.title; $('#app').dataset.theme = m.theme || '';
-  $('#tOsd').innerHTML = m.osd; $('#tNum').textContent = `Mystery #${m.n}`; $('#tTitle').textContent = m.title;
+  const R = results(), r = R.rooms[m.id], mr = HOST.mr();
+  ROOM.n = m.n; document.title = mr ? `${m.title} · ${SERIES.name}` : m.title; $('#app').dataset.theme = m.theme || '';
+  $('#tOsd').innerHTML = mr ? '' : m.osd; $('#tNum').textContent = `Mystery #${m.n}`; $('#tTitle').textContent = m.title;
   $('#tEyebrow').innerHTML = `${esc(m.place)} &middot; ${esc(m.era)}`; $('#tHook').textContent = m.hook;
   const saved = store.get(ROOM.saveKey);
   const inProg = saved && saved.flags && saved.flags.woke && !saved.flags.escaped;
@@ -266,10 +267,24 @@ function renderLobby(m, startGame) {
   if (inProg) {
     bCont.hidden = false; bCont.classList.add('primary'); bNew.classList.remove('primary');
     bNew.parentNode.insertBefore(bCont, bNew); bNew.dataset.label = 'Start over';
-    bNew.onclick = () => { if (bNew.dataset.sure) startGame(false); else { bNew.dataset.sure = '1'; bNew.textContent = 'Click again to wipe your progress'; } };
+    bNew.onclick = () => { if (bNew.dataset.sure) startGame(false); else { bNew.dataset.sure = '1'; bNew.textContent = G.touch ? 'Tap again to start over' : 'Click again to start over'; } };
     bCont.onclick = () => startGame(true);
   } else {
     bNew.dataset.label = r ? 'Play again' : (m.start || 'Begin'); bNew.onclick = () => startGame(false);
+  }
+  // on the website this is the only screen before the room: the same words as the corridor's door
+  $('#tHome').innerHTML = mr ? '&larr; Back to the corridor' : '&larr; All mysteries';
+  const note = $('#tNote');
+  if (note) {
+    const signed = !!(mr && mr.me);
+    note.textContent = !mr ? '' : inProg ? 'You left this room halfway. Continue picks up where you stopped.'
+      : r ? '' : signed ? 'Signed in: your result will be kept on every device.' : 'Playing as a guest. Sign in on the corridor page to keep your results on every device.';
+    note.hidden = !note.textContent;
+  }
+  if (mr) {
+    $('#tKeys').textContent = G.touch ? 'Hold your phone sideways · Thumbstick to walk · Drag to look · Headphones recommended'
+      : 'WASD to move · Mouse to look · E to use · H for hints · Headphones recommended';
+    const ph = $('#tPhones'); if (ph) ph.hidden = true;
   }
   $('#tHome').onclick = () => renderHome();
 }

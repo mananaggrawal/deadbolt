@@ -3,7 +3,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..600&family=Geist+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Special+Elite&family=IM+Fell+English&family=Oswald:wght@600&family=Playfair+Display:ital,wght@1,700&family=Teko:wght@600&family=Noto+Sans+KR:wght@900&family=UnifrakturMaguntia&family=Permanent+Marker&family=Rubik+Dirt&display=swap&text=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz%C3%AD-%20">
 <style>
 /* Layout: AgentDoor's skeleton (glass nav, quiet headline with a faint second clause, a textured scene with a door
    beside a live feed, card grids, a corridor, FAQ, CTA, footer) re-lit as a corridor at night.
@@ -30,9 +29,6 @@
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 18px 50px rgba(0, 0, 0, 0.55);
   --wall: #15130f;
   --frame: #221f1b;
-  /* each room's own title colour */
-  --t-406: #ede8de; --t-lamp: #e9dcc0; --t-cold: #f1f3f2; --t-sitting: #ecd9a8; --t-night: #f2c434;
-  --t-lift: #e6e8ea; --t-orloj: #e8c46a; --t-tik: #ece2c8; --t-tio: #d8321e;
   --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   --gutter: 40px;
@@ -353,30 +349,6 @@ footer.site { padding-block: 96px 64px; border-top: 1px solid var(--line); }
 .nav.gone { opacity: 0; pointer-events: none; }
 #veil { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; z-index: 80; transition: opacity .35s; }
 #veil.on { opacity: 1; }
-.room { position: fixed; inset: 0; z-index: 90; background: #000; overflow: auto; opacity: 0; transition: opacity .5s ease; }
-.room.show { opacity: 1; }
-.room .bg { position: fixed; inset: 0; }
-.room .bg img, .room .bg canvas { width: 100%; height: 100%; object-fit: cover; object-position: var(--pos, 50%) 50%; display: block; filter: brightness(.8); }
-.room .bg canvas { image-rendering: pixelated; opacity: .5; }
-.room .bg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(5,4,4,.93) 0, rgba(5,4,4,.72) 48%, rgba(5,4,4,.15) 100%), linear-gradient(0deg, rgba(5,4,4,.6), transparent 40%); }
-.room .in { position: relative; min-height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 0; padding: 48px max(16px, 7vw); max-width: 900px; }
-.room .back { align-self: flex-start; background: none; border: 0; padding: 6px 0; margin-bottom: 40px; cursor: pointer; color: var(--muted); font-size: 14px; }
-.room .back:hover { color: var(--ink); }
-.room .rn { font: 500 12px/16px var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--lamp); }
-.room .rt { font-size: clamp(52px, 8.5vw, 112px); line-height: .95; margin: 18px 0 20px; text-shadow: 0 0 40px rgba(0,0,0,.6), 0 2px 0 rgba(0,0,0,.7); }
-.room .rp { color: var(--ink-2); font-size: 14px; letter-spacing: .06em; text-transform: uppercase; }
-.room .rh { font-size: 18px; line-height: 29px; color: var(--ink); max-width: 600px; margin: 22px 0 36px; }
-.room .rnote { margin-top: 18px; font-size: 13px; color: var(--muted); max-width: 560px; }
-.room .rkeys { margin-top: 44px; font-size: 13px; color: var(--muted); }
-.t-406 { font-family: "Special Elite", var(--mono); color: var(--t-406); }
-.t-lamp { font-family: "IM Fell English", Georgia, serif; color: var(--t-lamp); }
-.t-cold { font-family: "Oswald", "Arial Narrow", sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; color: var(--t-cold); }
-.t-sitting { font-family: "Playfair Display", Georgia, serif; font-style: italic; font-weight: 700; color: var(--t-sitting); }
-.t-night { font-family: "Teko", "Oswald", sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; color: var(--t-night); }
-.t-lift { font-family: "Noto Sans KR", "Oswald", sans-serif; font-weight: 900; text-transform: uppercase; letter-spacing: -.01em; color: var(--t-lift); }
-.t-orloj { font-family: "UnifrakturMaguntia", serif; color: var(--t-orloj); }
-.t-tik { font-family: "Permanent Marker", cursive; color: var(--t-tik); }
-.t-tio { font-family: "Rubik Dirt", "Oswald", sans-serif; color: var(--t-tio); }
 .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 12px); background: var(--card); border: 1px solid var(--line-2); color: var(--ink); padding: 10px 16px; border-radius: 999px; font-size: 14px; box-shadow: var(--shadow); opacity: 0; transition: opacity .25s, transform .25s; z-index: 95; pointer-events: none; max-width: calc(100% - 32px); }
 .toast.on { opacity: 1; transform: translate(-50%, 0); }
 
@@ -419,20 +391,12 @@ footer.site { padding-block: 96px 64px; border-top: 1px solid var(--line); }
   .footer-top { grid-template-columns: 1fr 1fr; gap: 40px 24px; }
   .footer-top > :first-child { grid-column: 1 / -1; }
   .footer-bottom { flex-direction: column; margin-top: 56px; gap: 12px; }
-  .room .in { padding-block: 32px; }
-  .room .back { margin-bottom: 24px; }
-  .room .rh { font-size: 16px; line-height: 26px; margin: 16px 0 28px; }
 }
 @media (max-width: 440px) {
   .hud .inv em, .hud .inv span:first-of-type { display: none; }
   .hud .pr { top: calc(40% + 12px); }
 }
 @media (max-height: 500px) and (orientation: landscape) {
-  .room .in { padding-block: 20px; }
-  .room .back { margin-bottom: 10px; }
-  .room .rt { font-size: min(13vh, 64px); margin: 8px 0 10px; }
-  .room .rh { font-size: 14px; line-height: 22px; margin: 10px 0 18px; }
-  .room .rkeys { margin-top: 16px; }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -459,7 +423,7 @@ footer.site { padding-block: 96px 64px; border-top: 1px solid var(--line); }
         <span class="lbl">Sound</span>
       </button>
       <span id="mrAccount"></span>
-      <button class="btn btn-sm" type="button" data-enter="newest">Play the newest room</button>
+      <button class="btn btn-sm" type="button" data-enter="newest">Open the newest door</button>
     </div>
   </div>
 </nav>
@@ -499,7 +463,7 @@ footer.site { padding-block: 96px 64px; border-top: 1px solid var(--line); }
           <div class="mock">
             <div class="mock-row"><span>Room 406, Pinecrest Motor Lodge</span><span class="k">30 October 1983</span></div>
             <div class="mock-row"><span>The lift, Cheongun Building, Seoul</span><span class="k">17 December 2004</span></div>
-            <div class="mock-row"><span>Level 3, Cerro Rico, Potosí</span><span class="k">31 July 1998</span></div>
+            <div class="mock-row"><span>Cerro Rico, Potosí</span><span class="k">31 July 1998</span></div>
           </div>
         </div>
         <div class="txt"><h4>A real place, on one night</h4><p>A motel off the highway. A lift in Seoul. The works of Prague's astronomical clock the night it stopped. Every room is a different country, year and kind of horror.</p></div>
@@ -619,7 +583,7 @@ Escaped in 31:20 · 2 hints
         <span class="muted">Horror escape rooms you play in your browser.</span>
       </div>
       <div class="footer-col" id="footRooms"><span class="label">Newest rooms</span></div>
-      <div class="footer-col"><span class="label">Play</span><button type="button" data-enter="newest">Open the newest door</button><a href="#rooms">All the doors</a><a href="#how">How it works</a><a href="#faq">Questions</a></div>
+      <div class="footer-col"><span class="label">Play</span><button type="button" data-enter="newest">Open the newest door</button><a href="#rooms">All the rooms</a><a href="#how">How it works</a><a href="#faq">Questions</a></div>
     </div>
     <div class="footer-bottom"><p>Best with headphones. Plays on a computer with a keyboard and mouse, or on a phone held sideways.</p><span class="faint"><a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a></span></div>
   </div>
@@ -627,27 +591,12 @@ Escaped in 31:20 · 2 hints
 </div>
 
 <div id="veil" aria-hidden="true"></div>
-<div class="room" id="room" role="dialog" aria-modal="true" aria-labelledby="rTitle" hidden>
-  <div class="bg" id="rBg"></div>
-  <div class="in">
-    <button class="back" type="button" id="rBack">&larr; Back to the corridor</button>
-    <p class="rn" id="rNum"></p>
-    <h1 class="rt" id="rTitle"></h1>
-    <p class="rp" id="rPlace"></p>
-    <p class="rh" id="rHook"></p>
-    <div class="actions">
-      <a class="btn" id="rStart" href="/">Begin</a>
-      <button class="btn btn-ghost" type="button" id="rBack2">Back to the corridor</button>
-    </div>
-    <p class="rnote" id="rNote"></p>
-    <p class="rkeys mono" id="rKeys"></p>
-  </div>
-</div>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
 (() => {
-const ROOMS_ALL = [{"n": 1, "id": "406", "title": "Dead Air", "place": "Pinecrest Motor Lodge", "era": "30 October 1983", "hook": "You wake on top of the covers in Room 406 with no memory of checking in. The door is padlocked from the inside. The television is off. For now.", "tagline": "A motel room in 1983. The television shows the room three minutes from now, and you are never in the picture.", "start": "Check in", "short": "A motel room · 1983", "mins": "30–40 min", "glow": "#9fd0cc", "pos": "50%", "leaf": "406", "fx": "buzz", "events": ["Channel 13 has come on by itself.", "On the screen, the room is three minutes ahead of you."]}, {"n": 2, "id": "lamp", "title": "The Lamp Room", "place": "Skerrow Rock Light", "era": "21 December 1911", "hook": "You wake on the iron floor of a lighthouse lamp room, twenty miles out to sea, on the longest night of the year. The lamp is out. The hatch to the stairs is padlocked from your side, and something is climbing the tower.", "tagline": "A lighthouse in 1911, on the longest night. Keep the light turning, or they come up out of the sea.", "start": "Take the watch", "short": "Skerrow Rock · 1911", "mins": "20–40 min", "glow": "#e8dcae", "pos": "74%", "leaf": "lamp", "fx": "rain", "events": ["The lamp is out, and something is climbing the tower.", "A lantern is signalling from the rocks."]}, {"n": 3, "id": "cold", "title": "Cold Storage", "place": "St Agnes County Hospital", "era": "3 February 1974", "hook": "It's your first night shift at the county morgue. At ten past three the power fails, the door locks itself, and the cold room starts to warm up. The dead don't stay still when they're warm.", "tagline": "A hospital morgue in 1974. The power is out and the cold room is warming up. The dead don't stay still when they're warm.", "start": "Clock on", "short": "Hospital morgue · 1974", "mins": "10–20 min", "glow": "#cfe6df", "pos": "80%", "leaf": "cold", "fx": "buzz", "events": ["The cold room is up to 6 °C and still warming.", "The power went off at ten past three."]}, {"n": 4, "id": "sitting", "title": "The Last Sitting", "place": "9 Pellam Street, Bloomsbury", "era": "3 March 1893", "hook": "London, 1893. You investigate fake mediums for the Society for Psychical Research. After tonight's sitting you hid in Madame Kell's parlour to catch her out. She has locked you in, turned down the gas, and left you a note.", "tagline": "A medium's parlour in 1893. Every ghost in it is a trick, and you have to work out how each one is done. All but one.", "start": "Take your seat", "short": "Bloomsbury, London · 1893", "mins": "25–40 min", "glow": "#f0a860", "pos": "70%", "leaf": "sitting", "fx": "flicker", "events": ["A chair has turned to face the door.", "Something raps on the table. Nobody is at the pedal."]}, {"n": 5, "id": "night", "title": "Night Mail", "place": "Kasheli Ghat, Western Ghats", "era": "29 September 2026", "hook": "You rented an old railway saloon for a night ride over the ghats, and fell asleep at Karjat. You wake at twenty to three. The door to the rest of the train is locked. The train goes into a tunnel, and comes out at the same tunnel again. And every time it comes out, the man standing on the track behind you is closer.", "tagline": "The last carriage of a night train, tonight. It keeps going through the same tunnel, and the man on the track behind you is closer every time.", "start": "Wake up", "short": "Western Ghats, India · 2026", "mins": "25–35 min", "glow": "#e0533a", "pos": "50%", "leaf": "night", "fx": "rain", "events": ["The train has come out of No. 17 Tunnel again.", "The man on the line is closer than last time."]}, {"n": 6, "id": "lift", "title": "Doors Closing", "place": "Cheongun Building, Euljiro, Seoul", "era": "17 December 2004", "hook": "A week ago your sister Ji-yeon played the Elevator Game in the lift of her office building: four, two, six, two, ten, five, then one. The camera in the car shows it going up. It never brought her back down. Tonight you press the same buttons. When a woman gets on at the fifth floor, don't look at her.", "tagline": "A Seoul office lift, 2004, and the Elevator Game. Press the buttons in the right order, alone. When a woman gets on at the fifth floor, don't look at her.", "start": "Step in", "short": "Seoul · 2004", "mins": "30–40 min", "glow": "#ff4a2e", "pos": "50%", "leaf": "lift", "fx": "buzz", "events": ["The lift has stopped at the fifth floor.", "A woman got on. Don't look at her."]}, {"n": 7, "id": "orloj", "title": "The Blind Hour", "place": "Old Town Hall Tower, Prague", "era": "8 January 2018", "hook": "In 1490, the story goes, the city blinded the master who built Prague's astronomical clock, so that he could never build a finer one. He had himself led up into the works and stopped them with his bare hands. Tonight the restorers have stopped the clock for the first time in seventy years, and you fell asleep inside it. He's blind. He finds you by sound. But when a bell strikes, he stops to count.", "tagline": "Inside Prague's astronomical clock, the night they stopped it. Something blind is feeling through the gears for any sound you make. Work only while the bells ring.", "start": "Wake up", "short": "Prague · 2018", "mins": "35–50 min", "glow": "#e8c46a", "pos": "66%", "leaf": "orloj", "fx": "none", "arch": true, "events": ["Týn church is striking. Something is counting along.", "There is a thirteenth figure on the apostles’ wheel."]}, {"n": 8, "id": "tik", "title": "Tik-Tik", "place": "Barrio San Isidro, Infanta, Quezon", "era": "20 October 1979", "hook": "Typhoon night, two in the morning, in a house on stilts. Your sister Lorna is in labour behind the mosquito net, and Nanay went for the midwife hours ago. Something with wings is circling the house. Its legs are standing somewhere on your land. Salt them before dawn.", "tagline": "A stilt house in a typhoon, 1979. Something with wings hunts you across the yard. Find where she left her legs, and salt them before dawn.", "start": "Wake up", "short": "Quezon, Philippines · 1979", "mins": "20–30 min", "glow": "#f2a64a", "pos": "50%", "leaf": "tik", "fx": "rain", "events": ["Tik-tik. The call has gone faint, so she's close.", "Nanay's voice is calling from the gate."]}, {"n": 9, "id": "tio", "title": "El Tío", "place": "Cerro Rico, Potosí", "era": "31 July 1998", "hook": "Potosí, 1998. On the afternoon mine tour you slipped a lump of silver from the Tío's offerings into your pocket while the guide's back was turned. The miners say everything inside the mountain belongs to him, and nothing leaves it unpaid. Then the mountain shook. You wake alone on Level 3 with your lamp out and the way back full of rock, and the Tío's chair is empty.", "tagline": "A silver mine in the Bolivian Andes, 1998. You stole from the devil who owns the inside of the mountain. He only moves in the dark, and your lamp is running out.", "start": "Go down", "short": "Potosí, Bolivia · 1998", "mins": "25–35 min", "glow": "#f2c27a", "pos": "50%", "leaf": "tio", "fx": "flicker", "events": ["Your lamp has two minutes of carbide left.", "The Tío's chair is empty."]}];
+const ROOMS_ALL = [{"n": 1, "id": "406", "title": "Dead Air", "place": "Pinecrest Motor Lodge", "era": "30 October 1983", "hook": "You wake on top of the covers in Room 406 with no memory of checking in. The door is padlocked from the inside. The television is off. For now.", "tagline": "A motel room in 1983. The television shows the room three minutes from now, and you are never in the picture.", "start": "Check in", "short": "A motel room · 1983", "mins": "30–40 min", "glow": "#9fd0cc", "pos": "50%", "leaf": "406", "fx": "buzz", "events": ["Channel 13 has come on by itself.", "On the screen, the room is three minutes ahead of you."]}, {"n": 2, "id": "lamp", "title": "The Lamp Room", "place": "Skerrow Rock Light", "era": "21 December 1911", "hook": "You wake on the iron floor of a lighthouse lamp room, twenty miles out to sea, on the longest night of the year. The lamp is out. The hatch to the stairs is padlocked from your side, and something is climbing the tower.", "tagline": "A lighthouse in 1911, on the longest night. Keep the light turning, or they come up out of the sea.", "start": "Take the watch", "short": "Skerrow Rock · 1911", "mins": "20–40 min", "glow": "#e8dcae", "pos": "74%", "leaf": "lamp", "fx": "rain", "events": ["The lamp is out, and something is climbing the tower.", "A lantern is signalling from the rocks."]}, {"n": 3, "id": "cold", "title": "Cold Storage", "place": "St Agnes County Hospital", "era": "3 February 1974", "hook": "It's your first night shift at the county morgue. At ten past three the power fails, the door locks itself, and the cold room starts to warm up. The dead don't stay still when they're warm.", "tagline": "A hospital morgue in 1974. The power is out and the cold room is warming up. The dead don't stay still when they're warm.", "start": "Clock on", "short": "Hospital morgue · 1974", "mins": "10–20 min", "glow": "#cfe6df", "pos": "80%", "leaf": "cold", "fx": "buzz", "events": ["The cold room is up to 6 °C and still warming.", "The power went off at ten past three."]}, {"n": 4, "id": "sitting", "title": "The Last Sitting", "place": "9 Pellam Street, Bloomsbury", "era": "3 March 1893", "hook": "London, 1893. You investigate fake mediums for the Society for Psychical Research. After tonight's sitting you hid in Madame Kell's parlour to catch her out. She has locked you in, turned down the gas, and left you a note.", "tagline": "A medium's parlour in 1893. Every ghost in it is a trick, and you have to work out how each one is done. All but one.", "start": "Take your seat", "short": "Bloomsbury, London · 1893", "mins": "25–40 min", "glow": "#f0a860", "pos": "70%", "leaf": "sitting", "fx": "flicker", "events": ["A chair has turned to face the door.", "Something raps on the table. Nobody is at the pedal."]}, {"n": 5, "id": "night", "title": "Night Mail", "place": "Kasheli Ghat, Western Ghats", "era": "29 September 2026", "hook": "You rented an old railway saloon for a night ride over the ghats, and fell asleep at Karjat. You wake at twenty to three. The door to the rest of the train is locked. The train goes into a tunnel, and comes out at the same tunnel again. And every time it comes out, the man standing on the track behind you is closer.", "tagline": "The last carriage of a night train, tonight. It keeps going through the same tunnel, and the man on the track behind you is closer every time.", "start": "Wake up", "short": "Western Ghats, India · 2026", "mins": "25–35 min", "glow": "#e0533a", "pos": "50%", "leaf": "night", "fx": "rain", "events": ["The train has come out of No. 17 Tunnel again.", "The man on the line is closer than last time."]}, {"n": 6, "id": "lift", "title": "Doors Closing", "place": "Cheongun Building, Euljiro, Seoul", "era": "17 December 2004", "hook": "A week ago your sister Ji-yeon played the Elevator Game in the lift of her office building: four, two, six, two, ten, five, then one. The camera in the car shows it going up. It never brought her back down. Tonight you press the same buttons. When a woman gets on at the fifth floor, don't look at her.", "tagline": "A Seoul office lift, 2004, and the Elevator Game. Press the buttons in the right order, alone. When a woman gets on at the fifth floor, don't look at her.", "start": "Step in", "short": "Seoul · 2004", "mins": "30–40 min", "glow": "#ff4a2e", "pos": "50%", "leaf": "lift", "fx": "buzz", "events": ["The lift has stopped at the fifth floor.", "A woman got on. Don't look at her."]}, {"n": 7, "id": "orloj", "title": "The Blind Hour", "place": "Old Town Hall Tower, Prague", "era": "8 January 2018", "hook": "In 1490, the story goes, the city blinded the master who built Prague's astronomical clock, so that he could never build a finer one. He had himself led up into the works and stopped them with his bare hands. Tonight the restorers have stopped the clock for the first time in seventy years, and you fell asleep inside it. He's blind. He finds you by sound. But when a bell strikes, he stops to count.", "tagline": "Inside Prague's astronomical clock, the night they stopped it. Something blind is feeling through the gears for any sound you make. Work only while the bells ring.", "start": "Wake up", "short": "Prague · 2018", "mins": "35–50 min", "glow": "#e8c46a", "pos": "66%", "leaf": "orloj", "fx": "none", "arch": true, "events": ["Týn church is striking. Something is counting along.", "There is a thirteenth figure on the apostles’ wheel."]}, {"n": 8, "id": "tik", "title": "Tik-Tik", "place": "Barrio San Isidro, Infanta, Quezon", "era": "20 October 1979", "hook": "Typhoon night, two in the morning, in a house on stilts. Your sister Lorna is in labour behind the mosquito net, and Nanay went for the midwife hours ago. Something with wings is circling the house. Its legs are standing somewhere on your land. Salt them before dawn.", "tagline": "A stilt house in a typhoon, 1979. Something with wings hunts you across the yard. Find where she left her legs, and salt them before dawn.", "start": "Wake up", "short": "Quezon, Philippines · 1979", "mins": "20–30 min", "glow": "#f2a64a", "pos": "50%", "leaf": "tik", "fx": "rain", "events": ["Tik-tik. The call has gone faint, so she's close.", "Nanay's voice is calling from the gate."]}, {"n": 9, "id": "tio", "title": "El Tío", "place": "Cerro Rico, Potosí", "era": "31 July 1998", "hook": "Potosí, 1998. On the afternoon mine tour you slipped a lump of silver from the Tío's offerings into your pocket while the guide's back was turned. The miners say everything inside the mountain belongs to him, and nothing leaves it unpaid. Then the mountain shook. You wake alone in the dark, deep inside the mine, with your lamp out and the way back full of rock. And the Tío's chair is empty.", "tagline": "A silver mine in the Bolivian Andes, 1998. You stole from the devil who owns the inside of the mountain. He only moves in the dark, and your lamp is running out.", "start": "Go down", "short": "Potosí, Bolivia · 1998", "mins": "25–35 min", "glow": "#f2c27a", "pos": "50%", "leaf": "tio", "fx": "flicker", "events": ["Your lamp has two minutes of carbide left.", "The Tío's chair is empty."]}];
+if (window.MR_ROOMS) for (const r of ROOMS_ALL) Object.assign(r, window.MR_ROOMS[r.id] || {});
 const ROOMS = ROOMS_ALL.filter(r => !Array.isArray(window.MR_RELEASED) || window.MR_RELEASED.includes(r.id));
 const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
 /* the game keeps results and saves in this browser; show them on the doors */
@@ -857,21 +806,20 @@ function stopDrone() {
 }
 document.addEventListener('pointerdown', () => { heroUnlocked = true; }, { once: true });
 
-/* ---------- walking through a door ---------- */
-const stage = $('#stage'), veil = $('#veil'), room = $('#room'), nav = $('#nav');
-let inRoom = false, busy = false, lastDoor = null, lastFocus = null;
+/* ---------- walking through a door: it opens, the corridor zooms in, and you're on the room's own screen ---------- */
+const stage = $('#stage'), veil = $('#veil'), nav = $('#nav');
+let inRoom = false, busy = false;
 const wait = ms => new Promise(r => setTimeout(r, ms));
+const REQ = !!(window.MR_CFG && MR_CFG.requireLogin);
+const roomUrl = r => `/play/${encodeURIComponent(r.id)}`;
 
 async function enter(r, btn) {
-  if (busy || inRoom) return;
-  busy = true; lastFocus = btn || document.activeElement;
+  if (busy || inRoom || !r) return;
+  // when the site asks for an account, signing in comes first, and Google brings you straight back into the room
+  if (REQ && window.MR) { busy = true; try { await MR.ready; } catch (e) {} busy = false; if (!MR.me) { MR.signInDialog('required', roomUrl(r)); return; } }
+  busy = true;
   const door = btn && $('.door', btn);
-  fillRoom(r);
-  if (!door || reduce) {
-    veil.classList.add('on'); await wait(reduce ? 120 : 350);
-    showRoom(); veil.classList.remove('on'); busy = false; return;
-  }
-  lastDoor = door;
+  if (!door || reduce) { veil.classList.add('on'); await wait(reduce ? 120 : 350); go(r); return; }
   door.classList.remove('ajar'); door.classList.add('open');
   creak(1.15, .6);
   const op = $('.opening', door).getBoundingClientRect(), st = stage.getBoundingClientRect();
@@ -886,66 +834,20 @@ async function enter(r, btn) {
   void stage.offsetWidth;
   stage.style.transform = `translate(${dx}px, ${dy}px) scale(${k})`;
   whoosh(1.5);
-  await wait(1250);
-  showRoom();
-  startDrone();
-  busy = false;
+  await wait(900);
+  veil.classList.add('on');
+  await wait(380);
+  go(r);
 }
-function fillRoom(r) {
-  $('#rBg').innerHTML = r.id === '406' ? '<canvas class="static" width="120" height="68"></canvas>' : `<img src="/art/${r.id}.jpg" alt="">`;
-  $('#rBg').style.setProperty('--pos', r.pos);
-  $('#rNum').textContent = `Mystery #${r.n}`;
-  const t = $('#rTitle'); t.textContent = r.title; t.className = `rt t-${r.id}`;
-  $('#rPlace').textContent = `${r.place} · ${r.era}`;
-  $('#rHook').textContent = r.hook;
-  const st = statusOf(r.id), signed = !!(window.MR && MR.me);
-  $('#rNote').textContent = st.done ? `You escaped this one in ${mmss(st.time)}. You can play it again any time.`
-    : st.prog ? 'You left this room halfway. It picks up where you stopped.'
-    : signed ? 'Signed in: your result will be kept on every device.' : 'You’ll sign in with Google first. It takes one click, and your results follow you to every device.';
-  const s = $('#rStart'); s.href = `/play/${encodeURIComponent(r.id)}`;
-  // signed out: ask for Google sign-in right here instead of bouncing through the server's redirect
-  s.onclick = async e => {
-    if (!window.MR || !(window.MR_CFG || {}).requireLogin || MR.me) return;
-    e.preventDefault();
-    await MR.ready;
-    if (MR.me) location.href = s.href; else MR.signInDialog('required', s.getAttribute('href'));
-  }; s.innerHTML = `${esc(st.prog ? 'Continue' : st.done ? 'Play again' : (r.start || 'Begin'))} <svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 6h8M6.5 2.5 10 6l-3.5 3.5"/></svg>`;
-  $('#rKeys').textContent = touch
-    ? 'Hold your phone sideways · Thumbstick to walk · Drag to look · Headphones recommended'
-    : 'WASD to move · Mouse to look · E to use · H for hints · Headphones recommended';
-  document.title = `${r.title} · Deadbolt`;
-}
-function showRoom() {
-  inRoom = true;
-  room.hidden = false; void room.offsetWidth; room.classList.add('show');
-  startStatics();
-  setTimeout(() => $('#rBack').focus({ preventScroll: true }), 60);
-}
-async function leave() {
-  if (!inRoom || busy) return;
-  busy = true; inRoom = false;
-  stopDrone();
-  room.classList.remove('show');
-  document.title = 'Deadbolt';
-  await wait(reduce ? 50 : 380);
-  room.hidden = true;
-  if (lastDoor && !reduce) {
-    stage.classList.remove('zoom'); stage.classList.add('back'); void stage.offsetWidth;
-    stage.style.transform = '';
-    nav.classList.remove('gone');
-    await wait(900);
-    const d = lastDoor; lastDoor = null;
-    const isHero = heroDoor.contains(d);
-    d.classList.remove('open'); if (isHero) d.classList.add('ajar');
-    await wait(isHero ? 300 : 520); if (!isHero) thud(.55);
-    stage.classList.remove('back');
-  } else { nav.classList.remove('gone'); stage.style.transform = ''; }
+function go(r) { inRoom = true; location.href = roomUrl(r); }
+// back from a room with the browser's back button: put the corridor back as it was
+addEventListener('pageshow', e => {
+  if (!e.persisted) return;
+  inRoom = false; busy = false; stopDrone();
+  stage.classList.remove('zoom', 'back'); stage.style.transform = ''; nav.classList.remove('gone'); veil.classList.remove('on');
   document.documentElement.classList.remove('locked');
-  if (lastFocus && lastFocus.isConnected) lastFocus.focus({ preventScroll: true });
-  busy = false;
-}
-$('#rBack').onclick = leave; $('#rBack2').onclick = leave;
-addEventListener('keydown', e => { if (e.key === 'Escape' && inRoom) leave(); });
+  $$('.door.open').forEach(d => d.classList.remove('open'));
+});
 
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), 2600); }
 
@@ -981,8 +883,8 @@ $('#copyBtn').onclick = async () => {
   try { await navigator.clipboard.writeText(txt); toast('Copied. This one is only an example.'); }
   catch (e) { const r = document.createRange(); r.selectNodeContents($('#shareTxt')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast('Selected. Press Ctrl+C or Cmd+C to copy.'); }
 };
-/* /m/<id>: open straight onto that room's title screen */
-if (window.MR_OPEN && byId[window.MR_OPEN]) { fillRoom(byId[window.MR_OPEN]); showRoom(); }
+/* /m/<id>: straight onto that room's own screen */
+if (window.MR_OPEN && byId[window.MR_OPEN]) enter(byId[window.MR_OPEN]);
 let carb = 112;
 setInterval(() => { if (reduce) return; carb = carb <= 20 ? 112 : carb - 1; $('#carb').textContent = `${Math.floor(carb / 60)}:${String(carb % 60).padStart(2, '0')}`; }, 1000);
 })();

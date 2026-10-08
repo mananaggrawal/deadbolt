@@ -826,8 +826,9 @@ button.mcard:hover,button.mcard:focus-visible{border-color:var(--lamp);transform
         <button id="bNew" class="btn primary" disabled>Tuning in&hellip;</button>
         <button id="bCont" class="btn" hidden>Continue</button>
       </div>
+      <p class="fine t-note" id="tNote" hidden></p>
       <p class="fine" id="tKeys">WASD to move &middot; mouse to look &middot; E to interact &middot; H for hints</p>
-      <p class="fine">Headphones recommended.</p>
+      <p class="fine" id="tPhones">Headphones recommended.</p>
     </div>
   </section>
 
@@ -844,7 +845,8 @@ button.mcard:hover,button.mcard:focus-visible{border-color:var(--lamp);transform
         </div>
         <div class="marks"><div id="endSquares"></div><p class="fine">One square per puzzle: green solved alone, amber with hints, red took the answer.</p></div>
         <p class="fine end-replay" id="endReplay" hidden></p>
-        <div class="t-actions"><button id="bShare" class="btn primary">Copy result</button><button id="bAgain" class="btn">Play again</button><button id="bLobby" class="btn">All mysteries</button></div>
+        <div class="t-actions"><button id="bShare" class="btn primary">Copy result</button><button id="bLobby" class="btn">All mysteries</button></div>
+        <div class="plinks end-links" id="endLinks"><button id="bAgain" class="linkbtn">Play again</button></div>
         <p id="shareMsg" class="fine" aria-live="polite"></p>
         <textarea id="shareText" class="share-text" hidden readonly rows="3" aria-label="Your result"></textarea>
         <div class="next" id="endNext"></div>
