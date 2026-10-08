@@ -152,7 +152,7 @@
         const pending = SS.get('mr.consent');
         if (!me.consented && pending) { await api('/api/me/consent', { age: true, at: Number(pending) }).then(() => { me.consented = true; }).catch(() => {}); }
         SS.del('mr.consent');
-        if (!me.consented) setTimeout(() => consentDialog(), 300);
+        if (!me.consented && CFG.page !== 'admin') setTimeout(() => consentDialog(), 300);
         await syncResults().catch(() => {});
       }
     } catch (e) {}

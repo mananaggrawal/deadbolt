@@ -49,14 +49,14 @@ footer{border-top:1px solid var(--line);padding:32px 0 48px;color:var(--muted);f
 
 const LOGO = `<svg class="mark" viewBox="0 0 22 22" aria-hidden="true"><rect x="4" y="2" width="14" height="19" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="5.6" y="3.6" width="10.8" height="17.4" fill="#f0c27a" opacity=".85"/><rect x="5.6" y="3.6" width="5" height="17.4" fill="currentColor"/></svg>`;
 
-export function layout(head, body, { nav = true, wide = false } = {}) {
+export function layout(head, body, { nav = true, wide = false, footer = true } = {}) {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..600&family=Geist+Mono:wght@400;500&display=swap">
 ${head}<style>${CSS}</style></head><body${wide ? ' class="wide"' : ''}>
 ${nav ? `<div class="wrap nav"><a class="logo" href="/">${LOGO}<span>${esc(cfg.siteName)}</span></a><span id="mrAccount"></span></div>` : ''}
 ${body}
-<footer><div class="wrap"><span><a href="/">All the rooms</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a>${cfg.contactEmail ? `<a href="mailto:${esc(cfg.contactEmail)}">Contact</a>` : ''}</span><span>Horror escape rooms you play in your browser.</span></div></footer>
+${footer ? '' : '<!--'}<footer><div class="wrap"><span><a href="/">All the rooms</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a>${cfg.contactEmail ? `<a href="mailto:${esc(cfg.contactEmail)}">Contact</a>` : ''}</span><span>Horror escape rooms you play in your browser.</span></div></footer>${footer ? '' : '-->'}
 </body></html>`;
 }
 

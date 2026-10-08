@@ -144,7 +144,7 @@ It then runs every night at 2:30 a.m. India time. The files are encrypted, so th
   ```
   git checkout main && git merge staging && git push
   ```
-- **What's happening:** `/admin` (signed in as manan190303@gmail.com). It shows:
+- **What's happening:** open `/admin`. Signed out, it shows a single **Sign in with Google** button; sign in as manan190303@gmail.com and the dashboard opens. It shows:
   - who is on the site and in which room right now, refreshing every 15 seconds, and a feed of what just happened;
   - visitors, new accounts, plays and escapes over 24 hours, 7, 30 or 90 days, or all time;
   - the funnel from first visit to first escape, and whether new players come back;

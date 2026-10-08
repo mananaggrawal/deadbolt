@@ -107,7 +107,7 @@ with sync_playwright() as p:
             check(pg.locator('h1', has_text='Dashboard').count() == 1 and pg.locator('#live').count() == 1, 'dashboard opens for the admin account')
             pg.screenshot(path=f'{SHOTS}/09-admin.png', full_page=True)
         else:
-            check(r.status == 404, f'dashboard is a 404 for anyone else ({r.status})')
+            check(r.status == 403 and pg.locator('#go').count() == 1, f"anyone else gets the dashboard's sign-in page ({r.status})")
         ctx.close()
     else:
         print('skip signed-in checks (no session cookie given)')

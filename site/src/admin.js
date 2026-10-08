@@ -435,6 +435,41 @@ export async function adminPage(opts) {
 </script>`, { wide: true });
 }
 
+/* ---------- /admin when not signed in as the owner: one Google button ---------- */
+const GOOGLE_ICON = '<svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>';
+export function adminLoginPage(signedInAs) {
+  const head = headTags({ title: `Dashboard · ${cfg.siteName}`, description: 'Sign in', path: '/admin', page: 'admin', noindex: true });
+  return layout(head, `<style>
+.alog{min-height:calc(100dvh - 76px);display:grid;place-items:center;padding:24px 0 96px}
+.alog .card{width:min(380px,100%);text-align:center}
+.alog h1{font-size:30px;line-height:38px;margin:12px 0 22px;letter-spacing:-.3px}
+.alog .btn{width:100%;justify-content:center;min-height:46px;gap:10px}
+.alog .btn[disabled]{opacity:.5;cursor:default}
+.alog p{color:var(--muted);font-size:14px;line-height:21px;margin:16px 0 0}
+</style><div class="wrap alog"><div class="card">
+<p class="eyebrow" style="margin:0">${esc(cfg.siteName)}</p><h1>Dashboard</h1>
+<button class="btn" type="button" id="go" data-switch="${signedInAs ? '1' : ''}">${GOOGLE_ICON}<span>${signedInAs ? 'Sign in with another Google account' : 'Sign in with Google'}</span></button>
+${signedInAs ? `<p>You're signed in as ${esc(signedInAs)}, which can't open the dashboard.</p>` : ''}
+<p id="err" hidden>Couldn't reach Google. Try again.</p>
+</div></div>
+<script>
+(() => {
+  const go = document.getElementById('go'), err = document.getElementById('err');
+  const post = (path, body) => fetch(path, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body || {}) });
+  go.onclick = async () => {
+    go.disabled = true; err.hidden = true;
+    try {
+      if (go.dataset.switch) await post('/api/auth/sign-out');
+      const r = await post('/api/auth/sign-in/social', { provider: 'google', callbackURL: '/admin' });
+      const j = await r.json();
+      if (j && j.url) { location.href = j.url; return; }
+      throw new Error('no url');
+    } catch (e) { go.disabled = false; err.hidden = false; }
+  };
+})();
+</script>`, { nav: false, footer: false });
+}
+
 /* ---------- one player ---------- */
 export async function playerPage(uid, opts) {
   const u = await O(`select u.id uid, u.name uname, u.email, u.image, u."createdAt" created, pr.age_confirmed_at from "user" u

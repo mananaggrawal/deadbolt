@@ -13,7 +13,7 @@ import { landingHtml as LANDING, playHtml as PLAY } from './generated/assets.js'
 import * as R from './rooms.js';
 import * as og from './og.js';
 import { headTags, resultPage, privacyPage, termsPage, gatePage, notFoundPage } from './pages.js';
-import { adminOptions, adminPage, livePanel, playerPage, exportCsv } from './admin.js';
+import { adminOptions, adminPage, adminLoginPage, livePanel, playerPage, exportCsv } from './admin.js';
 
 export const app = new Hono();
 
@@ -398,8 +398,8 @@ async function admin(c) {
   return isAdmin(s) ? s : null;
 }
 app.get('/admin', async c => {
-  if (!(await session(c))) return c.redirect('/?signin=1&next=/admin');
-  if (!(await admin(c))) return c.html(notFoundPage(), 404);
+  const s = await admin(c);
+  if (!s) { const who = await session(c); return c.html(adminLoginPage(who && who.user.email), who ? 403 : 200); }
   return c.html(await adminPage(adminOptions(c.req.query())));
 });
 app.get('/admin/live', async c => {
