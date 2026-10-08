@@ -153,7 +153,7 @@ function landingHtml(room, { canon = null } = {}) {
   const rel = R.released().map(m => m.id);
   const head = room
     ? headTags({ title: `${room.title} · ${cfg.siteName}`, description: room.tagline || room.hook, path: `/m/${room.id}`, image: `/og/m/${room.id}.jpg`, imageAlt: `${room.title}, a horror mystery room on ${cfg.siteName}`, page: 'site', room: room.id })
-    : headTags({ title: `${cfg.siteName} · Horror mystery rooms`, description: 'First-person horror mystery rooms you play alone. A real place on one night, something in it that follows a rule, and one way out.', path: '/' });
+    : headTags({ title: `${cfg.siteName} · Horror mystery rooms`, description: 'Horror mystery rooms. A real place on one night, something in it that follows a rule, and one way out.', path: '/' });
   // the doors' words come from the game's own room list, so the corridor and the room never disagree
   const words = Object.fromEntries(R.allRooms().map(m => [m.id, { title: m.title, place: m.place, era: m.era, hook: m.hook, tagline: m.tagline, start: m.start }]));
   const vars = { MR_RELEASED: rel, MR_ROOMS: words, MR_PREFETCH: PREFETCH() };

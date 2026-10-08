@@ -569,7 +569,7 @@
       subject = `Try this: ${o.title} on ${site}`;
       heading = 'Send this room to a friend'; lead = 'They get the door and the story, nothing that gives the puzzles away.';
     } else {
-      text = `${site}: horror mystery rooms you play alone.`;
+      text = `${site}: horror mystery rooms.`;
       short = text; subject = `${site}: horror mystery rooms`;
       heading = `Share ${site}`;
     }
