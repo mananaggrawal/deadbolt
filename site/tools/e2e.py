@@ -45,7 +45,9 @@ with sync_playwright() as p:
     check(pg.locator('#doors .dbtn').count() >= 9, f"corridor has doors ({pg.locator('#doors .dbtn').count()})")
     nums = [t.strip() for t in pg.locator('#pgNums button').all_inner_texts()]
     check(nums == [str(i + 1) for i in range(len(nums))], f'corridor pager shows page numbers, not door ranges ({nums})')
-    check(pg.inner_text('#shareTxt').startswith('I got out of') and pg.locator('#help .card .panel').count() == 2, 'landing: the share example just says you got out')
+    pg.locator('#shareImg').scroll_into_view_if_needed(); pg.wait_for_timeout(1500)
+    check(pg.evaluate("(() => { const i = document.getElementById('shareImg'); return i.complete && i.naturalWidth === 1200; })()"), 'landing: the share example is the result link\'s picture, and it loads')
+    pg.evaluate('scrollTo(0, 0)')
     ph = [round(x.bounding_box()['height']) for x in pg.locator('#help .card .panel').all()]
     check(len(set(ph)) == 1, f'landing: the hints and share pictures are the same height ({ph})')
     check(pg.locator('.nav .shr').count() == 1, 'the top bar has a Share button')

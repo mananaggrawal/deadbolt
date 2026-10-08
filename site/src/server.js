@@ -153,7 +153,7 @@ function landingHtml(room, { canon = null } = {}) {
   const rel = R.released().map(m => m.id);
   const head = room
     ? headTags({ title: `${room.title} · ${cfg.siteName}`, description: room.tagline || room.hook, path: `/m/${room.id}`, image: `/og/m/${room.id}.jpg`, imageAlt: `${room.title}, a horror mystery room on ${cfg.siteName}`, page: 'site', room: room.id })
-    : headTags({ title: `${cfg.siteName} · Horror mystery rooms`, description: 'Horror mystery rooms. A real place on one night, something in it that follows a rule, and one way out.', path: '/' });
+    : headTags({ title: `${cfg.siteName} · Horror mystery rooms`, description: 'Horror mystery rooms. Every room has a way out. Not everything in it wants you to find it.', path: '/' });
   // the doors' words come from the game's own room list, so the corridor and the room never disagree
   const words = Object.fromEntries(R.allRooms().map(m => [m.id, { title: m.title, place: m.place, era: m.era, mins: m.mins, hook: m.hook, tagline: m.tagline, start: m.start }]));
   const vars = { MR_RELEASED: rel, MR_ROOMS: words, MR_PREFETCH: PREFETCH() };
@@ -247,6 +247,11 @@ app.get('/og/:file{site\\.(jpg|png)}', c => sendCard(c, `site:${R.released().len
 app.get('/og/m/:file{[a-z0-9_-]+\\.(jpg|png)}', c => {
   const file = c.req.param('file'), id = file.replace(/\.(jpg|png)$/, '');
   return sendCard(c, `m:${id}`, () => (R.isReleased(id) ? og.roomCard(id) : null), 'public, max-age=86400, s-maxage=86400', fmtOf(file));
+});
+// the same picture a shared result shows, for any open room: the landing page's "Share your result" example
+app.get('/og/got/:file{[a-z0-9_-]+\\.(jpg|png)}', c => {
+  const file = c.req.param('file'), id = file.replace(/\.(jpg|png)$/, '');
+  return sendCard(c, `got:${id}`, () => (R.isReleased(id) ? og.resultCard({ room: id }) : null), 'public, max-age=86400, s-maxage=86400', fmtOf(file));
 });
 app.get('/og/r/:file{[a-z0-9]{6}\\.(jpg|png)}', async c => {
   const file = c.req.param('file'), code = file.slice(0, 6);
