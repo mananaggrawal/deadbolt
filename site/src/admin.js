@@ -1,5 +1,5 @@
 // /admin: everything happening on the live site. Opens for cfg.admins only (see config.js).
-//   /admin                  the dashboard (?range=24h|7d|30d|90d|all, ?me=1 to include the owner's own activity)
+//   /admin                  the dashboard (?range=24h|7d|30d|90d|all; ?me=0 hides the owner's own activity, remembered in a cookie)
 //   /admin/live             the "Live now" panel on its own; the dashboard refreshes it every 15 seconds
 //   /admin/players/<id>     one player: their plays and everything they did, newest first
 //   /admin/export/<t>.csv   raw rows
@@ -16,9 +16,11 @@ const RANGES = {
   '90d': { label: '90 days', hours: 24 * 90, unit: 'day' },
   all: { label: 'All time', hours: null, unit: 'day' },
 };
-export function adminOptions(query) {
+// me: include the owner's own activity. On by default; ?me=0 hides it, and the server remembers the choice in a cookie.
+export function adminOptions(query, saved) {
   const range = RANGES[query.range] ? query.range : (query.days && RANGES[`${query.days}d`] ? `${query.days}d` : '7d');
-  return { range, me: query.me === '1' };
+  const me = query.me === '0' ? false : query.me === '1' ? true : saved !== '0';
+  return { range, me };
 }
 
 /* ---------- queries with named parameters: @name becomes $n ---------- */
@@ -34,7 +36,7 @@ function bind(text, p) {
 const R = (text, p) => rows(...bind(text, p));
 const O = (text, p) => one(...bind(text, p));
 
-// rows made by the owner (signed in as an admin, or on a browser that has signed in as one) are left out unless ?me=1
+// rows made by the owner (signed in as an admin, or on a browser that has signed in as one) are left out when ?me=0
 const notMe = (a = '') => `not coalesce(${a}user_id = any(@xu::text[]), false) and not coalesce(${a}anon_id = any(@xa::uuid[]), false)`;
 
 async function context(opts) {
@@ -82,10 +84,10 @@ const roomTitle = id => (allRooms().find(m => m.id === id) || {}).title || id ||
 const COUNTRY = new Intl.DisplayNames(['en'], { type: 'region' });
 const country = c => { try { return c ? COUNTRY.of(c) : '–'; } catch (e) { return c; } };
 const deviceShort = d => (d ? d.split(' ').filter(x => x !== 'other').join(' · ') : '–');
-function who(r, link = true) {
+function who(r, link = true, own = []) {
   if (r.name === 'server_error') return '<span class="muted">Server</span>';
   if (r.uid) {
-    const name = esc(r.uname || r.email || 'Player');
+    const name = own.includes(r.uid) ? 'You' : esc(r.uname || r.email || 'Player');
     return link ? `<a class="who" href="/admin/players/${encodeURIComponent(r.uid)}">${name}</a>` : `<span class="who">${name}</span>`;
   }
   return `<span class="muted">Visitor ${esc(String(r.anon_id || '').slice(0, 6) || '?')}</span>`;
@@ -185,11 +187,11 @@ export async function livePanel(opts) {
        order by ts desc limit 60`, P),
   ]);
   const roomsNow = inRoom.length ? `<div class="scroll"><table class="t"><thead><tr><th>Player</th><th>Room</th><th class="n">Puzzles</th><th class="n">Playing for</th><th class="n">Hints</th><th class="n">Wrong</th><th>Device</th><th>Country</th></tr></thead><tbody>
-    ${inRoom.map(p => `<tr><td>${who(p)}</td><td>${esc(roomTitle(p.room))}</td><td class="n">${p.steps_done}${p.steps_total ? ` / ${p.steps_total}` : ''}</td>
+    ${inRoom.map(p => `<tr><td>${who(p, true, ctx.ownIds)}</td><td>${esc(roomTitle(p.room))}</td><td class="n">${p.steps_done}${p.steps_total ? ` / ${p.steps_total}` : ''}</td>
       <td class="n">${dur(p.resumed ? p.seconds || 0 : Math.max(p.seconds || 0, (Date.now() - new Date(p.started_at)) / 1000))}</td><td class="n">${p.hints}</td><td class="n">${p.wrong}</td>
       <td>${esc(deviceShort(p.device))}</td><td>${esc(country(p.country))}</td></tr>`).join('')}</tbody></table></div>`
     : '<p class="muted">Nobody is in a room right now.</p>';
-  const items = feed.map(e => `<li><time title="${esc(fmtDT(e.ts))}">${esc(ago(e.ts))}</time><span>${who(e)}</span><span>${describe(e)}</span></li>`).join('')
+  const items = feed.map(e => `<li><time title="${esc(fmtDT(e.ts))}">${esc(ago(e.ts))}</time><span>${who(e, true, ctx.ownIds)}</span><span>${describe(e)}</span></li>`).join('')
     || '<li class="muted">Nothing in the last 24 hours.</li>';
   return `<div class="livehead"><h2><span class="dot" aria-hidden="true"></span>Live now</h2><small class="muted">Updated ${tf.format(new Date())} IST · refreshes every 15 seconds</small></div>
   <div class="tiles tiles-sm"><div class="tile"><span>On the site now</span><b>${num(counts.online)}</b></div><div class="tile"><span>In a room now</span><b>${num(inRoom.length)}</b></div>
@@ -255,11 +257,11 @@ async function sharingSection(ctx) {
   const roomHtml = allRooms().slice().reverse().map(m => { const r = byRoom.find(x => x.room === m.id); if (!r) return '';
     return `<tr><td>${esc(m.title)}<small>#${m.n}</small></td><td class="n">${num(r.invites)}</td><td class="n">${num(r.results)}</td><td class="n">${num(r.visitors)}</td><td class="n">${num(r.plays)}</td></tr>`; }).join('')
     || '<tr><td colspan="5" class="muted">No room shared in this period.</td></tr>';
-  const sharerHtml = sharers.map(r => `<tr><td>${who(r)}${r.email ? `<small>${esc(r.email)}</small>` : ''}</td><td class="n">${num(r.links)}</td><td class="n">${num(r.sent)}</td>
+  const sharerHtml = sharers.map(r => `<tr><td>${who(r, true, ctx.ownIds)}${r.email ? `<small>${esc(r.email)}</small>` : ''}</td><td class="n">${num(r.links)}</td><td class="n">${num(r.sent)}</td>
       <td class="n">${num(r.visits)}</td><td class="n">${num(r.plays)}</td><td class="n">${num(r.escapes)}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">No sharers yet.</td></tr>';
   const mixOf = code => mix.filter(r => r.code === code).sort((a, b) => b.n - a.n).map(r => `${chName(chKey(r.ch))} ${r.n}`).join(' · ');
   const linkHtml = links.map(r => `<tr><td><a class="who" href="/${r.kind === 'result' ? 'r' : 'i'}/${esc(r.code)}" target="_blank" rel="noopener"><code>${esc(r.code)}</code></a><small>${esc(KIND[r.kind] || r.kind)}${r.room ? ` · ${esc(roomTitle(r.room))}` : ''}</small></td>
-      <td>${who(r)}</td><td class="n">${num(r.clicks)}<small>${esc(mixOf(r.code))}</small></td><td class="n">${num(r.landings)}</td><td class="n">${num(r.new_players)}</td><td class="n">${num(r.plays_started)}</td>
+      <td>${who(r, true, ctx.ownIds)}</td><td class="n">${num(r.clicks)}<small>${esc(mixOf(r.code))}</small></td><td class="n">${num(r.landings)}</td><td class="n">${num(r.new_players)}</td><td class="n">${num(r.plays_started)}</td>
       <td class="n">${num(r.signups)}</td><td class="n">${num(r.escapes)}</td><td>${esc(fmtDT(r.created_at))}<small>${esc(SURFACE[r.surface] || r.surface || '')}</small></td></tr>`).join('')
     || '<tr><td colspan="9" class="muted">No shared link has been opened yet.</td></tr>';
   const tile = (label, v, note) => `<div class="tile"><span>${label}</span><b>${v}</b>${note ? `<small>${note}</small>` : ''}</div>`;
@@ -451,7 +453,7 @@ export async function adminPage(opts) {
   }).join('') || '<p class="muted">No finished or stopped plays yet. A play counts here once it escapes or goes quiet for two hours.</p>';
 
   /* players */
-  const playerRow = u => `<tr><td>${who(u)}<small>${esc(u.email || '')}</small></td><td>${esc(ago(u.last_active))}</td><td>${esc(fmtDT(u.created))}${u.age_confirmed_at ? '' : '<small class="bad">18+ not confirmed</small>'}</td>
+  const playerRow = u => `<tr><td>${who(u, true, ctx.ownIds)}<small>${esc(u.email || '')}</small></td><td>${esc(ago(u.last_active))}</td><td>${esc(fmtDT(u.created))}${u.age_confirmed_at ? '' : '<small class="bad">18+ not confirmed</small>'}</td>
     <td class="n">${num(u.plays)}</td><td class="n">${num(u.rooms_escaped)}<small>of ${pl(u.rooms, 'room')} tried</small></td><td class="n">${u.secs ? dur(u.secs) : '–'}</td>
     <td>${esc(deviceShort(u.device))}</td><td>${esc(country(u.country))}</td></tr>`;
   const playerHead = '<thead><tr><th>Player</th><th>Last active</th><th>Joined</th><th class="n">Plays</th><th class="n">Rooms escaped</th><th class="n">Time played</th><th>Device</th><th>Country</th></tr></thead>';
@@ -465,7 +467,7 @@ export async function adminPage(opts) {
   const srvRows = serverErr.map(e => `<tr><td><code>${esc(e.path || '')}</code></td><td>${esc(e.msg || '')}<small>${esc(e.loc || '')}</small></td><td class="n">${num(e.n)}</td><td>${esc(ago(e.last))}</td></tr>`).join('')
     || '<tr><td colspan="4" class="muted">No server errors in this period.</td></tr>';
 
-  const fbRows = fbList.map(f => `<tr><td>${esc(fmtDT(f.created_at))}</td><td>${who(f)}</td><td>${esc(roomTitle(f.room) || '–')}</td>
+  const fbRows = fbList.map(f => `<tr><td>${esc(fmtDT(f.created_at))}</td><td>${who(f, true, ctx.ownIds)}</td><td>${esc(roomTitle(f.room) || '–')}</td>
     <td>${esc(f.kind)}${f.rating ? ` · ${f.rating}/5` : ''}${f.difficulty ? ` · ${esc(f.difficulty)}` : ''}</td>
     <td>${esc(f.text || '')}<small>${fbWhere(f)}</small></td></tr>`).join('')
     || '<tr><td colspan="5" class="muted">No feedback in this period.</td></tr>';
@@ -474,14 +476,14 @@ export async function adminPage(opts) {
     : `<tr><td colspan="${cols.length}" class="muted">${empty}</td></tr>`;
   const dailyRows = daily.map(d => `<tr><td>${esc(d.d)}</td><td class="n">${num(d.visitors)}</td><td class="n">${num(d.views)}</td><td class="n">${num(d.accounts)}</td><td class="n">${num(d.starts)}</td><td class="n">${num(d.escapes)}</td></tr>`).join('');
 
-  const q = (o = {}) => { const p = new URLSearchParams({ range: ctx.range, ...(ctx.me ? { me: '1' } : {}), ...o }); if (p.get('me') === '0') p.delete('me'); return `?${p}`; };
+  const q = (o = {}) => `?${new URLSearchParams({ range: ctx.range, ...o })}`;
   const head = headTags({ title: `Dashboard · ${cfg.siteName}`, description: 'What is happening on the site', path: '/admin', page: 'admin', noindex: true });
   return layout(head, `<style>${ADMIN_CSS}</style><div class="wrap dash">
 <div class="dhead"><div><p class="eyebrow">Production · build ${esc(cfg.version)}</p><h1>Dashboard</h1></div>
 <nav class="ctl" aria-label="Period"><a class="toggle" href="#sharing">Sharing</a><span class="seg">${Object.entries(RANGES).map(([k, r]) => `<a href="${q({ range: k })}" class="${k === ctx.range ? 'on' : ''}">${r.label}</a>`).join('')}</span>
-<a class="toggle${ctx.me ? ' on' : ''}" href="${q({ me: ctx.me ? '0' : '1' })}">${ctx.me ? 'Including your own activity' : 'Your own activity hidden'}</a></nav></div>
+<a class="toggle${ctx.me ? '' : ' on'}" href="${q({ me: ctx.me ? '0' : '1' })}">${ctx.me ? 'Hide my own activity' : 'Your own activity is hidden · show it'}</a></nav></div>
 
-<section id="live" class="live" data-src="/admin/live${ctx.me ? '?me=1' : ''}">${live}</section>
+<section id="live" class="live" data-src="/admin/live?me=${ctx.me ? 1 : 0}">${live}</section>
 
 <section><h2>${esc(ctx.label === 'All time' ? 'All time' : `Last ${ctx.label}`)}</h2><div class="tiles">${tiles}</div>
 <div class="figs">${charts}</div>
@@ -511,7 +513,7 @@ ${sharing}
 <div><h3>Devices</h3><table class="t"><thead><tr><th>Device</th><th class="n">Visitors</th></tr></thead><tbody>${small(devices, [['kind', 0, (k, r) => deviceShort(`${k} ${r.os} ${r.browser}`)], ['u', 1, num]], 'None yet.')}</tbody></table></div>
 </div></section>
 
-<section><h2>Export</h2><p class="exp">${['plays', 'events', 'users', 'feedback', 'shares', 'sharing'].map(t => `<a href="/admin/export/${t}.csv${q()}">${t}.csv</a>`).join('')}</p>
+<section><h2>Export</h2><p class="exp">${['plays', 'events', 'users', 'feedback', 'shares', 'sharing'].map(t => `<a href="/admin/export/${t}.csv${q({ me: ctx.me ? 1 : 0 })}">${t}.csv</a>`).join('')}</p>
 <p class="muted">Times are India time. Bots, link previews and headless browsers aren't counted.</p></section>
 </div>
 <script>
@@ -587,7 +589,7 @@ export async function playerPage(uid, opts) {
   const timeline = events.map(e => `<li><time>${esc(fmtDT(e.ts))}</time><span>${describe(e)}</span><span class="muted">${esc(deviceShort(e.device))}</span></li>`).join('')
     || '<li class="muted">Nothing recorded yet.</li>';
   const head = headTags({ title: `${u.uname || u.email} · Dashboard`, description: 'Player', path: '/admin', page: 'admin', noindex: true });
-  const back = `/admin${opts && opts.me ? '?me=1' : ''}`;
+  const back = '/admin';
   return layout(head, `<style>${ADMIN_CSS}</style><div class="wrap dash">
 <p class="eyebrow"><a href="${back}">Dashboard</a> · Player</p>
 <div class="phead">${u.image ? `<img src="${esc(u.image)}" alt="" referrerpolicy="no-referrer">` : ''}<div><h1>${esc(u.uname || 'Player')}</h1><p class="muted">${esc(u.email || '')}</p></div></div>
