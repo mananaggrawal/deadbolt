@@ -107,7 +107,10 @@ button { font: inherit; color: inherit; }
 /* hero */
 .hero { padding-block: 72px 56px; }
 .eyebrow { color: var(--muted); }
-.hero h1 { max-width: 1000px; margin-top: 64px; }
+.hero h1 { max-width: 1000px; margin-top: 28px; }
+.kicker { display: inline-flex; align-items: center; gap: 10px; padding: 6px 14px 6px 12px; border: 1px solid rgba(240, 194, 122, .24); border-radius: 999px;
+  background: rgba(240, 194, 122, .06); color: var(--lamp); font: 500 12px/16px var(--mono); letter-spacing: .18em; text-transform: uppercase; }
+.kicker .bulb { width: 6px; height: 6px; border-radius: 50%; background: var(--lamp); box-shadow: 0 0 8px 2px rgba(240, 194, 122, .5); animation: bulb 9s steps(1) infinite; }
 .hero h1 .faint { color: var(--faint); }
 .hero .actions { margin-top: 40px; }
 
@@ -245,6 +248,11 @@ button { font: inherit; color: inherit; }
 section.block { padding-top: 152px; }
 .section-head { max-width: 600px; margin-bottom: 40px; display: flex; flex-direction: column; gap: 12px; }
 .section-head .lead { color: var(--muted); }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.step { position: relative; display: flex; flex-direction: column; gap: 8px; padding: 28px 28px 32px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg-2); }
+.step-i { width: 32px; height: 32px; color: var(--lamp); margin-bottom: 20px; }
+.step-n { position: absolute; top: 28px; right: 28px; font: 500 12px/16px var(--mono); letter-spacing: .14em; color: var(--faint); }
+.step p { color: var(--muted); max-width: 34ch; }
 .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px; }
 .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px; }
 .card { display: flex; flex-direction: column; gap: 20px; padding: 20px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); min-width: 0; }
@@ -253,27 +261,8 @@ section.block { padding-top: 152px; }
 .panel { position: relative; min-height: 248px; border-radius: 4px; background: var(--bg-2); overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 24px; isolation: isolate; }
 .panel::after { content: ""; position: absolute; inset: 0; z-index: -1; background-image: var(--grain); background-size: 256px; opacity: .35; mix-blend-mode: overlay; }
 .mock { width: 100%; max-width: 310px; background: var(--card); border: 1px solid var(--line); border-radius: 6px; box-shadow: var(--shadow); padding: 14px 16px; font-size: 13px; line-height: 20px; }
-.mock-row { display: flex; flex-direction: column; padding: 8px 0; border-top: 1px solid var(--line); }
-.mock-row:first-child { border-top: 0; padding-top: 0; }
-.mock-row:last-child { padding-bottom: 0; }
-.mock-row .k { color: var(--muted); font-family: var(--mono); font-size: 11.5px; letter-spacing: .02em; }
 .mock .cap { font: 500 11px/16px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
-.rule-line { font-size: 18px; line-height: 26px; margin: 8px 0 14px; }
-.meter { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; font-size: 12.5px; color: var(--muted); }
-.meter .bar { height: 4px; background: var(--tag); border-radius: 2px; overflow: hidden; }
-.meter .bar i { display: block; height: 100%; width: 34%; background: var(--lamp); border-radius: 2px; animation: burn 14s linear infinite; }
-@keyframes burn { from { width: 40%; } to { width: 8%; } }
-.meter .mono { color: var(--ink); font-variant-numeric: tabular-nums; }
-.hud { position: relative; width: 100%; max-width: 330px; aspect-ratio: 16 / 10; border-radius: 4px; overflow: hidden; background: #000 center / cover; box-shadow: var(--shadow); }
-.hud img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(.7); }
-.hud .ret { position: absolute; left: 50%; top: 46%; width: 12px; height: 12px; margin: -6px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 1px rgba(0,0,0,.6); }
-.hud .pr { position: absolute; left: 0; right: 0; top: calc(46% + 14px); text-align: center; font-size: 12px; text-shadow: 0 1px 2px #000, 0 0 8px #000; }
-.hud .pr b { display: block; font-weight: 500; font-size: 14px; margin-bottom: 3px; }
 kbd { display: inline-block; min-width: 16px; padding: 0 5px; border: 1px solid rgba(237,232,222,.55); border-radius: 3px; font: 500 10.5px/16px var(--mono); text-align: center; background: rgba(0,0,0,.4); margin-right: 4px; }
-.hud .inv { position: absolute; left: 10px; bottom: 10px; display: flex; gap: 4px; flex-wrap: wrap; align-items: center; max-width: 92%; }
-.hud .inv em { font: 500 9px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-style: normal; margin-right: 2px; }
-.hud .inv span { font: 500 9.5px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 4px 6px; border: 1px solid var(--line-2); background: rgba(0,0,0,.6); color: var(--ink-2); }
-.hud .inv span.new { border-color: var(--lamp); color: var(--ink); }
 
 .hints { width: 100%; max-width: 380px; }
 .hints h5 { margin: 0 0 10px; font-size: 15px; font-weight: 450; display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
@@ -370,6 +359,10 @@ footer.site { padding-block: 96px 64px; border-top: 1px solid var(--line); }
   .footer-top { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 900px) {
+  .steps { grid-template-columns: 1fr; gap: 12px; }
+  .step { padding: 22px 22px 24px; }
+  .step-i { margin-bottom: 8px; }
+  .step-n { top: 22px; right: 22px; }
   .corridor { padding: 64px 0 40px; }
   .doors { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 28px; padding: 30px 24px 8px; scrollbar-width: none; }
   .doors::-webkit-scrollbar { display: none; }
@@ -384,7 +377,8 @@ footer.site { padding-block: 96px 64px; border-top: 1px solid var(--line); }
   .nav-right .btn { display: none; }
   #mrAccount .btn { display: inline-flex; }   /* keep Sign in / account on phones */
   .hero { padding-block: 40px 40px; }
-  .hero h1 { margin-top: 36px; }
+  .hero h1 { margin-top: 22px; }
+  .kicker { font-size: 11px; letter-spacing: .16em; }
   .scene { width: calc(100% - 32px); grid-template-columns: 1fr; padding: 64px 20px 32px; gap: 56px; min-height: 0; }
   .hero-door .dbtn { --dw: 188px; }
   .hero-cap { margin-top: 72px; }
@@ -403,14 +397,12 @@ footer.site { padding-block: 96px 64px; border-top: 1px solid var(--line); }
   .footer-bottom { flex-direction: column; margin-top: 56px; gap: 12px; }
 }
 @media (max-width: 440px) {
-  .hud .inv em, .hud .inv span:first-of-type { display: none; }
-  .hud .pr { top: calc(40% + 12px); }
 }
 @media (max-height: 500px) and (orientation: landscape) {
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .walker, .fx-flicker, .fx-buzz, .fx-rain::after, .meter .bar i, .live .dot, .wall-tex::before { animation: none; }
+  .walker, .fx-flicker, .fx-buzz, .fx-rain::after, .live .dot, .wall-tex::before, .kicker .bulb { animation: none; }
   .door .leaf, .door .halves i { transition-duration: .01s; }
 }
 </style>
@@ -441,7 +433,7 @@ footer.site { padding-block: 96px 64px; border-top: 1px solid var(--line); }
 <div id="stage">
 <main id="top">
   <header class="hero wrap">
-    <p class="eyebrow">Horror mystery rooms</p>
+    <p class="kicker"><span class="bulb" aria-hidden="true"></span>Horror mystery rooms</p>
     <h1>Every room has a way out. <span class="faint">Not everything in it wants you to find it.</span></h1>
     <div class="actions">
       <button class="btn" type="button" data-enter="newest">Open the newest door <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 6h8M6.5 2.5 10 6l-3.5 3.5"/></svg></button>
@@ -465,41 +457,27 @@ footer.site { padding-block: 96px 64px; border-top: 1px solid var(--line); }
     <div class="section-head">
       <p class="eyebrow">How it works</p>
       <h2>One night, one place, one way out.</h2>
-      <p class="lead">Each room is a small 3D place you walk around in, seen through your own eyes. You are alone, and the only goal is to get out.</p>
     </div>
-    <div class="grid3">
-      <article class="card">
-        <div class="panel">
-          <div class="mock">
-            <div class="mock-row"><span>Room 406, Pinecrest Motor Lodge</span><span class="k">30 October 1983</span></div>
-            <div class="mock-row"><span>The lift, Cheongun Building, Seoul</span><span class="k">17 December 2004</span></div>
-            <div class="mock-row"><span>Cerro Rico, Potosí</span><span class="k">31 July 1998</span></div>
-          </div>
-        </div>
-        <div class="txt"><h4>A real place, on one night</h4><p>A motel off the highway. A lift in Seoul. The works of Prague's astronomical clock the night it stopped. Every room is a different country, year and kind of horror.</p></div>
-      </article>
-      <article class="card">
-        <div class="panel">
-          <div class="mock">
-            <span class="cap">The rule</span>
-            <p class="rule-line">He only moves in the dark.</p>
-            <div class="meter"><span>Lamp</span><span class="bar"><i></i></span><span class="mono" id="carb">1:52</span></div>
-          </div>
-        </div>
-        <div class="txt"><h4>Something in it follows a rule</h4><p>Learn the rule and it keeps you alive. Don't look at the woman who gets on at the fifth floor. Keep your lamp lit, because he only moves in the dark.</p></div>
-      </article>
-      <article class="card">
-        <div class="panel">
-          <div class="hud" aria-hidden="true">
-            <img src="/art/tik.jpg" alt="">
-            <span class="ret"></span>
-            <span class="pr"><b>Old trunk</b><kbd>E</kbd>Open it</span>
-            <span class="inv"><em>Pockets</em><span>Torch</span><span class="new">Brass key</span><span>Torn note</span></span>
-          </div>
-        </div>
-        <div class="txt"><h4>You get out with your hands</h4><p>Pick things up, carry them, drag furniture, climb, crouch, light the lamp. Look closely at everything: the answer is always somewhere in the room.</p></div>
-      </article>
-    </div>
+    <ol class="steps">
+      <li class="step">
+        <span class="step-n">01</span>
+        <svg class="step-i" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="4" width="16" height="25" rx="1"/><path d="M4 29h24"/><circle cx="20" cy="17" r="1" fill="currentColor"/></svg>
+        <h4>Pick a door</h4>
+        <p>Every room is a real place, on one night. You go in alone.</p>
+      </li>
+      <li class="step">
+        <span class="step-n">02</span>
+        <svg class="step-i" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="14" cy="14" r="8"/><path d="m20 20 8 8"/></svg>
+        <h4>Look around</h4>
+        <p>Search, pick things up and use them. Everything you need is in the room.</p>
+      </li>
+      <li class="step">
+        <span class="step-n">03</span>
+        <svg class="step-i" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4H6v25h8"/><path d="M14 4l10 3v19l-10 3z"/><circle cx="17.5" cy="17" r="1" fill="currentColor"/></svg>
+        <h4>Get out</h4>
+        <p>Find the way out. Stuck? Ask for a hint.</p>
+      </li>
+    </ol>
   </section>
 
   <section class="block" id="rooms">
@@ -595,7 +573,7 @@ Escaped in 31:20 · 2 hints
     <div class="footer-top">
       <div class="footer-col">
         <span class="logo"><svg class="mark" viewBox="0 0 22 22" aria-hidden="true"><rect x="4" y="2" width="14" height="19" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="5.6" y="3.6" width="10.8" height="17.4" fill="#f0c27a" opacity=".85"/><rect class="lf" x="5.6" y="3.6" width="10.8" height="17.4" fill="currentColor"/></svg><span>Deadbolt</span></span>
-        <span class="muted">Horror escape rooms you play in your browser.</span>
+        <span class="muted">Horror mystery rooms you play in your browser.</span>
       </div>
       <div class="footer-col" id="footRooms"><span class="label">Newest rooms</span></div>
       <div class="footer-col"><span class="label">Play</span><button type="button" data-enter="newest">Open the newest door</button><a href="#rooms">All the rooms</a><a href="#how">How it works</a><a href="#faq">Questions</a></div>
@@ -930,8 +908,6 @@ $('#copyBtn').onclick = async () => {
 };
 /* /m/<id>: straight onto that room's own screen */
 if (window.MR_OPEN && byId[window.MR_OPEN]) enter(byId[window.MR_OPEN]);
-let carb = 112;
-setInterval(() => { if (reduce) return; carb = carb <= 20 ? 112 : carb - 1; $('#carb').textContent = `${Math.floor(carb / 60)}:${String(carb % 60).padStart(2, '0')}`; }, 1000);
 })();
 </script>
 
