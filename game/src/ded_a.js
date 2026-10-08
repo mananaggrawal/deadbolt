@@ -49,7 +49,7 @@ const POS = {
   pegs: new THREE.Vector3(4.15, FY + 1.75, -0.05), chest0: new THREE.Vector3(3.05, FY, -0.36), chestTrap: new THREE.Vector3(3.0, FY, -2.15),
   basket0: new THREE.Vector3(3.75, FY + 0.45, -5.78), sewing: new THREE.Vector3(3.0, FY + 0.86, -6.08),
   toolbox: new THREE.Vector3(0.38, FY + 0.48, 1.45), ladder0: new THREE.Vector3(18.0, 0, 6.2), gable: new THREE.Vector3(3.0, 0, 3.05),
-  crate0: new THREE.Vector3(16.1, 0, -2.9), oar1: new THREE.Vector3(17.6, 2.38, -0.5), oakum: new THREE.Vector3(19.3, 1.55, -3.9), tar0: new THREE.Vector3(17.85, 0.89, -3.62),
+  crate0: new THREE.Vector3(16.1, 0, -2.9), oar1: new THREE.Vector3(17.4, 2.427, -0.84), oakum: new THREE.Vector3(19.3, 1.55, -3.9), tar0: new THREE.Vector3(17.85, 0.89, -3.62),
   block: new THREE.Vector3(13.8, 0, 5.0), hook: new THREE.Vector3(-2.25, 0, 18.6),
   roller0: [new THREE.Vector3(4.9, 0, 21.9), new THREE.Vector3(4.4, 0, 20.4)],
   oar2: new THREE.Vector3(4.2, CY + 0.05, -4.3), nest: new THREE.Vector3(2.35, CY, -1.2),

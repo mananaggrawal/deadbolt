@@ -116,7 +116,7 @@ const HINTS = [
     'Take the iron door off the oven mouth and put the wood and the bark in. Before you light it, open the damper high on the chimney: you\'ll need to stand on the step beside the stove to reach it.',
     'Take an armful from the woodpile, and a curl of bark from the birch log by the chopping block. At the stove, lift the iron door off the mouth, put the wood in, then the bark. Climb onto the step at the side of the stove and open the little iron damper door on the chimney. Then light it with the matches.'] },
   { id: 'oar1', title: 'An oar in the barn', when: s => !s.flags.barnSeen ? 'hidden' : s.flags.oar1Taken ? 'solved' : 'open', tiers: [
-    'One oar is lying across the barn\'s crossbeams.',
+    'One oar is lying across the crossbeams overhead, a few steps inside the barn door.',
     'It\'s too high to reach from the floor. You need something to stand on.',
     'There\'s a crate in the barn you can drag.',
     `Grab the crate (E) and walk it under the oar on the beams, let go, jump onto it (${'Space'}) and take the oar.`] },

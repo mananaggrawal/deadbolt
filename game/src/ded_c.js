@@ -109,8 +109,8 @@ function buildBarn() {
   O.oakum = grp(POS.oakum.x, POS.oakum.y, POS.oakum.z, scene); O.oakum.userData.keep = true;
   { pole([0.03, 0.05, 0], [-0.03, 0.05, 0], 0.005, M.iron, O.oakum, 4); for (let i = 0; i < 9; i++) { const t = tube([[0, 0.04, 0], [(hash1(i) - 0.5) * 0.06, -0.15, (hash1(i * 3) - 0.5) * 0.04], [(hash1(i * 5) - 0.5) * 0.08, -0.35 - hash1(i * 7) * 0.1, (hash1(i * 9) - 0.5) * 0.06]], 0.012, M.oakum, O.oakum, 8, 4); } }
   // the oar up across the beams, and the two empty pegs on the wall where the other one hung
-  O.oar1 = grp(POS.oar1.x, POS.oar1.y, POS.oar1.z, scene); O.oar1.userData.keep = true; buildOarMesh(O.oar1); O.oar1.rotation.set(Math.PI / 2, 0, Math.PI / 2 + 0.05);
-  O.oar1.position.set(18.7, 2.42, -0.5);
+  // it lies across the first two beams (z -2.5 and -0.5), blade toward the door's line, so it shows in the gap from below
+  O.oar1 = grp(POS.oar1.x, POS.oar1.y, POS.oar1.z, scene); O.oar1.userData.keep = true; buildOarMesh(O.oar1); O.oar1.rotation.set(-Math.PI / 2, 0, 0.04);
   for (const y of [1.3, 1.7]) pole([B.x0 + 0.08, y, -3.6], [B.x0 + 0.25, y + 0.02, -3.6], 0.012, M.wood, g, 5);
   O.pegHit = mbox(0.4, 0.8, 0.4, HITMAT, B.x0 + 0.2, 1.5, -3.6, scene, 1); O.pegHit.layers.set(2); O.pegHit.userData.hit = true;
   // the crate you can drag about
