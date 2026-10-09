@@ -1100,7 +1100,7 @@ const ITEMS = {
   bowl: { name: 'Coconut-shell bowl', short: 'Bowl', desc: 'Half a coconut shell, scraped clean and smooth inside.', held: true },
   tabo: { name: 'Water dipper', short: 'Dipper', desc: 'A coconut-shell cup on a wooden handle, for taking water from the jar.', held: true },
   bolo: { name: 'Tatay\'s bolo', short: 'Bolo', desc: 'A long single-edged blade with a horn handle, nicked from years of cutting firewood and cogon grass.', held: true },
-  lamp: { name: 'The lamp', short: 'Lamp', desc: 'A tin kerosene lamp, a gasera, with a little glass chimney. F turns the wick up or down: bright to see by, low to be seen less.' },
+  lamp: { name: 'The lamp', short: 'Lamp', get desc() { return `A tin kerosene lamp, a gasera, with a little glass chimney. ${G.touch ? 'The Lamp up and Lamp down buttons turn' : 'F turns'} the wick up or down: bright to see by, low to be seen less.`; } },
 };
 
 /* ---------------- what Lorna told you (the notebook keeps it) ---------------- */
@@ -1145,7 +1145,7 @@ const HINTS = [
     'Whoever is out there wants the window opened. Lorna says don\'t.',
     'Lorna wants you to look at her feet. Not through the window: through the wall.',
     'A strip of the woven wall has rotted out by the bedroom window, low down. You\'d have to crouch (C).',
-    'Crouch at the gap in the bedroom\'s east wall, just south of the window, and look through it.' ] },
+    'Crouch at the gap low in the bedroom wall, just to the right of the window as you face it, and look through it.' ] },
   { id: 'water', title: 'Lorna needs water', when: s => !s.flags.thirsty ? 'hidden' : s.flags.key ? 'solved' : 'active', tiers: [
     'Lorna is parched. She\'s asking for water.',
     'The big clay water jar stands in the kitchen.',
@@ -1162,20 +1162,20 @@ const HINTS = [
     'The coconut-shell bowl is on the shelf in the kitchen. Hold it and use it on the stove.',
     'Take the bowl from the kitchen shelf, then use it on the clay stove to scoop up ash.' ] },
   { id: 'salt', title: 'Rock salt', when: s => !s.flags.manaKnown ? 'hidden' : (s.bowl && s.bowl.salt) ? 'solved' : 'active', tiers: [
-    'The salt is kept in the granary: the little hut on posts at the back of the yard, on the west side.',
+    'The salt is kept in the granary: the little hut on posts at the back of the yard, on the kitchen side of the house.',
     'It\'s padlocked, and Lorna has the key. And the ladder\'s broken: the doorway is too high to climb into from the ground.',
     'Drag something under the doorway to climb on: the wooden crate by the pigpen, or the mortar.',
     'Unlock the granary with Lorna\'s key. Drag the crate under its doorway, jump onto it, then jump up into the granary. Lift the lid off the jar and fill the bowl.' ] },
   { id: 'under', title: 'Under the house', when: s => !(s.flags.legsSeen || s.flags.rustle) ? 'hidden' : s.flags.panelCut ? 'solved' : 'active', tiers: [
     'Something is standing under the house. The crawlspace is closed in by woven screens.',
-    'One screen, at the back of the house on the east side, is only tied shut with rope.',
-    'Tatay\'s bolo is stuck fast in the chopping stump in the east yard. It takes a few tugs.',
-    'Pull the bolo out of the stump, then cut the rope on the screen at the back right of the house. Crouch (C) to crawl in.' ] },
+    'One screen, at the back of the house on the bedroom side, is only tied shut with rope.',
+    'Tatay\'s bolo is stuck fast in the chopping stump in the yard, off the bedroom end of the house. It takes a few tugs.',
+    'Pull the bolo out of the stump, then cut the rope on the screen at the back of the house, on the bedroom side. Crouch (C) to crawl in.' ] },
   { id: 'legs', title: 'Her legs', when: s => !s.flags.manaKnown ? 'hidden' : s.flags.salted ? 'solved' : 'active', tiers: [
     'Salt, garlic and ash: all three in the coconut bowl.',
     'Look down through the broken gap in the sala floor.',
-    'She left them standing in the crawlspace, under the sala, by the west end.',
-    'Crawl under the house to the south-west corner with the full bowl in your hands, and pour it on her.' ] },
+    'She left them standing in the crawlspace, under the sala, at the kitchen end.',
+    'Crawl under the house toward the front, at the kitchen end, with the full bowl in your hands, and pour it on her.' ] },
   { id: 'hunt', title: 'Out in the open', when: s => !s.flags.hunted ? 'hidden' : s.flags.escaped ? 'solved' : 'active', tiers: [
     'She hunts whatever moves in the yard.',
     'Listen to the tik-tik. When it\'s loud she\'s far off; when it\'s faint she\'s right above you.',
@@ -1433,7 +1433,7 @@ function openShutter(id) { setShutter(id, true); }
 const high = (above) => camera.position.y > FLOOR + above;
 function startDrag(id) {
   dragStart(id);
-  if (DRAG.cur && !S.ev.toldDrag) { S.ev.toldDrag = true; toast(`Walk to drag it. ${G.touch ? 'Let go' : '<kbd>E</kbd>'} lets go. ${G.touch ? 'Jump' : '<kbd>Space</kbd>'} climbs onto it.`, 6500); }
+  if (DRAG.cur && !S.ev.toldDrag) { S.ev.toldDrag = true; toast(`Walk to drag it. ${G.touch ? 'Tap <b>Let go</b> when it\'s in place' : '<kbd>E</kbd> lets go'}. ${G.touch ? '<b>Jump</b>' : '<kbd>Space</kbd>'} climbs onto it.`, 6500); }
 }
 
 /* ---------------- Lorna ---------------- */
@@ -1466,7 +1466,7 @@ function lightLamp() {
   if (S.flags.lit) return;
   sStrike(); flag('lit'); S.lamp = 2;
   O.lampWorld.visible = false;
-  after(0.5, () => { line('light', LORNA, 'Thank you. Stay there, near the light.', { pos: POS.lorna }); toast(`The lamp is in your left hand. ${G.touch ? 'The Lamp button' : '<kbd>F</kbd>'} turns the wick up or down.`, 6500); });
+  after(0.5, () => { line('light', LORNA, 'Thank you. Stay there, near the light.', { pos: POS.lorna }); toast(`The lamp is in your left hand. ${G.touch ? 'The Lamp up / Lamp down button' : '<kbd>F</kbd>'} turns the wick up or down.`, 6500); });
   V.litT = 0; renderInv(); save();
 }
 
@@ -1927,7 +1927,7 @@ function siegeUpdate(dt) {
 }
 function burnTongue() {
   const sg = V.sg; if (!sg || sg.sub !== 'tongue') return;
-  if (S.lamp !== 2) { toast(`Turn the lamp up first (${G.touch ? 'Lamp button' : '<kbd>F</kbd>'}).`, 2200); return; }
+  if (S.lamp !== 2) { toast(`Turn the lamp up first (${G.touch ? 'tap Lamp up' : '<kbd>F</kbd>'}).`, 2200); return; }
   sg.burns++; sg.sub = 'recoil'; sg.t = 0; V.gutter = 0.4;
   sHiss(POS.lorna.clone().setY(FLOOR + 1.2), 1.2); sShriek(V.h.pos, 0.7, 1.2, 760); G.flash = 0.12; G.shake = 0.8;
   for (let i = 0; i < 6; i++) after(i * 0.05, () => { G.flash = Math.max(G.flash, 0.06); });

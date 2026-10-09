@@ -423,7 +423,9 @@ const ray = new THREE.Raycaster(); ray.far = 3.2; ray.layers.enable(2);
 const HITMAT = new THREE.MeshBasicMaterial({ visible: false });
 // an invisible, slightly larger box around a small object so it's easier to aim at
 function hitbox(id, obj, pad = 0.035) {
-  obj.updateMatrixWorld(true);
+  // parents too: getWorldQuaternion below refreshes them, and a box measured against stale parent
+  // matrices would land the hit box somewhere else in the room
+  obj.updateWorldMatrix(true, true);
   const b = new THREE.Box3().setFromObject(obj), s = b.getSize(new THREE.Vector3()), c = b.getCenter(new THREE.Vector3());
   const q = obj.getWorldQuaternion(new THREE.Quaternion()).invert();
   const m = new THREE.Mesh(new THREE.BoxGeometry(s.x + pad * 2, s.y + pad * 2, s.z + pad * 2), HITMAT);

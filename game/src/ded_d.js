@@ -57,7 +57,7 @@ function paintThings() {
 
 /* ---------------- items ---------------- */
 const ITEMS = {
-  torch: { name: 'Your torch', short: 'Torch', desc: 'A flat battery torch from the hardware shop in Ust-Ilimsk. The battery is going: the light is yellow and weak. F turns it on and off.' },
+  torch: { name: 'Your torch', short: 'Torch', get desc() { return `A flat battery torch from the hardware shop in Ust-Ilimsk. The battery is going: the light is yellow and weak. ${G.touch ? 'The Torch button, top right,' : 'F'} turns it on and off.`; } },
   bread: { name: 'A loaf of black bread', short: 'Bread', desc: 'Rye bread from the bakery by the hospital, wrapped in newspaper. You brought it because Babushka said to.' },
   letter: { name: 'Babushka\'s letter', short: 'Letter', doc: 'letter' },
   thread: { name: 'A reel of red thread', short: 'Red thread', desc: 'Red cotton thread on a wooden reel, from her sewing tin.' },
@@ -102,9 +102,9 @@ const DOCS = {
 
 /* ---------------- hints ---------------- */
 const HINTS = [
-  { id: 'start', title: 'What Babushka asked', when: s => !s.flags.woke ? 'hidden' : s.flags.letterRead ? 'solved' : 'open', tiers: [
+  { id: 'start', title: 'What Babushka asked', when: s => !s.flags.woke ? 'hidden' : s.flags.letterRead ? 'solved' : 'open', get tiers() { return [
     'Her letter is in your pocket.',
-    `Open the notebook (${'Tab'}) and read Babushka\'s letter.`] },
+    `Open the notebook (${G.touch ? 'top right' : 'Tab'}) and read Babushka\'s letter.`]; } },
   { id: 'matches', title: 'Your matches', when: s => !s.flags.matchesMissing ? 'hidden' : s.flags.matchesBack ? 'solved' : 'open', tiers: [
     'Babushka told you what to do when he hides something. It\'s in her letter too.',
     'You need something red to tie, and the table in the icon corner. Her sewing tin is on the middle windowsill.',
@@ -115,11 +115,11 @@ const HINTS = [
     'The firewood is stacked under the barn\'s eaves. Birch bark catches from a match: there\'s a birch log by the chopping block.',
     'Take the iron door off the oven mouth and put the wood and the bark in. Before you light it, open the damper high on the chimney: you\'ll need to stand on the step beside the stove to reach it.',
     'Take an armful from the woodpile, and a curl of bark from the birch log by the chopping block. At the stove, lift the iron door off the mouth, put the wood in, then the bark. Climb onto the step at the side of the stove and open the little iron damper door on the chimney. Then light it with the matches.'] },
-  { id: 'oar1', title: 'An oar in the barn', when: s => !s.flags.barnSeen ? 'hidden' : s.flags.oar1Taken ? 'solved' : 'open', tiers: [
+  { id: 'oar1', title: 'An oar in the barn', when: s => !s.flags.barnSeen ? 'hidden' : s.flags.oar1Taken ? 'solved' : 'open', get tiers() { return [
     'One oar is lying across the crossbeams overhead, a few steps inside the barn door.',
     'It\'s too high to reach from the floor. You need something to stand on.',
     'There\'s a crate in the barn you can drag.',
-    `Grab the crate (E) and walk it under the oar on the beams, let go, jump onto it (${'Space'}) and take the oar.`] },
+    G.touch ? 'Take hold of the crate, walk it under the oar on the beams, tap Let go, then Jump onto it and take the oar.' : 'Grab the crate (E) and walk it under the oar on the beams, let go, jump onto it (Space) and take the oar.']; } },
   { id: 'patch', title: 'The split seam', when: s => !s.flags.boatSeen ? 'hidden' : s.flags.tarred ? 'solved' : 'open', tiers: [
     'Her letter says to mind the seam: Grandfather caulked her every spring with oakum and hot tar.',
     'Caulking is hammering oakum into the split, then sealing it with hot tar. The oakum and the tar are in the barn; the caulking tools are in the seni.',
@@ -130,21 +130,27 @@ const HINTS = [
     'The hatch at the top of the ladder in the seni is bolted from above. There\'s another way into the attic.',
     'The little window in the gable at the back of the house. There\'s a ladder lying by the barn.',
     'Pick up the ladder lying by the barn and carry it round to the back of the house. Set it against the gable under the little window and climb up into the attic. Her shoe is the one with the red woollen tie, hanging from the pole under the ridge.'] },
-  { id: 'oar2', title: 'The other oar', when: s => !(s.flags.pegsSeen || s.flags.oar1Taken) ? 'hidden' : s.flags.oar2Taken ? 'solved' : 'open', tiers: [
-    'There were two oars. Somebody has taken the other one.',
-    'Babushka told you what to do when he hides something.',
-    'Ask him again at the table leg with the red thread, and go out. When you come back in, listen, and look at the floor.',
-    'At the table leg, choose Ask him to give it back, and go out. When you come back the chest has been dragged over the cellar hatch: drag it off, open the hatch and climb down. The oar is in the cellar, beside his nest.'] },
+  { id: 'oar2', title: 'The other oar', when: s => !(s.flags.pegsSeen || s.flags.oar1Taken) ? 'hidden' : s.flags.oar2Taken ? 'solved' : 'open',
+    // what to do depends on whether he has answered yet (the chest is on the hatch once he has)
+    get tiers() { return S && S.flags && S.flags.chestMoved ? [
+      'He has answered. While you were out, something heavy was dragged across the floor.',
+      'Her chest is standing on the cellar hatch, and something under the floor is knocking.',
+      'Drag the chest off the hatch, then lift the hatch and climb down into the cellar.',
+      'Drag the chest clear of the hatch, lift the hatch and climb down. The oar is lying on the cellar floor in front of the shelves of jars, to your right as you come off the ladder. Take it and climb back up: you push it up through the hatch ahead of you.'] : [
+      'There were two oars. Somebody has taken the other one.',
+      'Babushka told you what to do when he hides something.',
+      'Ask him again at the table leg with the red thread, and go out. When you come back in, listen, and look at the floor.',
+      'At the table leg, choose Ask him to give it back, and go out into the seni for a moment. When you come back the chest has been dragged over the cellar hatch: drag it off, lift the hatch and climb down. The oar is lying on the cellar floor in front of the shelves of jars.']; } },
   { id: 'launch', title: 'Into the water', when: s => !s.flags.tarred ? 'hidden' : (s.flags.launched && (s.oarsIn || 0) >= 2) ? 'solved' : 'open', tiers: [
     'She has to be the right way up, down at the water, with both oars in her.',
     'She\'s too heavy to lift. The boat hook leaning on the fence will lever her over.',
     'Roll her down on logs: there are two round ones in the grass near her. Lay them in front of her bow and push.',
-    'Take the boat hook from the west fence and lever her over. Carry the two round logs from the grass and lay them in front of her bow, one at a time. Push her down to the water. Then put both oars in her.'] },
+    'Take the boat hook leaning on the fence near the bank (on your right as you face the river) and lever her over. Carry the two round logs from the grass and lay them in front of her bow, one at a time. Push her down to the water. Then put both oars in her.'] },
   { id: 'basket', title: 'Dedushka\'s basket', when: s => !s.flags.stoveLit ? 'hidden' : s.flags.ritual ? 'solved' : 'open', tiers: [
-    'Follow her letter: embers in the pot, bread in the shoe, both in her basket, then ask him at the stove.',
+    'Follow her letter: embers in the pot, bread in the shoe, both in her basket, then ask him at the stove. Get the boat into the river with both oars first: once he\'s in the basket you can\'t put it down.',
     'The clay pot is on the bottom shelf behind the curtain in the kitchen corner. Wait for the stove to burn down to embers.',
     'Rake embers into the clay pot. Put the pot, and the shoe with bread in it, into her basket. Set the basket on the stove and ask him.',
-    'Take the clay pot from the bottom shelf behind the curtain and rake embers into it at the oven mouth. At the basket on the bench by the table, put in the shoe, then the bread, then the pot. Carry the basket to the stove and choose Ask him.'] },
+    'Take the clay pot from the bottom shelf behind the curtain and rake embers into it at the oven mouth. At the basket on the bench by the table, put in the shoe, then the bread, then the pot. With the boat afloat and both oars in her, carry the basket to the stove and choose Ask him.'] },
   { id: 'out', title: 'Getting out', when: s => !s.flags.ritual ? 'hidden' : s.flags.escaped ? 'solved' : 'open', tiers: [
     'The house is on fire. Get to the boat.',
     'The smoke is thickest up high. Keep low.',

@@ -1041,7 +1041,7 @@ function paintThings() {
 const ITEMS = {
   silver: { name: 'A lump of silver ore', short: 'Silver', desc: 'Heavy for its size, grey, glittering where it broke. You took it from the offerings at the Tío\'s feet while Don Teo had his back turned. A souvenir. Everyone was laughing; nobody saw.' },
   card: { name: 'Don Teo\'s card', short: 'Card', doc: 'card' },
-  coca: { name: 'A bag of coca leaves', short: 'Coca', desc: 'Dry green leaves in a plastic bag. You bought them at the market for the altitude; Don Teo said the Tío likes them too.' },
+  coca: { name: 'A bag of coca leaves', short: 'Coca', desc: 'Dry green leaves in a plastic bag, out of the presents you bought for the miners at the market this morning. Don Teo said the Tío likes them too.' },
   cigs: { name: 'Cigarettes', short: 'Cigarettes', desc: 'A pack of Cóndor, three left. The miners light them for the Tío and put them between his teeth. They say that while he smokes, he\'s content.' },
   alcohol: { name: 'A bottle of alcohol', short: 'Alcohol', desc: 'Alcohol potable, 96 per cent, still sealed. The miners pour a little on the ground for the Pachamama and the rest over the Tío\'s feet.' },
   key: { name: 'The powder-box key', short: 'Key', desc: 'A brass key on an iron ring. A brass tag on it, stamped POLVORÍN.' },
@@ -1225,7 +1225,7 @@ function lampUpdate(dt) {
   for (const s of O.sparks) { if (s.t <= 0) continue; s.t -= dt; s.v.y -= 6 * dt; s.s.position.addScaledVector(s.v, dt); s.s.material.opacity = clamp(s.t * 4, 0, 1); if (s.t <= 0) s.s.visible = false; }
   if (A.loops.hiss) setGain(A.loops.hiss, lit ? 0.012 * (0.5 + fuelK * 0.5) : 0, 0.05);
   // a refill: the lamp open, in the dark
-  if (V.refill > 0) { V.refill -= dt; if (V.refill <= 0) { S.fuel = 1; save(); sClick(null, 0.3, 1400); toast(`Full. ${G.touch ? 'Tap Strike' : 'Strike the flint (<kbd>E</kbd>)'}.`, 2600); updatePrompt(true); } }
+  if (V.refill > 0) { V.refill -= dt; if (V.refill <= 0) { S.fuel = 1; save(); sClick(null, 0.3, 1400); toast(`Full. ${G.touch ? 'Tap Strike the flint' : 'Strike the flint (<kbd>E</kbd>)'}.`, 2600); updatePrompt(true); } }
 }
 const isDark = () => !lampLit() && !(V.sparkT > 0) || V.flicker > 0;
 function refillAt(id) {
@@ -1589,7 +1589,7 @@ function registerInteractions() {
   scene.updateMatrixWorld(true);   // hit boxes are measured in world space: every parent must be in place first
   // --- the Tío
   inter('tio', O.tio, { name: () => S.flags.paid ? 'The Tío, smoking' : 'The Tío', reach: 2.0, enabled: () => lampLit() || S.flags.paid, actions: () => {
-    if (S.flags.paid) return [look('Back on his bench, smoking, your silver on his knee. His glass eyes follow you. You don\'t look at them for long.')];
+    if (S.flags.paid) return [look('Back on his bench, smoking, your silver in his palm. His glass eyes follow you. You don\'t look at them for long.')];
     // every offering you carry goes in one action, so nothing (the silver last of all) hides behind the first two
     const offers = offerActions(), a = [];
     if (offers.length === 1) a.push(offers[0]);
@@ -1813,7 +1813,8 @@ function applyState() {
   if (S.cart === 'rolling') S.cart = 'top';
   // the lamp is always lit again when you come back, unless you never lit it
   S.lamp = f.lit ? 1 : 0; if (f.lit) S.fuel = Math.max(S.fuel, 0.35); V.lampK = f.lit ? 1 : 0;
-  // the Tío
+  // the Tío (a game saved after the last offering but before he sat down settles here: he has been paid)
+  if (S.paid && S.paid.coca && S.paid.cig && S.paid.alc && S.paid.silver) f.paid = true;
   if (f.paid) { setTio(POS.seat.x, 0, POS.seat.z, Math.PI / 2, 'seated', 'n0'); }
   else if (S.tio && f.tioKnown) { setTio(S.tio.x, S.tio.y, S.tio.z, S.tio.yaw, S.tio.pose || 'stand', S.tio.node); if (f.blocked && !f.pastHim) stageCrawlMouth(); }
   else setTio(POS.tioStart.x, 0, POS.tioStart.z, 0, 'stand', 'g5');
