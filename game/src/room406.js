@@ -68,16 +68,19 @@ function makeTextures() {
     for (let i = 0; i < 40; i++) { g.fillStyle = `rgba(255,220,170,${rand(0.05, 0.2)})`; g.fillRect(rand(0, w), rand(h * 0.58, h), rand(20, 70), 1); }
     speckle(g, w, h, 5000, 0.18);
   });
+  // behind the painting: one time scratched into the plaster over and over (the tool case's three wheels)
   T.insc = ctex(512, 340, (g, w, h) => {
     g.fillStyle = '#b3ac9c'; g.fillRect(0, 0, w, h); speckle(g, w, h, 8000, 0.14);
-    g.strokeStyle = 'rgba(40,34,28,0.85)'; g.lineWidth = 2;
-    g.beginPath(); g.moveTo(90, 80); g.lineTo(300, 60); g.lineTo(300, 250); g.lineTo(90, 290); g.closePath(); g.stroke();
-    g.beginPath(); g.moveTo(300, 60); g.lineTo(380, 110); g.moveTo(300, 250); g.lineTo(380, 230); g.stroke();
-    g.strokeRect(110, 170, 40, 100); g.beginPath(); g.moveTo(112, 172); g.lineTo(148, 200); g.moveTo(148, 172); g.lineTo(112, 200); g.stroke();
-    g.beginPath(); g.ellipse(292, 72, 14, 7, 0, 0, TAU); g.stroke(); g.beginPath(); g.arc(292, 72, 3, 0, TAU); g.fill();
-    g.font = `34px ${FONT_HAND}`; g.fillStyle = 'rgba(40,34,28,0.9)';
-    g.fillText('IT SEES FROM THE CORNER', 60, 40); g.fillText("DON'T SLEEP", 330, 290); g.fillText('3:17 3:17 3:17', 300, 180);
-    g.globalCompositeOperation = 'lighter'; g.fillStyle = 'rgba(255,255,255,0.12)'; g.fillText('IT SEES FROM THE CORNER', 61, 41); g.globalCompositeOperation = 'source-over';
+    g.strokeStyle = 'rgba(40,34,28,0.6)'; g.lineWidth = 2;
+    g.beginPath(); g.ellipse(458, 40, 22, 11, 0, 0, TAU); g.stroke(); g.fillStyle = 'rgba(40,34,28,0.85)'; g.beginPath(); g.arc(458, 40, 5, 0, TAU); g.fill();
+    const rows = [[30, 112, 64, -0.04], [44, 196, 72, 0.03], [24, 282, 66, -0.02]];
+    rows.forEach(([x, y, size, rot]) => {
+      g.save(); g.translate(x, y); g.rotate(rot); g.font = `${size}px ${FONT_HAND}`;
+      g.fillStyle = 'rgba(36,30,24,0.92)'; g.fillText('3:17   3:17   3:17', 0, 0);
+      g.globalCompositeOperation = 'lighter'; g.fillStyle = 'rgba(255,255,255,0.14)'; g.fillText('3:17   3:17   3:17', 1.5, 1.5); g.globalCompositeOperation = 'source-over';
+      g.restore();
+    });
+    g.font = `26px ${FONT_HAND}`; g.fillStyle = 'rgba(40,34,28,0.8)'; g.fillText('IT SEES FROM THE CORNER', 40, 36);
   });
   T.grille = ctex(128, 96, (g, w, h) => {
     g.clearRect(0, 0, w, h); g.fillStyle = '#d9d4c4'; g.fillRect(0, 0, w, 8); g.fillRect(0, h - 8, w, 8); g.fillRect(0, 0, 8, h); g.fillRect(w - 8, 0, 8, h);
@@ -91,6 +94,7 @@ function makeTextures() {
     for (let k = 0; k < 4; k++) { const ox = 30 + k * 18; g.beginPath(); g.moveTo(ox, 250); g.lineTo(ox + 4, 330); g.moveTo(ox + 5, 252); g.lineTo(ox + 9, 326); g.moveTo(ox + 10, 255); g.lineTo(ox + 13, 322); g.stroke(); }
   });
   T.floorStain = ctex(256, 256, (g, w, h) => { g.clearRect(0, 0, w, h); blot(g, 128, 128, 110, 0.55, '12,4,4'); blot(g, 100, 150, 60, 0.4, '12,4,4'); blot(g, 160, 100, 40, 0.4, '12,4,4'); });
+  T.glow = ctex(64, 64, (g, w, h) => { g.clearRect(0, 0, w, h); const gr = g.createRadialGradient(32, 32, 2, 32, 32, 32); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.35, 'rgba(255,255,255,0.35)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, h); });
   T.shadow = ctex(128, 128, (g, w, h) => { g.clearRect(0, 0, w, h); const gr = g.createRadialGradient(64, 64, 10, 64, 64, 64); gr.addColorStop(0, 'rgba(0,0,0,0.85)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, h); });
   T.logCover = ctex(160, 200, (g, w, h) => { g.fillStyle = '#23402f'; g.fillRect(0, 0, w, h); speckle(g, w, h, 3000, 0.25); g.fillStyle = '#e4dccb'; g.fillRect(30, 40, 100, 50); g.fillStyle = '#222'; g.font = `bold 13px ${FONT_TYPE}`; g.fillText('WKVR-TV', 48, 60); g.font = `10px ${FONT_TYPE}`; g.fillText('TRANSMITTER LOG', 36, 78); });
   T.pad = ctex(128, 180, (g, w, h) => { g.fillStyle = '#efe8d6'; g.fillRect(0, 0, w, h); g.fillStyle = '#2d5a3d'; g.font = `italic 13px Georgia, serif`; g.fillText('Pinecrest', 10, 20); g.font = `9px Georgia, serif`; g.fillText('MOTOR LODGE', 72, 20); g.fillStyle = 'rgba(40,90,60,0.25)'; for (let y = 36; y < h; y += 14) g.fillRect(8, y, w - 16, 1); });
@@ -204,6 +208,11 @@ function buildRoom() {
   box(0.1, 0.004, 0.13, M.paper, -0.08, 0, 0, O.ventItems); box(0.09, 0.004, 0.11, M.cream, 0.08, 0, -0.03, O.ventItems); box(0.06, 0.01, 0.06, M.leatherDark, 0.02, 0.005, 0.07, O.ventItems);
   O.ventZone.add(O.ventItems); O.ventItems.position.set(2.1, 2.31, -3.2);
   O.eyes = layer1(grp(2.1, 2.47, -3.62)); [-0.045, 0.045].forEach(x => { const e = mesh(new THREE.SphereGeometry(0.011, 8, 6), basic(0xe4dcb0, { fog: false }), x, 0, 0, O.eyes); e.layers.set(1); }); O.eyes.visible = false;
+  // the finale's eyes: wider apart, nearer the mouth of the duct, each with a faint glow
+  O.eyesBig = layer1(grp(2.1, 2.45, -3.12)); O.eyesBig.visible = false;
+  const glowMat = new THREE.SpriteMaterial({ map: T.glow, color: 0xfff0b0, transparent: true, opacity: 0.0, depthWrite: false, blending: THREE.AdditiveBlending, fog: false });
+  [-0.06, 0.06].forEach(x => { const e = mesh(new THREE.SphereGeometry(0.019, 10, 8), basic(0xf2ecc8, { fog: false }), x, 0, 0, O.eyesBig); e.layers.set(1); const gl = new THREE.Sprite(glowMat); gl.scale.set(0.075, 0.075, 1); gl.position.set(x, 0, 0.01); layer1(gl); O.eyesBig.add(gl); });
+  O.eyeGlow = glowMat;
   const streak = plane(0.42, 1.5, M.decal(T.streak, 0.9), 2.1, 1.52, -2.996); noRay(streak);
   O.stainFloor = plane(0.9, 0.7, M.decal(T.floorStain, 0.9), 2.1, 0.005, -2.6); O.stainFloor.rotation.x = -Math.PI / 2;
   O.streak = streak;
@@ -328,7 +337,7 @@ function buildRoom() {
   O.suitLid = grp(-0.21, 0.1, 0, O.suit); box(0.42, 0.06, 0.56, M.suit, 0.21, 0.03, 0, O.suitLid);
   box(0.012, 0.03, 0.05, M.brass, 0.215, 0.1, -0.18, O.suit); box(0.012, 0.03, 0.05, M.brass, 0.215, 0.1, 0.18, O.suit); box(0.012, 0.025, 0.08, M.black, 0.215, 0.1, 0, O.suit);
   box(0.03, 0.02, 0.14, M.leatherDark, 0, 0.165, 0, O.suit);
-  O.suitIn = grp(0, 0.1, 0, O.suit); box(0.08, 0.02, 0.15, M.black, 0.05, 0.01, -0.12, O.suitIn); box(0.1, 0.004, 0.14, M.cream, -0.08, 0.004, 0.1, O.suitIn); box(0.06, 0.004, 0.09, M.paper, 0.08, 0.004, 0.14, O.suitIn);
+  O.suitIn = grp(0, 0.1, 0, O.suit); { const fl = grp(0.05, 0.022, -0.12, O.suitIn); cyl(0.02, 0.02, 0.17, M.black, 0, 0, 0, fl, 10).rotation.x = Math.PI / 2; cyl(0.03, 0.022, 0.05, M.black, 0, 0, -0.1, fl, 12).rotation.x = Math.PI / 2; } box(0.1, 0.004, 0.14, M.cream, -0.08, 0.004, 0.1, O.suitIn); box(0.06, 0.004, 0.09, M.paper, 0.08, 0.004, 0.14, O.suitIn);
   O.tapeS = tapeMesh('tapeS', wd, -0.12, 2.0625, 0.28, 0.2);
   O.tapeS.children[1].material = basic(0xffffff, { map: T.tapes.tapeS });
 
@@ -351,7 +360,7 @@ function buildRoom() {
   plane(0.1, 0.025, basic(0xffffff, { map: T.vcr }), -0.153, 0.03, 0.1, -Math.PI / 2, O.vcr);
   O.vcrTape = grp(2.12, 0.86, 0.02); box(0.1, 0.025, 0.188, M.black, 0, 0, 0, O.vcrTape);
   O.vcrLabel = plane(0.17, 0.018, toon(0xffffff, T.tapes.tapeW), -0.0505, 0, 0, -Math.PI / 2, O.vcrTape); O.vcrTape.visible = false;
-  O.guide = plane(0.2, 0.26, toon(0xffffff, T.guide), 2.29, 0.892, 0.05); O.guide.rotation.x = -Math.PI / 2; O.guide.rotation.z = 0.15;
+  O.guide = plane(0.2, 0.26, toon(0xffffff, T.guide), 2.27, 0.803, 0.43); O.guide.rotation.x = -Math.PI / 2; O.guide.rotation.z = 0.15;   // on the dresser beside the VCR, so it never covers it
   O.tapeW = tapeMesh('tapeW', scene, 2.3, 0.8125, 0.44, 0.1);
   O.tapeF = tapeMesh('tapeF', scene, 2.28, 0.8375, 0.45, -0.15);
   O.mirror = grp(2.485, 1.78, -0.2);
@@ -379,7 +388,7 @@ function buildRoom() {
   box(0.03, 0.05, 0.03, M.metal, 1.93, 1.3, 2.945);
   O.lock = grp(1.93, 1.215, 2.94);
   box(0.052, 0.062, 0.024, M.brass, 0, 0, 0, O.lock);
-  for (let i = 0; i < 5; i++) cyl(0.006, 0.006, 0.008, M.black, -0.02 + i * 0.01, -0.02, -0.014, O.lock, 8).rotation.x = Math.PI / 2;
+  cyl(0.009, 0.009, 0.006, M.black, 0, -0.012, -0.013, O.lock, 10).rotation.x = Math.PI / 2; box(0.004, 0.012, 0.006, M.black, 0, -0.022, -0.013, O.lock);
   O.shackle = mesh(new THREE.TorusGeometry(0.018, 0.0045, 6, 14, Math.PI), M.metal, 0, 0.03, 0, O.lock);
   // corridor beyond the door
   const cc = toon(0xffffff, T.carpet); const cw = toon(0x6f6a58, T.wall);
@@ -439,7 +448,7 @@ const feedCam = new THREE.PerspectiveCamera(80, 4 / 3, 0.05, 30); feedCam.layers
 const feedLookCur = FEED_LOOK.clone();
 const tvDummy = basic(0x1a2226);
 let tvMat;
-const SET = { mode: 0, chShown: -10, osdT: 0, flip: 0, ghost: 0, override: null, overrideT: 0 };
+const SET = { mode: 0, chShown: -10, osdT: 0, flip: 0, ghost: 0, override: null, overrideT: 0, stage: '', stareBase: 0, feedT: 0 };
 const VCR = { playing: false, t: 0, prevT: 0 };
 
 function makeTV() {
@@ -522,12 +531,29 @@ function applyOv(o) {
 }
 const REC_BASE = { paint: false, ward: 0, suitLid: 0, caseLid: 0, drawer: 0, skirt: 0, tape4: false, imprint: false, lump: false, sit: 0, glass: false, vent: 'on', door: 0, padOpen: false, tapes: false, dark: true };
 
+// Channel 13 shows the room three minutes from now, so it shows what you're about to do next.
+// Each stage: how the room looks in the picture, where the thing in the vent stares, and one line describing it.
+function feedStage() {
+  if (!has('tapeS')) return 'tape';
+  if (!S.flags.caseOpen) return 'case';
+  if (!S.flags.ventOpen) return 'vent';
+  if (!S.flags.doorOpen) return 'door';
+  return '';
+}
+const STAGES = {
+  tape: { ov: { chair: CHAIR_WARD, tape4lift: true }, stare: [new THREE.Vector3(-2.25, 2.08, 2.5), 16], flag: 'feedTape',
+    say: 'In the picture the desk chair is standing beside the wardrobe, and something on top of the wardrobe is being lifted down. Nobody is lifting it.' },
+  case: { ov: { caseLid: 1 }, stare: [new THREE.Vector3(2.12, 0.12, 1.05), 22], flag: 'feedCase',
+    say: 'In the picture the aluminium tool case on the floor is lying open.' },
+  vent: { ov: { chair: CHAIR_VENT, vent: 'floor', caseLid: 1 }, stare: [new THREE.Vector3(1.95, 0.1, -2.25), 58], flag: 'feedVent',
+    say: 'In the picture the chair is standing right under the vent, and the grille is lying on the carpet.' },
+  door: { ov: { chair: CHAIR_VENT, door: 0.55, padOpen: true, caseLid: 1 }, stare: [new THREE.Vector3(1.45, 1.0, 2.85), 34], flag: 'feedDoor',
+    say: 'In the picture the door to the hall is standing open, and the room is empty.' },
+};
 function futureOv() {
   const o = { dark: true };
   if (G.ending) { o.lump = true; o.door = 1.25; o.padOpen = true; return o; }
-  if (!has('tapeS')) { o.chair = CHAIR_WARD; o.tape4lift = true; }
-  else if (!S.flags.ventOpen) { o.chair = CHAIR_VENT; o.vent = 'floor'; }
-  else if (!S.flags.doorOpen) { o.chair = CHAIR_VENT; o.door = 0.55; o.padOpen = true; }
+  const st = STAGES[feedStage()]; if (st) Object.assign(o, st.ov);
   if (G.subliminal > 0) o.lump = true;
   return o;
 }
@@ -538,7 +564,9 @@ const TAPES = {
   tapeW: { label: 'WED 10/26', date: 'OCT.26 1983', clock: [2, 56, 4], dur: 23, k: { t: 8.2, n: 2, gap: 0.7, loud: 0.9 }, at: t => ({ chair: CHAIR_DESK }) },
   tapeT: { label: 'THU 10/27', date: 'OCT.27 1983', clock: [2, 39, 49], dur: 23, k: { t: 14.5, n: 5, gap: 0.55, loud: 0.85 }, at: t => ({ chair: CHAIR_DESK, glass: t > 11 }) },
   tapeF: { label: 'FRI 10/28', date: 'OCT.28 1983', clock: [3, 13, 47], dur: 23, k: { t: 17.0, n: 1, gap: 0, loud: 1.5 }, at: t => { const k = t < 4 ? 0 : t < 8.5 ? 0.35 : t < 12.5 ? 0.7 : 1; return { chair: { x: lerp(CHAIR_DESK.x, CHAIR_VENT.x, k), z: lerp(CHAIR_DESK.z, CHAIR_VENT.z, k), r: lerp(0, 0.35, k) } }; } },
-  tapeS: { label: 'SAT 10/29', date: 'OCT.29 1983', clock: [3, 4, 50], dur: 21, k: { t: 3.0, n: 8, gap: 0.34, loud: 1.0 }, at: t => ({ chair: CHAIR_VENT, vent: 'floor', lump: true, glass: true, sit: t > 19.4 ? clamp((t - 19.4) / 0.45, 0, 1) : 0 }), look: t => { const k = smooth(clamp((t - 11) / 7, 0, 1)); return new THREE.Vector3(lerp(FEED_LOOK.x, -1.0, k), lerp(FEED_LOOK.y, 0.55, k), lerp(FEED_LOOK.z, -1.7, k)); } },
+  tapeS: { label: 'SAT 10/29', date: 'OCT.29 1983', clock: [3, 4, 50], dur: 21, k: { t: 3.0, n: 8, gap: 0.34, loud: 1.0 }, at: t => ({ chair: CHAIR_VENT, vent: 'floor', caseLid: 1, lump: true, glass: true, sit: t > 19.4 ? clamp((t - 19.4) / 0.45, 0, 1) : 0 }),
+    // looks down at the chair, the grille and the open tool case, then turns to the bed
+    look: t => { const k = smooth(clamp((t - 9) / 6, 0, 1)); return new THREE.Vector3(lerp(1.75, -1.0, k), lerp(0.0, 0.55, k), lerp(-1.0, -1.7, k)); } },
 };
 for (const id in TAPES) TAPES[id].knocks = knockTimes(TAPES[id].k);
 function knockEnv(tp, t) { let v = 0; for (const kt of tp.knocks) { const d = t - kt; if (d >= 0 && d < 0.16) v = Math.max(v, 1 - d / 0.16); } return v; }
@@ -551,13 +579,18 @@ function vcrUpdate(dt) {
   const audible = S.tv.on && S.tv.ch === 3 && G.power > 0.5;
   for (const kt of tp.knocks) if (VCR.prevT < kt && VCR.t >= kt && audible) sKnock(POS.tv, tp.k.loud * 0.95, 0, 1);
   if (S.vcr === 'tapeS' && audible) {
+    if (VCR.prevT < 1.6 && VCR.t >= 1.6) subtitle('', '<i>Saturday night, from inside the vent. The chair is under the vent, the grille is on the carpet, and the tool case is lying open.</i>', 6500);
     if (VCR.prevT < 9 && VCR.t >= 9) sBreath(POS.tv, 3, 0.55, true);
     if (VCR.prevT < 19.4 && VCR.t >= 19.4) { G.fearT = 1; }
     if (VCR.prevT < 19.9 && VCR.t >= 19.9) { sStinger(1.1); G.fear = 1; SET.override = 1; SET.overrideT = 1.4; }
   }
   const last = tp.knocks[tp.knocks.length - 1] + 1.2;
   if (audible && VCR.prevT < last && VCR.t >= last && !S.tapesSeen[S.vcr]) { S.tapesSeen[S.vcr] = true; save(); }
-  if (VCR.t >= tp.dur) { VCR.playing = false; VCR.t = 0; sClick(POS.tv, 0.4, 1200); drawVCR(); refreshSet(); }
+  if (VCR.t >= tp.dur) {
+    VCR.playing = false; VCR.t = 0; sClick(POS.tv, 0.4, 1200); drawVCR(); refreshSet();
+    // once a tape has played through, the set goes back to 13 by itself
+    if (audible && S.flags.sawFeed) after(1.4, () => { if (VCR.playing || !S.tv.on || S.tv.ch !== 3) return; S.tv.ch = 13; SET.chShown = G.time; sClick(POS.tv, 0.5, 1500); save(); refreshSet(); onTVChange(); subtitle('', '<i>The set clicks back to channel 13 by itself.</i>', 3500); });
+  }
 }
 
 /* ---------- OSD / VCR display / clock ---------- */
@@ -604,9 +637,10 @@ function renderFeed(dt) {
     o = futureOv();
     const tgt = new THREE.Vector3(lerp(FEED_LOOK.x, P.x, 0.12) + Math.sin(G.time * 0.13) * 0.25, FEED_LOOK.y, lerp(FEED_LOOK.z, P.z, 0.12));
     feedLookCur.lerp(tgt, Math.min(1, dt * 1.6)); look = feedLookCur; tvMat.uniforms.bright.value = 1.7;
-    // every so often the thing in the vent stares at something: first the top of the wardrobe, later the bed
-    const cyc = G.time % 24, fk = smooth(clamp((cyc - 13) / 2.5, 0, 1)) * (1 - smooth(clamp((cyc - 20) / 2.5, 0, 1)));
-    if (fk > 0) { const ft = has('tapeS') ? new THREE.Vector3(-1.0, 0.65, -1.9) : new THREE.Vector3(-2.25, 2.08, 2.5); look = feedLookCur.clone().lerp(ft, fk); fov = lerp(80, has('tapeS') ? 45 : 16, fk); }
+    // every so often the thing in the vent stares at what you're about to do next (at the bed, once there's nothing left)
+    const st = STAGES[feedStage()], tgt2 = st ? st.stare : [new THREE.Vector3(-1.0, 0.65, -1.9), 45];
+    const cyc = (G.time - SET.stareBase) % 24, fk = smooth(clamp((cyc - 13) / 2.5, 0, 1)) * (1 - smooth(clamp((cyc - 20) / 2.5, 0, 1)));
+    if (fk > 0) { look = feedLookCur.clone().lerp(tgt2[0], fk); fov = lerp(80, tgt2[1], fk); }
   }
   if (feedCam.fov !== fov) { feedCam.fov = fov; feedCam.updateProjectionMatrix(); }
   const restore = applyOv(o);
@@ -622,7 +656,7 @@ function makePolaroid() {
   const rt = new THREE.WebGLRenderTarget(256, 256);
   const cam = new THREE.PerspectiveCamera(58, 1, 0.05, 20); cam.layers.enable(1);
   cam.position.copy(VENT_CAM); cam.lookAt(-1.0, 0.55, -1.95);
-  const restore = applyOv(Object.assign({}, REC_BASE, { lump: true, chair: CHAIR_DESK, paint: false, tapes: true }));
+  const restore = applyOv(Object.assign({}, REC_BASE, { lump: true, chair: CHAIR_DESK, paint: false, tapes: false }));
   const hi = L.hemi.intensity; L.hemi.intensity = 2.0; L.feed.intensity = 3.0; O.screen.material = tvDummy;
   renderer.setRenderTarget(rt); renderer.setClearColor(0, 1); renderer.clear(); renderer.render(scene, cam);
   const buf = new Uint8Array(256 * 256 * 4); renderer.readRenderTargetPixels(rt, 0, 0, 256, 256, buf);
@@ -664,16 +698,23 @@ function refreshSet() {
     <div class="grp"><span class="lbl">Channel</span><div class="row"><button class="btn" id="chDn" aria-label="Channel down">&#9664;</button><span class="ch">${S.tv.ch}</span><button class="btn" id="chUp" aria-label="Channel up">&#9654;</button></div></div>
     <div class="grp" style="display:block"><div style="display:flex;justify-content:space-between;align-items:center"><span class="lbl">VCR</span><span class="muted" style="font-size:12px">${st}</span></div>
       ${S.vcr ? `<p style="font-size:12.5px;margin:8px 0 0">In the VCR: <b style="font-weight:500">${TAPES[S.vcr].label}</b></p>` : ''}
-      ${pocket.length ? `<p class="muted" style="font-size:11.5px;margin:8px 0 0">${S.vcr ? 'Swap for a tape from your pockets:' : 'Tapes in your pockets. Click one to put it in:'}</p><div class="tapes">${pocket.map(id => `<button class="btn" data-t="${id}">${TAPES[id].label}</button>`).join('')}</div>` : (S.vcr ? '' : '<p class="muted" style="font-size:12px;margin:8px 0 0">You have no tapes.</p>')}
+      ${pocket.length ? `<p class="muted" style="font-size:11.5px;margin:8px 0 0">${S.vcr ? 'Swap for a tape from your pockets:' : 'In your pocket. Click it to put it in:'}</p><div class="tapes">${pocket.map(id => `<button class="btn" data-t="${id}">${TAPES[id].label}</button>`).join('')}</div>` : (S.vcr ? '' : '<p class="muted" style="font-size:12px;margin:8px 0 0">You have no tapes.</p>')}
       <div class="row" style="margin-top:10px"><button class="btn" id="vPlay" ${S.vcr ? '' : 'disabled'}>&#9654; Play</button><button class="btn" id="vStop" ${VCR.playing ? '' : 'disabled'}>&#9632; Stop</button><button class="btn" id="vEj" ${S.vcr && !VCR.playing ? '' : 'disabled'}>Eject</button></div></div>
     ${G.touch ? '<button class="btn" id="setBack" style="margin-top:12px;width:100%">Step back</button>' : '<p class="muted" style="font-size:11px;margin:10px 0 0"><kbd>Esc</kbd> or <kbd>E</kbd> to step back</p>'}`;
   if ($('#setBack')) $('#setBack').onclick = () => closePanel();
   $('#tvPow').onclick = () => setTV(!S.tv.on);
   $('#chDn').onclick = () => setChannel(-1); $('#chUp').onclick = () => setChannel(1);
   p.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { if (VCR.playing) return; insertTape(b.dataset.t); });
-  $('#vPlay').onclick = () => { if (!S.vcr) return; VCR.playing = true; VCR.t = 0; VCR.prevT = 0; sClick(POS.tv, 0.5, 1100); drawVCR(); refreshSet(); if (S.vcr === 'tapeS') G.fearT = 0.4; };
+  $('#vPlay').onclick = () => playTape();
   $('#vStop').onclick = () => { VCR.playing = false; VCR.t = 0; sClick(POS.tv, 0.5, 1100); drawVCR(); refreshSet(); };
   $('#vEj').onclick = () => ejectTape();
+}
+// Play: the set comes on and goes to channel 3, where the VCR plays
+function playTape() {
+  if (!S.vcr) return;
+  VCR.playing = true; VCR.t = 0; VCR.prevT = 0; sClick(POS.tv, 0.5, 1100);
+  if (!S.tv.on || S.tv.ch !== 3) { const was = S.tv.on; S.tv.on = true; S.tv.ch = 3; SET.chShown = G.time; if (!was) sThunk(POS.tv, 0.25, 90); toast('You turn the set to channel 3 for the VCR.'); save(); }
+  drawVCR(); refreshSet(); onTVChange(); if (S.vcr === 'tapeS') G.fearT = 0.4;
 }
 function showVcrTape(id, animate) {
   if (!id) { O.vcrTape.visible = false; return; }
@@ -690,13 +731,25 @@ function ejectTape() {
   tween(0.3, k => O.vcrTape.position.x = lerp(2.12, 2.0, k), () => { O.vcrTape.visible = false; });
   save(); renderInv(); drawVCR(); refreshSet();
 }
+const lightWord = () => S.lamp && S.ceil ? 'the lamp and the ceiling light' : S.lamp ? 'the bedside lamp' : 'the ceiling light';
 function onTVChange() {
   const m = screenMode();
-  if (m === 1 && S.tv.ch === 13 && !S.flags.ghostSeen) { flag('ghostSeen'); after(1.6, () => { if (screenMode() === 1 && S.tv.ch === 13) subtitle('', '<i>Under the static on 13 there\'s something. A room, maybe. Too washed out by the light in here to make out.</i>', 6000); }); }
+  if (m === 1 && S.tv.ch === 13 && !S.flags.ghostSeen) { flag('ghostSeen'); after(1.6, () => { if (screenMode() === 1 && S.tv.ch === 13) subtitle('', `<i>Channel 13. Under the static there's a picture of a room, washed out by ${lightWord()}.</i>`, 6500); }); }
   if (m === 2 && !S.flags.sawFeed) {
     flag('sawFeed'); G.fear = 1; G.fearT = 0.5; sStinger(0.9);
-    after(1.2, () => subtitle('', '<i>The room. This room, from high in the corner by the ceiling. The clock in the picture is three minutes ahead of the one by the bed. You aren\'t in it.</i>', 7000));
+    SET.stareBase = G.time - 4; SET.feedT = 0; SET.ruleUntil = G.time + 8.8;   // its first stare, and the next line, come after this one
+    after(1.2, () => subtitle('', '<i>This room, from inside the vent in the corner. The clock in the picture is three minutes ahead of the one by the bed: it shows what\'s about to happen. You aren\'t in it.</i>', 7500));
   }
+}
+// called every frame: when a new stage is on screen, stare at it straight away, and describe it once you've watched it a few seconds
+function feedWatch(dt) {
+  const stage = feedStage();
+  if (stage !== SET.stage) { SET.stage = stage; SET.feedT = Math.min(SET.feedT, 0); SET.stareBase = G.time - 10; }
+  if (screenMode() !== 2 || UI.kind || G.cutscene || FIN.on) { SET.feedT = Math.min(SET.feedT, 0); return; }
+  if (!inView(O.screen, 0.85) || Math.hypot(P.x - POS.tv.x, P.z - POS.tv.z) > 4.6) return;
+  SET.feedT += dt;
+  const st = STAGES[stage];
+  if (st && !S.flags[st.flag] && SET.feedT > 3.2 && G.time > (SET.ruleUntil || 0)) { flag(st.flag); subtitle('', `<i>${st.say}</i>`, 7000); }
 }
 
 /* ---------- telephone ---------- */
@@ -802,8 +855,6 @@ function stopRing() { PH.ringing = false; pClear(PH.ringTimer); }
 /* =====================================================================
    ROOM 406 · part C: content, puzzles, scares, room hooks
    ===================================================================== */
-const tallyDots = (n, d) => `<span class="tnum"><span class="dots">${'&bull;'.repeat(d)}</span>${tallyNum(n)}</span>`;
-const tallyNum = n => { let out = '<span style="display:inline-block;margin-right:26px">'; let left = n; while (left > 0) { const k = Math.min(5, left); out += `<span class="tally ${k === 5 ? 'five' : ''}">${'<i></i>'.repeat(k === 5 ? 4 : k)}</span>`; left -= k; } return out + '</span>'; };
 
 const ITEMS = {
   pencil: { name: 'Motel pencil', short: 'Pencil', desc: 'Yellow, chewed at the end. PINECREST MOTOR LODGE in flaking gold letters.' },
@@ -814,6 +865,7 @@ const ITEMS = {
   tapeS: { name: 'VHS tape: SAT 10/29', short: 'Tape Sat', desc: 'Handwritten label: SAT 10/29. Underneath, pressed so hard the pen tore the paper: DON\'T.' },
   screwdriver: { name: 'Flat screwdriver', short: 'Screwdriver', desc: 'A heavy engineer\'s screwdriver. There are flecks of cream paint caught in the notch of the blade.' },
   flashlight: { name: 'Flashlight', short: 'Flashlight', get desc() { return `Rubber-cased, heavy, fresh batteries. ${G.touch ? 'Tap Flashlight, top right, to switch' : 'Press F to switch'} it on or off.`; } },
+  padkey: { name: 'Small steel key', short: 'Padlock key', desc: 'A padlock key on a loop of string, sticky with cream paint. It was lying in the duct, an arm\'s length in.' },
   page: { name: 'Torn logbook page', short: 'Torn page', doc: 'page' },
   watch: { name: 'Wristwatch', short: 'Watch', desc: 'A man\'s watch on a cracked leather strap. The crystal is broken and the hands have stopped at 3:17. Engraved on the back: <i>E.V. &mdash; so you\'re never late home. I.</i>' },
   polaroid: { name: 'Polaroid', short: 'Polaroid', doc: 'polaroid' },
@@ -861,25 +913,15 @@ const FIREMAP_HTML = (() => {
     <p style="font-size:13px;margin-top:12px">Every room on the floor is on the plan except yours. The red dot is on a stretch of solid wall between 405 and 407.</p>`;
 })();
 
-const INSC_HTML = `<svg viewBox="0 0 520 300" style="width:100%;height:auto;display:block;margin-bottom:10px" role="img" aria-label="A scratched sketch of the room seen from the top corner. An eye is drawn in the corner. An X is scratched on top of the tall wardrobe in the far corner.">
-  <g fill="none" stroke="#2f2a24" stroke-width="2.2" stroke-linecap="round">
-  <path d="M90 70 L330 52 L330 250 L90 282 Z"/><path d="M330 52 L420 100 M330 250 L420 228 M90 70 L40 110 M90 282 L40 262"/>
-  <path d="M112 170 h44 v104 h-44 z"/><path d="M114 172 l40 28 M154 172 l-40 28" stroke-width="3"/>
-  <path d="M190 210 h110 v40 h-110 z"/>
-  <ellipse cx="318" cy="66" rx="16" ry="8"/><circle cx="318" cy="66" r="3.5" fill="#2f2a24"/>
-  <path d="M318 74 L150 180 M318 74 L150 268 M318 74 L260 250" stroke-dasharray="4 6" stroke-width="1.2"/></g></svg>
-  <p style="margin:0">IT SEES FROM THE CORNER</p><p style="margin:.2em 0">IT SEES WHAT I CAN'T</p><p style="margin:.2em 0">3:17 &nbsp;3:17 &nbsp;3:17 &nbsp;3:17</p><p style="margin:.2em 0">DON'T SLEEP</p>
-  <p style="font:13px var(--ui);color:#3f3a33;text-shadow:none;margin-top:14px">Scratched into the plaster with something like a key. The corner with the eye is the same corner as the vent.</p>`;
+const INSC_HTML = `<div style="font-family:var(--hand);font-size:46px;line-height:1.2;color:#2f2a24;text-shadow:0 1px 0 rgba(255,255,255,.25)">3:17 &nbsp; 3:17 &nbsp; 3:17<br>3:17 &nbsp; 3:17 &nbsp; 3:17<br>3:17 &nbsp; 3:17 &nbsp; 3:17</div>
+  <p style="margin:.7em 0 0">IT SEES FROM THE CORNER</p>
+  <p style="font:13px var(--ui);color:#3f3a33;text-shadow:none;margin-top:14px">Scratched into the plaster behind the painting, over and over, with something like a key.</p>`;
 
 const DOCS = {
   log: {
     title: 'Green logbook: WKVR-TV transmitter log', style: 'log', onRead: () => flag('readLog'), pages: [
-      `<p><span class="d">PROPERTY OF WKVR-TV</span>Transmitter log, Pinecrest Ridge<br>Night engineer: E. Varga<br>If found, return to the station.</p><p style="color:#5a2020">Most of the old pages have been cut out with a razor. The new entries start near the back.</p>`,
-      `<p><span class="d">Wed 26 Oct '83 &mdash; night one</span>Checked into the Pinecrest and asked for 406 by number. The clerk looked at me a long time before he handed over the key.</p><p>Guests say the set in this room picks up a station after midnight. Nobody else on the lodge aerial gets it. Only 406. I know which station.</p><p>It comes in on our old number, and only in the dark &mdash; every light in the room off, like it doesn't want to be seen doing it.</p><p>The picture on the set is this room, from high up in the corner. Empty. The clock in the picture runs three minutes ahead of mine. I sat on the bed for an hour and watched myself not be in it.</p>`,
-      `<p><span class="d">Thu 27 Oct &mdash; night two</span>Tested the three minutes. Stood a water glass on top of the set at 2:40 by my watch. The picture on the set had the glass there at 2:37.</p><p>It isn't fast. It's early.</p><p>Knocking from the bathroom again, a different count from last night. I'm taping all of it. Every cassette gets its date, same as the log. Bill always said a log is only as good as its order.</p>`,
-      `<p><span class="d">Fri 28 Oct &mdash; night three</span>I lost time tonight.</p><p>At 14 past 3 the picture on the set showed the desk chair standing under the vent. I laughed at it. At 17 past I was standing on that chair with the screwdriver in my hand and the first screw half out. I don't remember crossing the room.</p><p>Locked the screwdriver in the tool case.</p><p>Nailed the bathroom shut. Put a hasp on the door.</p>`,
-      `<p><span class="d">Sat 29 Oct &mdash; night four</span>I understand it now.</p><p>It isn't showing me the future. It's showing the room after &mdash; after whoever is in it has gone. Every guest in 406 left at 17 past 3, and the picture simply got there first. That's why I'm never in it.</p><p>But it can't take you while your eyes are on it. It has waited three nights for me to look away.</p><p>I'm not going to look away.</p><p>Tonight's tape is up where only it can see. If it wants something to look at, it can look at that.</p><p>Reset the tool case dials to the knocking &mdash; one night to a dial, first night to last. I'd have to sit through every tape to open it again. Good.</p>`,
-      `<p style="color:#5a2020">The last page has been torn out. A ragged strip is left along the binding.</p>`,
+      `<p><span class="d">PROPERTY OF WKVR-TV</span>Night engineer: E. Varga</p><p><span class="d">Wed 26 Oct '83</span>Took room 406. After midnight the set in here picks up our old channel, 13, but only with every light in the room off.</p><p>The picture is this room, seen from inside the vent in the corner, three minutes from now. It shows what's about to happen. I'm never in it.</p>`,
+      `<p><span class="d">Sat 29 Oct</span>Every guest in 406 left at 17 past 3. The picture just gets there first.</p><p>It can't take you while you're looking at it. So I'm not going to look away.</p><p>Locked the screwdriver in the tool case so I can't open that vent. Padlocked the door and hid the key where I'd never reach in for it.</p><p style="color:#5a2020">The last page has been torn out.</p>`,
     ],
   },
   guide: {
@@ -890,10 +932,7 @@ const DOCS = {
   },
   pad: {
     title: 'Motel notepad', style: 'pad', onRead: () => flag('sawPad'),
-    pages: () => [S.flags.rubbed
-      ? `<div class="graphite">suitcase &mdash; 3 wheels<br><br>use the minute the SET shows it<br>not the minute it happens<br><br><span class="faint">don't sleep don't sleep don't sleep</span></div><p style="font:13px var(--ui);margin-top:12px">Under the graphite, the pressed-in lines come up pale.</p>`
-      : `<p style="font-family:var(--type);font-size:15px;line-height:1.6">Pinecrest Motor Lodge. The top sheet is blank, but when you tilt it toward the light you can see ridges where someone wrote hard on the sheet above it.</p>${has('pencil') ? '<button class="btn" id="rub" style="color:#2a241d;border-color:rgba(40,34,28,.5)">Shade over it with the pencil</button>' : '<p style="font:13px var(--ui);color:#6c6250">You\'d need something to bring the lines out.</p>'}`],
-    bind: card => { const b = card.querySelector('#rub'); if (b) b.onclick = () => { flag('rubbed'); sScrape(null, 1.1, 0.14); openDoc('pad'); }; },
+    pages: [`<p style="font-family:var(--type);font-size:15px;line-height:1.6">Pinecrest Motor Lodge. The top sheet is blank, but someone pressed so hard on the sheet above that two words came through, over and over: <b>DON'T SLEEP</b>.</p>`],
   },
   calendar: { title: 'Wall calendar', style: 'print', pages: [CAL_HTML] },
   firemap: { title: 'Fire evacuation plan', style: 'print', pages: [FIREMAP_HTML] },
@@ -903,7 +942,7 @@ const DOCS = {
   irene: { title: 'Photograph', style: 'print', pages: [`<div style="height:180px;background:linear-gradient(#c9b48a,#8a7a5a 60%,#6a5a42);position:relative;border:10px solid #f4efe2;box-shadow:0 2px 8px rgba(0,0,0,.3)"><div style="position:absolute;left:38%;bottom:18px;width:34px;height:90px;background:#3a2a22;border-radius:16px 16px 4px 4px"></div><div style="position:absolute;right:10%;bottom:14px;width:150px;height:46px;background:#6b2a1e;border-radius:6px"></div></div><p style="margin-top:14px">A snapshot of a woman squinting into the sun beside a station wagon, one hand up against the glare.</p><p>On the back, in blue ink: <span style="font-family:var(--hand);font-size:24px;color:#1f2a44">Dayton, summer '71. Keep your eyes on the road. &mdash; I.</span></p>`] },
   page: {
     title: 'Torn logbook page', style: 'log', onRead: () => flag('readPage'),
-    pages: () => [`<p><span class="d">Sat 29 Oct &mdash; 3:09</span>Awake since Thursday. I keep losing the word.</p><p>The padlock on the door is set to the one thing that makes it wait. I can't hold letters in my head any more, so I've written it down the way the telephone would dial it. The dots over each number say which of its letters I mean:</p><p style="padding:4px 0 10px">${tallyDots(9, 1)}${tallyDots(2, 1)}${tallyDots(8, 1)}${tallyDots(2, 3)}${tallyDots(4, 2)}</p><p>If you are reading this, you are in the room now. Look at the set. If you are not in the picture, you do not have three minutes.</p><p>Irene, I'm s</p>`],
+    pages: [`<p><span class="d">Sat 29 Oct &mdash; 3:09</span>Awake since Thursday.</p><p>If you're reading this, you're in the room now, and you've found the key.</p><p>It can't take you while you're looking at it. Don't turn your back on it. Not even at the door.</p><p>Irene, I'm s</p>`],
   },
   polaroid: {
     title: 'Polaroid', style: 'photo',
@@ -912,68 +951,52 @@ const DOCS = {
 };
 
 /* ---------------- hints ---------------- */
-const anyTape = s => ['tapeW', 'tapeT', 'tapeF', 'tapeS'].some(t => s.inv.includes(t));
 const HINTS = [
-  { id: 'start', title: 'Where do I start?', when: s => s.flags.readLog ? 'solved' : 'active', tiers: [
-    'Everything you need is in this room. Walk the walls and look at anything that highlights under the dot.',
-    'Someone was living in here before you woke up. Their notes are on the desk by the window.',
-    'Read the green logbook on the desk. It explains the television and the locks.',
-    'Go to the desk on the window wall and press E on the green logbook. Read every page.'] },
   { id: 'phone', title: 'The blinking red light on the phone', when: s => s.flags.heardMsgs ? 'solved' : 'active', tiers: [
-    'A blinking lamp on a motel phone means the front desk is holding something for the room.',
-    'The card beside the dial lists what each number does.',
+    'A blinking lamp on a motel phone means there are messages for the room.',
+    'The card beside the dial says which number plays them.',
     'Messages are on 8.',
-    'Pick up the phone on the nightstand and dial 8. Listen to both messages.'] },
+    'Pick up the phone on the nightstand and dial 8. Listen to the first message.'] },
   { id: 'wardrobe', title: 'The locked wardrobe', when: s => (s.inv.includes('key') || s.flags.wardUnlocked) ? 'solved' : (s.flags.wardTried || s.flags.heardMsgs) ? 'active' : 'hidden', tiers: [
-    'The key isn\'t anywhere near the wardrobe. Someone knows exactly where he always hides his keys.',
-    'Listen to the phone messages again. What does Irene tell him not to do?',
-    'His shoes are under the bed, hidden behind the bed skirt. You\'ll have to get down low.',
-    'Crouch (C), face the side of the bed that looks into the room, and use the bed skirt. The key is in the left shoe.'] },
-  { id: 'pad', title: 'The blank notepad', when: s => s.flags.rubbed ? 'solved' : s.flags.sawPad ? 'active' : 'hidden', tiers: [
-    'A blank page isn\'t always blank. Something was written on the sheet above it.',
-    'You need something to bring the indentations out.',
-    'There\'s a pencil in the desk drawer.',
-    'Open the desk drawer, take the pencil, then look at the notepad again and shade over it.'] },
-  { id: 'suit', title: 'The suitcase lock', when: s => s.flags.suitOpen ? 'solved' : s.flags.sawSuit ? 'active' : 'hidden', tiers: [
-    'Three wheels. Eli left himself a reminder about this lock by the bed.',
-    'The notepad says: use the minute the set shows it, not the minute it happens. What happens, and when does the TV show it?',
-    'The logbook says guests are gone at 17 past 3, and the picture on the TV always gets there three minutes early.',
-    'The TV shows it at 3:14. Set the suitcase to 3-1-4.'] },
-  { id: 'tv', title: 'The television', when: s => s.flags.sawFeed ? 'solved' : s.flags.readLog ? 'active' : 'hidden', tiers: [
-    'Eli\'s logbook says exactly when the station comes in. Read the first night again.',
-    '"Our old number," and only in the dark. Whose number? Who is "our"?',
-    'The logbook belonged to WKVR. The TV listings on top of the VCR give WKVR\'s channel. Every light in the room has to be off.',
-    'Switch off the bedside lamp, make sure the ceiling light is off too (its switch is by the door), then turn the TV to channel 13.'] },
-  { id: 'top', title: 'What the TV shows', when: s => s.inv.includes('tapeS') ? 'solved' : (s.flags.sawFeed || s.flags.sawInsc) ? 'active' : 'hidden', tiers: [
-    'What\'s on the TV is the room seen from the vent in the corner. What can it see that you can\'t?',
-    'Eli put his last tape "where only it can see." Look at the high surfaces in the picture on the TV.',
-    'There\'s something on top of the wardrobe. You\'ll need to be taller.',
-    'Drag the desk chair (R) over to the wardrobe, climb onto it (E), and take the tape from the top.'] },
-  { id: 'tapes', title: 'Watching the tapes', when: s => Object.keys(s.tapesSeen).length ? 'solved' : anyTape(s) ? 'active' : 'hidden', tiers: [
-    'The VCR plays through the television, but not on just any channel.',
-    'Look at the bottom of the TV listings page.',
-    'Put a tape in the VCR, press Play, and set the TV to channel 3.',
-    'Use the set, pick a tape, press Play, and turn the channel to 3. The lights can stay on.'] },
-  { id: 'case', title: 'The aluminium tool case', when: s => s.flags.caseOpen ? 'solved' : s.flags.sawCase ? 'active' : 'hidden', tiers: [
-    'Eli describes setting this lock in the logbook, in his last entry.',
-    '"One night to a dial, first night to last." Each tape has something you can count, and you need all four tapes.',
-    'Count the knocks from the bathroom on each tape. Put the tapes in date order, Wednesday the 26th first.',
-    'Wednesday 2 knocks, Thursday 5, Friday 1, Saturday 8. The code is 2-5-1-8.'] },
+    'Irene says where he always hides his keys.',
+    'In his shoes. Where would his shoes be?',
+    'Under the bed, behind the bed skirt. You\'ll have to get down low.',
+    'Crouch (C), face the side of the bed, lift the bed skirt and look in the shoes. The key is in the left one.'] },
+  { id: 'tv', title: 'The television', when: s => s.flags.sawFeed ? 'solved' : (s.flags.tvAuto || s.flags.ghostSeen) ? 'active' : 'hidden', tiers: [
+    'The television switched itself on. Something is trying to come through on 13.',
+    'The picture is washed out by the light in the room.',
+    'Channel 13 only comes in when the room is dark.',
+    'Switch off the bedside lamp (and the ceiling light, if it\'s on: its switch is by the door). Leave the TV on 13.'] },
+  { id: 'top', title: 'What the TV shows', when: s => s.inv.includes('tapeS') ? 'solved' : s.flags.sawFeed ? 'active' : 'hidden', tiers: [
+    'The picture shows the room three minutes from now. Watch what it shows happening.',
+    'In the picture the chair is beside the wardrobe, and something on top of the wardrobe is coming down.',
+    'There\'s something on top of the wardrobe. You\'ll need to stand on something.',
+    'Drag the desk chair (R) over to the wardrobe, climb onto it (E), and take what\'s on top.'] },
+  { id: 'tape', title: 'The videotape', when: s => (s.tapesSeen && s.tapesSeen.tapeS) ? 'solved' : s.inv.includes('tapeS') ? 'active' : 'hidden', tiers: [
+    'It\'s a videotape. There\'s a VCR beside the television.',
+    'Put it in the VCR.',
+    'Use the VCR: it takes the tape and plays it. Watch the TV.',
+    'Use the VCR and watch the tape to the end.'] },
+  { id: 'case', title: 'The tool case', when: s => s.flags.caseOpen ? 'solved' : (s.flags.sawCase || (s.tapesSeen && s.tapesSeen.tapeS)) ? 'active' : 'hidden', tiers: [
+    'Three number wheels. The number is in this room, and once you see it, it\'s everywhere.',
+    'Something is scratched into the wall behind the painting over the bed.',
+    'Lift the painting off its nail. One time is scratched there over and over: 3:17.',
+    'Set the tool case to 3-1-7.'] },
   { id: 'vent', title: 'The vent', when: s => s.flags.reached ? 'solved' : s.flags.caseOpen ? 'active' : 'hidden', tiers: [
-    'The screwdriver has cream paint in its notch. What in this room is painted cream and held on with screws?',
-    'The vent high in the corner, above the dark stain on the carpet. You\'ll need something to stand on.',
+    'The screwdriver has cream paint in its notch. What in here is cream, high up, and held on with screws?',
+    'The vent in the corner by the TV, above the stain on the carpet. The picture on the TV shows where the chair goes.',
     'Drag the chair right under the vent, climb onto it, and unscrew the grille.',
-    'Put the chair under the vent (the corner by the TV end of the bed wall), climb on, use the vent to unscrew the grille, then reach inside.'] },
-  { id: 'early', title: 'The padlock on the door', when: s => (s.flags.sawPadlock && !s.flags.readPage) ? 'active' : 'hidden', tiers: [
-    'You don\'t have what you need for this lock yet. Leave it for last.',
-    'Eli wrote the word on the last page of his logbook, and that page is missing.',
-    'The missing page is somewhere only the thing in the corner could reach. Follow everything that points at the vent.',
-    'The page is inside the vent. You need the screwdriver from the tool case first.'] },
-  { id: 'padlock', title: 'The padlock word', when: s => s.flags.doorOpen ? 'solved' : s.flags.readPage ? 'active' : 'hidden', tiers: [
-    'Eli wrote the word the way a telephone dials it. Each group of marks is a number, and the dots above it pick one of that number\'s letters.',
-    'Look closely at the phone\'s dial: each number has letters printed with it.',
-    '9 is WXY, 2 is ABC, 8 is TUV, 4 is GHI. One dot means the first letter, two dots the second, three dots the third.',
-    '9-2-8-2-4 with those dots spells WATCH. Set the padlock to W-A-T-C-H.'] },
+    'Put the chair under the vent, climb on, use the vent to unscrew the grille, then reach inside.'] },
+  { id: 'early', title: 'The padlock on the door', when: s => (s.flags.sawPadlock && !s.inv.includes('padkey') && !s.flags.reached) ? 'active' : 'hidden', tiers: [
+    'This padlock needs a key, and you don\'t have it yet.',
+    'Eli hid the key where he\'d never reach in for it.',
+    'Somewhere only the thing in the corner can reach.',
+    'The key is inside the vent. You\'ll need the screwdriver from the tool case to open it.'] },
+  { id: 'out', title: 'Getting out', when: s => s.flags.escaped ? 'solved' : s.flags.reached ? 'active' : 'hidden', tiers: [
+    'It can\'t take you while you\'re looking at it.',
+    'Keep the vent in front of you, all the way to the door.',
+    'Walk backwards to the door with your eyes on the vent (S, or pull your left thumb down). At the door you can reach behind you for the padlock.',
+    'Look at the vent and walk backwards until you reach the door. Press E there to unlock the padlock behind you, then keep backing out into the hall.'] },
 ];
 
 /* ---------------- phone scripts ---------------- */
@@ -1050,7 +1073,7 @@ function nearWardTop() {
   const dx = Math.max(-2.5 - S.chair.x, 0, S.chair.x - (-1.88)), dz = Math.max(1.72 - S.chair.z, 0, S.chair.z - 2.95);
   return Math.hypot(dx, dz) < 0.75;
 }
-function progress() { const k = ['readLog', 'heardMsgs', 'keyTaken', 'rubbed', 'suitOpen', 'sawFeed', 'caseOpen', 'ventOpen', 'reached', 'doorOpen']; return (k.filter(f => S.flags[f]).length + (has('tapeS') ? 1 : 0)) / (k.length + 1); }
+function progress() { const k = ['heardMsgs', 'keyTaken', 'wardOpened', 'sawFeed', 'caseOpen', 'ventOpen', 'reached', 'doorOpen']; return (k.filter(f => S.flags[f]).length + (has('tapeS') ? 1 : 0)) / (k.length + 1); }
 function pose(obj, from, to, dur = 0.6, done) { const f = Object.assign({}, from); tween(dur, k => { for (const key in to) { const [o, p] = key.split('.'); obj[o][p] = lerp(f[key], to[key], k); } }, done); }
 
 /* ---------------- actions ---------------- */
@@ -1061,7 +1084,7 @@ function takePainting() {
   S.painting = true; save(); sScrape(O.painting.position, 0.4, 0.2);
   const r0 = O.painting.rotation.z;
   tween(0.8, k => { O.painting.position.y = lerp(1.62, 0.98, k); O.painting.position.z = lerp(-2.975, -2.62, k); O.painting.rotation.x = lerp(0, -0.28, k); O.painting.rotation.z = lerp(r0, 0, k); },
-    () => subtitle('', '<i>It was hanging on a single nail. Behind it, someone has scratched into the plaster.</i>', 5000));
+    () => { flag('sawInsc'); subtitle('', '<i>It was hanging on a single nail. Behind it, one time is scratched into the plaster, over and over: 3:17.</i>', 6000); });
 }
 function hangPainting() { S.painting = false; save(); sScrape(O.painting.position, 0.4, 0.2); tween(0.8, k => { O.painting.position.y = lerp(0.98, 1.62, k); O.painting.position.z = lerp(-2.62, -2.975, k); O.painting.rotation.x = lerp(-0.28, 0, k); }); }
 function toggleDrawer() { S.drawer = !S.drawer; save(); sScrape(O.desk.position, 0.35, 0.22); const x0 = O.drawer.position.x, x1 = S.drawer ? 0.3 : 0; tween(0.4, k => O.drawer.position.x = lerp(x0, x1, k)); }
@@ -1083,30 +1106,29 @@ function openWard() {
 }
 function closeWard() { S.ward = false; save(); sCreak(POS.wardrobe, 0.8, 0.3, 80); const a = O.wdL.rotation.y; tween(0.8, k => { O.wdL.rotation.y = lerp(a, 0, k); O.wdR.rotation.y = -lerp(a, 0, k); }, () => sThunk(POS.wardrobe, 0.3, 140)); }
 function suitLock() {
-  flag('sawSuit');
-  openLock({ id: 'suit', title: 'Suitcase lock', sub: 'Three brass wheels set into the latch of a leather suitcase.', n: 3, brass: true, answer: '314', btn: 'Press the latches', pos: POS.wardrobe,
-    onOpen: () => { flag('suitOpen'); tween(0.6, k => O.suitLid.rotation.z = 1.2 * k); after(0.8, suitContents); } });
+  flag('sawSuit'); flag('suitOpen'); sClick(POS.wardrobe, 0.5, 1600); after(0.15, () => sClick(POS.wardrobe, 0.5, 1500));
+  tween(0.6, k => O.suitLid.rotation.z = 1.2 * k); after(0.7, suitContents);
 }
 function suitContents() {
-  openContainer('Suitcase', 'Shirts folded with care, and under them:', [
-    { name: 'VHS tape: THU 10/27', desc: 'Handwritten label.', take: 'tapeT', onTake: () => { O.suitIn.children[0].visible = false; } },
+  openContainer('Suitcase', 'Shirts folded with care, and lying on top of them:', [
+    { name: 'Flashlight', desc: 'Rubber-cased and heavy. It works.', take: 'flashlight', onTake: () => { O.suitIn.children[0].visible = false; toast(G.touch ? 'Tap <b>Flashlight</b>, top right, to switch it on or off.' : 'Press <kbd>F</kbd> to switch the flashlight on or off.'); } },
     { name: 'WKVR staff badge', desc: 'Laminated, with a photo.', read: 'badge', verb: 'Look' },
     { name: 'Newspaper clipping', desc: 'Folded small and soft from handling.', read: 'clip' },
     { name: 'Photograph', desc: 'A snapshot, creased down the middle.', read: 'irene', verb: 'Look' }]);
 }
 function caseLock() {
   flag('sawCase');
-  openLock({ id: 'case', title: 'Tool case', sub: 'Four steel number wheels between the latches. Stencilled on the lid: <i>WKVR-TV &middot; PROPERTY OF ENGINEERING</i>.', n: 4, answer: '2518', btn: 'Snap the latches', pos: new THREE.Vector3(2.12, 0.2, 1.05),
+  openLock({ id: 'case3', title: 'Tool case', sub: 'Three steel number wheels between the latches. Stencilled on the lid: <i>WKVR-TV &middot; PROPERTY OF ENGINEERING</i>.', n: 3, answer: '317', btn: 'Snap the latches', pos: new THREE.Vector3(2.12, 0.2, 1.05),
     onOpen: () => { flag('caseOpen'); tween(0.6, k => O.caseLid.rotation.z = -1.2 * k); after(0.8, caseContents); } });
 }
 function caseContents() {
   openContainer('Tool case', 'Foam cut-outs shaped for tools. Most of them are empty.', [
-    { name: 'Flat screwdriver', desc: 'Heavy, with flecks of cream paint in the notch of the blade.', take: 'screwdriver', onTake: () => { O.caseIn.children[0].visible = false; } },
-    { name: 'Flashlight', desc: 'Rubber-cased. It works.', take: 'flashlight', onTake: () => { O.caseIn.children[1].visible = false; toast(G.touch ? 'Tap <b>Flashlight</b>, top right, to switch it on or off.' : 'Press <kbd>F</kbd> to switch the flashlight on or off.'); } }]);
+    { name: 'Flat screwdriver', desc: 'Heavy, with flecks of cream paint in the notch of the blade.', take: 'screwdriver', onTake: () => { O.caseIn.children[0].visible = false; } }]);
 }
 function padlock() {
   flag('sawPadlock');
-  openLock({ id: 'door', title: 'Padlock', sub: 'A brass word lock through a hasp that someone screwed onto the door from the inside. Five lettered wheels.', n: 5, letters: true, brass: true, answer: 'WATCH', btn: 'Pull the shackle', pos: new THREE.Vector3(1.93, 1.2, 2.94), onOpen: openDoor });
+  if (!has('padkey')) { sThunk(O.lock.position, 0.4, 180); subtitle('', '<i>A padlock through a hasp that someone screwed onto the door from the inside. It needs a key.</i>', 4200); return; }
+  unlockPadlock(false);
 }
 function peephole() {
   const t = S.flags.reached ? 'The corridor is empty, and much longer than the building could possibly be. Every light in it is off except the one just outside your door.' : 'A long dark corridor, bent by the lens. Far away at the end, a red EXIT sign.';
@@ -1173,25 +1195,91 @@ function reachVent() {
   after(3.0, () => subtitle('', '<i>Paper. A watch strap. Something smooth and square.</i>', 0));
   after(5.4, () => { subtitle('', '<i>Something brushes the back of your hand.</i>', 3000); sStinger(1.2); sKnock(POS.vent, 1.7); G.fear = 1; G.shake = 0.6; });
   after(6.1, () => {
-    G.blackT = 0; G.fearT = 0.2; flag('reached'); give('page', true); give('watch', true); give('polaroid', true); O.ventItems.visible = false;
+    G.blackT = 0; G.fearT = 0.2; flag('reached'); G.finFresh = true; give('padkey', true); give('page', true); give('watch', true); give('polaroid', true); O.ventItems.visible = false;
     S.tv.on = true; S.tv.ch = 13; SET.chShown = G.time; sThunk(POS.tv, 0.6, 80); save(); onTVChange();
     G.cutscene = false; G.polaroid = makePolaroid();
     openContainer('From inside the vent', 'You pull your arm back fast. Behind you, the television has switched itself on.', [
+      { name: 'Small steel key', desc: 'On a loop of string, sticky with paint. It looks like it fits the padlock on the door.', item: 'padkey' },
       { name: 'Torn logbook page', desc: 'The missing last page of the logbook.', read: 'page' },
       { name: 'Wristwatch', desc: 'Stopped at 3:17.', item: 'watch' },
       { name: 'Polaroid', desc: 'Taken from inside the vent.', read: 'polaroid', verb: 'Look' }]);
   });
 }
 function openDoor() {
-  flag('doorOpen'); G.cutscene = true; updatePrompt(true);
+  flag('doorOpen');
   tween(0.35, k => O.shackle.position.y = 0.03 + 0.025 * k);
-  after(0.7, () => {
+  after(0.5, () => {
     sThunk(O.lock.position, 0.7, 160); O.lock.visible = false;
-    subtitle('', '<i>The padlock drops open. Before you can touch the handle, the door swings inward on its own, slowly, all the way.</i>', 6000);
+    subtitle('', FIN.on ? '<i>The padlock drops. Behind you the door swings open on its own, slowly, all the way. Keep backing out.</i>' : '<i>The padlock drops open. Before you can touch the handle, the door swings inward on its own, slowly, all the way.</i>', 6000);
     sCreak(new THREE.Vector3(1.45, 1.2, 2.9), 3.2, 0.5, 58);
     tween(3.2, k => O.door.rotation.y = 1.45 * k, null, t => t);
     O.colDoor.on = false; O.colHall.forEach(c => c.on = true);
-    after(1.2, () => { G.cutscene = false; updatePrompt(true); });
+    updatePrompt(true);
+  });
+}
+
+/* ---------------- the way out: it can't take you while you're looking at it ----------------
+   Once the key is out of the vent, two eyes open in the duct. Keep them in view all the way to the door,
+   reach behind you for the padlock, and back out into the hall. Look away for about a second and you
+   wake on top of the covers again (a mistake), with the door as it was. */
+const FIN = { on: false, away: 0, warned: false, grace: 0, looked: false, lookT: 0, unlocking: false, heartT: 0 };
+const VENT_EYE = new THREE.Vector3(2.1, 2.45, -3.0);
+const _fd = new THREE.Vector3(), _ff = new THREE.Vector3();
+function finActive() { return FIN.on && !G.ending; }
+function startFinale(resumed) {
+  FIN.on = true; FIN.away = 0; FIN.warned = false; FIN.looked = false; FIN.lookT = 0; FIN.unlocking = false; FIN.grace = resumed ? 6 : 3;
+  O.eyesBig.visible = true;
+  if (S.lamp || S.ceil) { S.lamp = false; S.ceil = false; O.switchLever.position.y = -0.005; save(); }
+  if (resumed) {
+    subtitle('', S.flags.finIntro ? '<i>The eyes are still there in the vent. Find them, and don\'t look away.</i>' : '<i>Two eyes are watching you from the vent. It can\'t take you while you\'re looking at it. Keep your eyes on the vent and back out of the room.</i>', S.flags.finIntro ? 5000 : 9000);
+    flag('finIntro'); return;
+  }
+  flag('finIntro'); G.fear = 1; G.fearT = 0.7; sStinger(1.0); G.flickerT = 0.8; buzz([60, 40, 120]);
+  sBreath(VENT_EYE, 3, 0.7, true);
+  subtitle('', '<i>In the dark of the duct, an arm\'s length from your face, two eyes open.</i>', 4800);
+  after(5.0, () => { if (finActive()) subtitle('', '<i>It can\'t take you while you\'re looking at it. Keep your eyes on the vent, and back out of the room.</i>', 9000); });
+}
+function nearDoorBehind() { return !S.flags.doorOpen && P.z > 2.05 && P.x > 0.9 && P.x < 2.15; }
+function unlockPadlock(behind) {
+  if (FIN.unlocking || S.flags.doorOpen || !has('padkey')) return;
+  FIN.unlocking = true; updatePrompt(true);
+  subtitle('', behind ? '<i>You reach behind you and find the padlock by feel. The key skids round the keyhole, then goes in.</i>' : '<i>The key goes in stiffly.</i>', 3200);
+  sScrape(O.lock.position, 0.5, 0.12); after(0.7, () => sClick(O.lock.position, 0.45, 2400));
+  after(1.5, () => { if (!FIN.unlocking) return; FIN.unlocking = false; openDoor(); });
+}
+function finTick(dt) {
+  if (!finActive()) return;
+  O.eyesBig.visible = true;
+  const pulse = 0.3 + 0.15 * Math.sin(G.time * 2.3) + (Math.random() < 0.02 ? -0.3 : 0);
+  O.eyeGlow.opacity = clamp(pulse, 0, 0.5);
+  O.eyesBig.scale.y = (G.time % 6.5) < 0.12 ? 0.15 : 1;   // it blinks, now and then
+  FIN.heartT -= dt; if (FIN.heartT <= 0) { FIN.heartT = 4.7; sHeart(6, 0.35 + 0.35 * clamp(FIN.away * 2, 0, 1), 0.8); }
+  if (UI.kind || G.cutscene || G.paused || P.z > 3.05) { FIN.away = 0; return; }
+  camera.getWorldDirection(_ff); _fd.copy(VENT_EYE).sub(camera.position); const dist = _fd.length(); _fd.normalize();
+  const looking = _ff.dot(_fd) > (dist < 1.4 ? 0.5 : 0.84);
+  // the rule starts once you've held it in view for half a second (a glance while turning doesn't count)
+  if (looking) { FIN.lookT += dt; if (FIN.lookT > 0.5) FIN.looked = true; FIN.away = Math.max(0, FIN.away - dt * 2); if (FIN.away === 0) FIN.warned = false; return; }
+  FIN.lookT = 0;
+  if (!FIN.looked) { FIN.grace -= dt; if (FIN.grace > 0) return; }
+  FIN.away += dt;
+  if (FIN.away > 0.3 && !FIN.warned) { FIN.warned = true; sBreath(behindPos(0.4), 1, 0.9, true); G.fear = Math.max(G.fear, 0.9); G.red = Math.max(G.red, 0.35); }
+  if (FIN.away > (P.z > 1.8 ? 0.75 : 1.0)) caught();
+}
+function caught() {
+  S.wrong++; save(); FIN.away = 0; FIN.unlocking = false;
+  G.cutscene = true; updatePrompt(true); clearSubs();
+  sStinger(1.3); sKnock(behindPos(0.3), 1.6); G.fear = 1; G.red = 0.8; G.shake = 0.8; G.blackT = 1; buzz([90, 40, 200]);
+  if (G.carrying) { G.carrying = false; placeChairMesh(); O.colChair.on = true; }
+  after(1.8, () => {
+    G.onChair = false; G.crouch = false; G.flashOn = false;
+    P.x = ROOM.spawn.x; P.z = ROOM.spawn.z; G.yaw = ROOM.spawn.yaw; G.pitch = 0.6; G.eye = G.eyeT = 0.9;
+    $('#fx').className = 'lids'; G.blackT = 0;
+    tween(2.6, k => { G.pitch = lerp(0.6, -0.06, k); });
+    after(1.5, () => { G.eyeT = 1.62; sStep(0.2); });
+    after(2.8, () => {
+      G.cutscene = false; $('#fx').className = ''; FIN.looked = false; FIN.lookT = 0; FIN.grace = 6; FIN.warned = false; updatePrompt(true);
+      subtitle('', '<i>You wake on top of the covers. They\'re warm. The eyes are still in the vent. Find them, and don\'t look away.</i>', 7000);
+    });
   });
 }
 
@@ -1219,6 +1307,7 @@ function dropCarried() {
 /* ---------------- interactions ---------------- */
 function look(txt, ms = 4500) { return { label: 'Look', run: () => subtitle('', `<i>${txt}</i>`, ms) }; }
 function registerInteractions() {
+  scene.updateMatrixWorld(true);   // so every hit box below sits where its object is
   inter('bed', O.bed, { name: 'Bed', actions: () => [look(S.flags.imprint ? 'There\'s a shape pressed into the covers. A person\'s shape. It\'s still warm, and you\'ve been over here the whole time.' : 'The covers are still warm where you were lying. You don\'t want to lie down again.')] });
   const skirt = { name: 'Bed skirt', enabled: () => !S.skirt, actions: () => [{ label: G.crouch ? 'Lift it and look under the bed' : 'Look under the bed', run: lookUnderBed }] };
   inter('skirt', O.skirtE, skirt); O.skirtF.traverse(o => o.userData.iid = 'skirt');
@@ -1230,13 +1319,13 @@ function registerInteractions() {
   inter('phone', O.phone, { name: 'Telephone', note: () => PH.ringing ? 'It\'s ringing.' : (!S.flags.heardMsgs ? 'A red lamp on the base is blinking.' : ''), actions: () => [{ label: PH.ringing ? 'Answer it' : 'Pick up the receiver', run: openPhone }] });
   inter('pad', O.pad, { name: 'Motel notepad', actions: () => [{ label: 'Look', run: () => openDoc('pad') }] });
   inter('clock', O.clock, { name: () => `Flip clock: ${fmtClock(S.clock)} a.m.`, actions: () => [] });
-  inter('painting', O.painting, { name: 'Painting of a lake at dusk', actions: () => [S.painting ? { label: 'Hang it back up', run: hangPainting } : { label: 'Lift it off the wall', run: takePainting }] });
+  inter('painting', O.painting, { name: 'Painting of a lake at dusk', note: () => S.flags.crooked && !S.painting ? 'It\'s hanging crooked.' : '', actions: () => [S.painting ? { label: 'Hang it back up', run: hangPainting } : { label: 'Lift it off the wall', run: takePainting }] });
   inter('insc', O.insc, { name: 'Scratches in the plaster', enabled: () => S.painting, actions: () => [{ label: 'Read', run: () => openDoc('insc') }] });
   inter('blinds', O.blinds, { name: 'Venetian blinds', actions: () => [{ label: 'Look outside', run: () => subtitle('', `<i>Rain on the glass. The parking lot is empty. Up on the ridge the old transmitter tower blinks red, and the motel sign has lost its V.${S.flags.hand ? ' There\'s a handprint on the glass. On the outside. This is the fourth floor.' : ''}</i>`, 6500) }, { label: S.blinds ? 'Close the blinds' : 'Open the blinds', run: toggleBlinds }] });
   inter('heater', O.heater, { name: 'Wall heater', actions: () => [look('Switched off. It ticks now and then as it cools, like something tapping from inside.')] });
   inter('desk', O.desk, { name: 'Desk', actions: () => [look('Cigarette burns along the edge. Someone worked here for nights on end.')] });
   inter('drawer', O.drawer, { name: 'Desk drawer', actions: () => [{ label: S.drawer ? 'Close it' : 'Open it', run: toggleDrawer }] });
-  inter('pencil', O.pencil, { name: 'Pencil', enabled: () => S.drawer && !has('pencil'), actions: () => [{ label: 'Take', run: () => { give('pencil'); O.pencil.visible = false; } }] });
+  inter('pencil', O.pencil, { name: 'Pencil', enabled: () => S.drawer, actions: () => [look('A motel pencil, chewed at the end.', 3000)] });
   inter('log', O.log, { name: 'Green logbook', actions: () => [{ label: 'Read', run: () => openDoc('log') }] });
   inter('recorder', O.recorder, { name: 'Pocket cassette recorder', actions: () => [{ label: 'Play the tape', run: playMemo }] });
   inter('ashtray', O.ashtray, { name: 'Ashtray', actions: () => [look('Seven cigarettes, each one smoked right down to the filter.')] });
@@ -1248,7 +1337,7 @@ function registerInteractions() {
   inter('coat', O.coat, { name: 'Man\'s overcoat', enabled: () => S.ward, actions: () => [{ label: 'Search the pockets', run: () => {
     if (!has('moth')) { give('moth'); subtitle('', '<i>Lint. A bus transfer from Dayton. And pinned inside the lapel, over the heart, a tiny brass moth.</i>', 5500); }
     else subtitle('', '<i>Nothing else in the pockets.</i>', 2500); } }] });
-  inter('suit', O.suit, { name: 'Leather suitcase', enabled: () => S.ward, actions: () => [S.flags.suitOpen ? { label: 'Look inside', run: suitContents } : { label: 'Try the lock', run: suitLock }] });
+  inter('suit', O.suit, { name: 'Leather suitcase', enabled: () => S.ward, actions: () => [S.flags.suitOpen ? { label: 'Look inside', run: suitContents } : { label: 'Open it', run: suitLock }] });
   O.scratches.forEach(s => s.userData.noRay = false);
   inter('scr', O.scratches[0], { name: 'Inside of the wardrobe door', enabled: () => S.ward, actions: () => [look('Fingernail marks, dozens of them, scored into the wood. They start near the bottom and stop at about the height of a man\'s chest.', 6000)] }); O.scratches[1].userData.iid = 'scr';
   inter('tapeS', O.tapeS, { name: 'Something on top of the wardrobe', reach: 1.8, enabled: () => !has('tapeS'), note: () => nearWardTop() ? '' : 'Out of reach.', actions: () => nearWardTop() ? [{ label: 'Take it', run: () => {
@@ -1256,13 +1345,17 @@ function registerInteractions() {
     subtitle('', '<i>A videotape, left where no one standing on the floor would ever see it. Under the date, pressed so hard the pen tore the label: DON\'T.</i>', 6500); } }] : [] });
   inter('dresser', O.dresser, { name: 'Dresser', actions: () => [look('The drawers are empty apart from a paper laundry bag with PINECREST printed on it.')] });
   inter('tv', O.tv, { name: 'Television', reach: 2.6, actions: () => [{ label: 'Use the set', run: openSet }, { label: S.tv.on ? 'Switch it off' : 'Switch it on', run: () => setTV(!S.tv.on) }] });
-  inter('vcr', O.vcr, { name: 'VCR', note: () => ['tapeW', 'tapeT', 'tapeF', 'tapeS'].some(has) && !S.vcr ? 'You have a tape in your pocket.' : '', actions: () => [{ label: ['tapeW', 'tapeT', 'tapeF', 'tapeS'].some(has) && !S.vcr ? 'Put a tape in' : 'Use the set', run: openSet }] });
+  inter('vcr', O.vcr, { name: 'VCR', note: () => has('tapeS') && S.vcr !== 'tapeS' ? 'You have a tape in your pocket.' : '', actions: () => {
+    if (has('tapeS') && S.vcr !== 'tapeS' && !VCR.playing) return [{ label: 'Put the tape in and play it', run: () => { insertTape('tapeS'); after(0.6, playTape); } }];
+    if (VCR.playing) return [{ label: 'Stop the tape', run: () => { VCR.playing = false; VCR.t = 0; sClick(POS.tv, 0.5, 1100); drawVCR(); refreshSet(); } }];
+    if (S.vcr) return [{ label: 'Play the tape', run: playTape }, { label: 'Eject it', run: ejectTape }];
+    return [{ label: 'Use the set', run: openSet }];
+  } });
   O.vcrTape.traverse(o => o.userData.iid = 'vcr');
   inter('guide', O.guide, { name: 'TV WEEK listings page', actions: () => [{ label: 'Read', run: () => openDoc('guide') }] });
-  ['tapeW', 'tapeF'].forEach(id => inter(id, O[id], { name: `VHS tape: "${TAPES[id].label}"`, enabled: () => !has(id), actions: () => [{ label: 'Take', run: () => { give(id); O[id].visible = false; } }] }));
   inter('mirror', O.mirror, { name: 'Mirror', actions: () => [look('Someone has draped a towel over the mirror and taped it down at the corners. You leave it where it is.')] });
   inter('case', O.case, { name: 'Aluminium tool case', actions: () => [S.flags.caseOpen ? { label: 'Look inside', run: caseContents } : { label: 'Try the lock', run: caseLock }] });
-  inter('door', O.door, { name: 'Door to the hall', enabled: () => !S.flags.doorOpen, actions: () => [{ label: 'Try the padlock', run: padlock }, { label: 'Look through the peephole', run: peephole }] });
+  inter('door', O.door, { name: 'Door to the hall', enabled: () => !S.flags.doorOpen, actions: () => [{ label: has('padkey') ? 'Unlock the padlock' : 'Try the padlock', run: padlock }, { label: 'Look through the peephole', run: peephole }] });
   O.lock.traverse(o => o.userData.iid = 'door');
   inter('firemap', O.firemap, { name: 'Fire evacuation plan', enabled: () => !S.flags.doorOpen, actions: () => [{ label: 'Read', run: () => openDoc('firemap') }] });
   inter('bath', O.bath, { name: 'Bathroom door', note: () => S.boards ? 'Nailed shut. Some of the boards are hanging loose.' : 'Nailed shut with three boards.', actions: () => [{ label: 'Knock', run: knockBack }, { label: 'Pull at the boards', run: () => { sCreak(POS.bath, 0.6, 0.3, 130); subtitle('', '<i>The nails don\'t give. You get the feeling someone on the other side is leaning against the door, very gently.</i>', 5000); } }] });
@@ -1279,7 +1372,7 @@ function registerInteractions() {
   inter('streak', O.streak, { name: 'Streaks on the wallpaper', actions: () => [look('Dark streaks run down from the vent. Below them the paint is scored with short parallel scratches, in fours.')] });
   inter('stain', O.stainFloor, { name: 'Stain on the carpet', actions: () => [look('The carpet under the vent is stiff and dark, as if something dripped here for a long time.')] });
   // bigger targets for small things
-  [['recorder', O.recorder, 0.04], ['tapeW', O.tapeW], ['tapeF', O.tapeF], ['pencil', O.pencil], ['pad', O.pad, 0.02], ['phone', O.phone, 0.02], ['clock', O.clock], ['lamp', O.lamp],
+  [['recorder', O.recorder, 0.04], ['pencil', O.pencil], ['pad', O.pad, 0.02], ['phone', O.phone, 0.02], ['clock', O.clock], ['lamp', O.lamp],
    ['log', O.log], ['shoes', O.shoes], ['switch', O.switch], ['door', O.lock], ['guide', O.guide, 0.02], ['mug', O.mug, 0.02], ['ashtray', O.ashtray, 0.02], ['meter', O.meter, 0.012], ['coil', O.coil, 0.012]].forEach(([id, o, pad]) => hitbox(id, o, pad));
 }
 
@@ -1289,15 +1382,24 @@ function defaults() {
     lamp: true, ceil: false, blinds: false, painting: false, drawer: false, skirt: false, ward: false, screws: 4, boards: 0,
     tv: { on: false, ch: 4 }, vcr: null, chair: Object.assign({}, CHAIR_DESK), clock: 171, clockAcc: 0, elapsed: 0, player: null };
 }
+// saves from the old version of this room (four tapes, a pencil, a lettered padlock): drop what's gone, add what's new
+const OLD_ITEMS = ['tapeW', 'tapeT', 'tapeF', 'pencil', 'key2'];
+function upgradeSave() {
+  S.inv = S.inv.filter(id => !OLD_ITEMS.includes(id));
+  if (S.vcr && S.vcr !== 'tapeS') S.vcr = null;
+  if (S.flags.reached && !S.flags.doorOpen && !S.inv.includes('padkey')) S.inv.push('padkey');
+  S.flags.v2 = true;
+}
 function applyState() {
+  upgradeSave();
   placeChairMesh();
   if (S.painting) { O.painting.position.set(-1.0, 0.98, -2.62); O.painting.rotation.set(-0.28, 0, 0); } else { O.painting.position.set(-1.0, 1.62, -2.975); O.painting.rotation.set(0, 0, S.flags.crooked ? 0.12 : 0); }
   O.drawer.position.x = S.drawer ? 0.3 : 0;
   O.skirtE.rotation.z = S.skirt ? 1.35 : 0; O.skirtF.rotation.x = S.skirt ? -1.35 : 0; if (S.skirt) { noRay(O.skirtE); noRay(O.skirtF); }
   O.wdL.rotation.y = S.ward ? 1.9 : 0; O.wdR.rotation.y = S.ward ? -1.9 : 0;
   O.suitLid.rotation.z = S.flags.suitOpen ? 1.2 : 0; O.caseLid.rotation.z = S.flags.caseOpen ? -1.2 : 0;
-  O.pencil.visible = !has('pencil'); O.tapeW.visible = !has('tapeW'); O.tapeF.visible = !has('tapeF'); O.tapeS.visible = !has('tapeS');
-  O.suitIn.children[0].visible = !has('tapeT'); O.caseIn.children[0].visible = !has('screwdriver'); O.caseIn.children[1].visible = !has('flashlight');
+  O.pencil.visible = true; O.tapeW.visible = false; O.tapeF.visible = false; O.tapeS.visible = !has('tapeS');
+  O.suitIn.children[0].visible = !has('flashlight'); O.caseIn.children[0].visible = !has('screwdriver') && !S.flags.ventOpen; O.caseIn.children[1].visible = false;
   if (S.flags.ventOpen) { O.vent.position.set(1.95, 0.012, -2.45); O.vent.rotation.x = -Math.PI / 2; O.screws.forEach(s => s.visible = false); O.vent.traverse(o => o.userData.iid = 'grilleFloor'); }
   O.ventItems.visible = !S.flags.reached;
   for (let i = 0; i < S.boards; i++) O.boards[i].rotation.z = O.boards[i].userData.r0 - 1.05;
@@ -1306,6 +1408,7 @@ function applyState() {
   O.switchLever.position.y = S.ceil ? 0.02 : -0.005;
   if (S.flags.doorOpen) { O.door.rotation.y = 1.45; O.lock.visible = false; O.colDoor.on = false; O.colHall.forEach(c => c.on = true); }
   if (S.flags.heardMsgs) O.msgLamp.visible = false;
+  FIN.on = false; O.eyesBig.visible = false;
   showVcrTape(S.vcr, false);
   drawClock(); drawVCR(); renderInv();
 }
@@ -1317,17 +1420,16 @@ const EVENTS = [
   { id: 'above', w: 1.4, ok: () => true, run: () => { const x0 = rand(-2, 0), z0 = rand(-2, 2); for (let i = 0; i < 6; i++) after(i * 0.62, () => sKnock(new THREE.Vector3(x0 + i * 0.5, 3.3, z0), 0.4, 0, 1)); } },
   { id: 'flicker', w: 2, ok: () => S.lamp || S.ceil, run: () => { G.flickerT = 1.6; } },
   { id: 'chair', w: 1.4, ok: () => !G.carrying && !G.onChair && chairNearDesk(), unseen: () => O.chair, run: () => { const c = S.chair; c.x += (CHAIR_VENT.x - c.x) * 0.07; c.z += (CHAIR_VENT.z - c.z) * 0.07; c.r += 0.3; placeChairMesh(); save(); } },
-  { id: 'tv', w: 1.6, ok: () => !S.tv.on && S.flags.readLog && !S.flags.sawFeed && G.play > 300, unseen: () => O.tv, run: () => { S.tv.on = true; S.tv.ch = 13; SET.chShown = G.time; sThunk(POS.tv, 0.5, 90); save(); onTVChange(); } },
   { id: 'ring', w: 1.1, ok: () => !PH.ringing && UI.kind !== 'phone' && G.play > 150, run: () => ringPhone(5, breathCall) },
   { id: 'breath', w: 1.3, ok: () => S.flags.sawFeed, run: () => { sBreath(behindPos(0.7), 2, 0.75, true); G.fear = Math.max(G.fear, 0.4); } },
-  { id: 'painting', w: 1, ok: () => !S.painting && !S.flags.crooked, unseen: () => O.painting, run: () => { S.flags.crooked = true; O.painting.rotation.z = 0.12; save(); } },
+  { id: 'painting', w: 1, ok: () => !S.painting && !S.flags.crooked && !S.flags.sawCase, unseen: () => O.painting, run: () => { S.flags.crooked = true; O.painting.rotation.z = 0.12; save(); } },
   { id: 'ward', w: 1.2, ok: () => S.flags.wardUnlocked && !S.ward, unseen: () => O.wd, run: () => { S.ward = true; save(); sCreak(POS.wardrobe, 1.4, 0.35, 60); tween(1.4, k => { O.wdL.rotation.y = 1.9 * k; O.wdR.rotation.y = -1.9 * k; }); } },
   { id: 'hand', w: 2.5, ok: () => S.flags.sawFeed && !S.flags.hand, unseen: () => O.hand, run: () => { S.flags.hand = true; O.hand.visible = true; save(); } },
   { id: 'imprint', w: 3, ok: () => S.flags.reached && !S.flags.imprint, unseen: () => O.bed, run: () => { S.flags.imprint = true; O.imprint.visible = true; save(); } },
   { id: 'drip', w: 1, ok: () => true, run: () => { let t = 0; for (let i = 0; i < 5; i++) { t += rand(0.8, 1.5); after(t, () => sClick(new THREE.Vector3(2.1, 0.1, -2.6), 0.3, 3600)); } } },
 ];
 function director(dt) {
-  if (G.cutscene || G.ending || UI.kind === 'phone' || VCR.playing || G.memo) return;
+  if (G.cutscene || G.ending || FIN.on || UI.kind === 'phone' || VCR.playing || G.memo) return;
   DIR.t -= dt; if (DIR.t > 0) return;
   if (DIR.pending) {
     const e = DIR.pending;
@@ -1344,7 +1446,7 @@ function director(dt) {
   else { ev.run(); DIR.t = rand(38, 75) * (1 - 0.35 * progress()); }
 }
 function on317() {
-  if (G.cutscene || G.ending || VCR.playing) return;   // never knock over a tape: its knocks are the case code
+  if (G.cutscene || G.ending || FIN.on || VCR.playing) return;
   if (!S.flags.first317) {
     flag('first317'); G.powerCut = 7; sStinger(0.7); G.fear = 1;
     after(1.4, () => sBell(POS.phone, 1.2));
@@ -1369,10 +1471,33 @@ function tickClock(dt) {
 /* ---------------- per-frame room update ---------------- */
 let lightningT = rand(20, 40), boltK = 0, blinkT = 0, eyeT = rand(8, 18), eyeLook = 0, neonT = 0;
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// the television switches itself on to 13 a little after the suitcase is open (later if you don't open it)
+function tvSwitchesOn() {
+  flag('tvAuto'); if (S.tv.on && S.tv.ch === 13) { onTVChange(); return; }
+  const seen = inView(O.tv, 0.9);
+  S.tv.on = true; S.tv.ch = 13; SET.chShown = G.time; sThunk(POS.tv, 0.6, 90); sClick(POS.tv, 0.5, 900); save(); refreshSet();
+  subtitle('', `<i>${seen ? 'The television switches itself on.' : 'Behind you, the television switches itself on.'}</i>`, 3400);
+  after(2.0, onTVChange);
+}
+// the beats that happen on cue: the TV coming on, the painting going crooked once you've tried the tool case, the way out
+function scriptedBeats(dt) {
+  if (G.cutscene || G.ending || UI.kind) return;
+  const tvReady = (has('flashlight') || S.flags.suitOpen) ? 6 : S.flags.wardOpened ? 25 : 0;
+  if (!S.flags.tvAuto && !VCR.playing && (S.flags.wardOpened || G.play > 420)) {
+    G.tvAutoT = (G.tvAutoT || 0) + dt;
+    if (G.tvAutoT > tvReady && (!inView(O.tv, 1.0) || G.tvAutoT > tvReady + 10)) tvSwitchesOn();
+  }
+  if (S.flags.sawCase && !S.flags.caseOpen && !S.painting && !S.flags.crooked && !inView(O.painting, 1.2)) { S.flags.crooked = true; O.painting.rotation.z = 0.12; save(); G.crookT = G.time; }
+  if (S.flags.crooked && !S.flags.crookSeen && !S.painting && inView(O.painting, 0.6) && G.time - (G.crookT || 0) > 1) { flag('crookSeen'); subtitle('', '<i>The painting over the bed is hanging crooked. It was straight a minute ago.</i>', 4500); }
+  if (S.flags.reached && !FIN.on && !S.flags.escaped) startFinale(!G.finFresh);
+}
 function roomUpdate(dt) {
   tickClock(dt);
   vcrUpdate(dt);
   director(dt);
+  scriptedBeats(dt);
+  feedWatch(dt);
+  finTick(dt);
   if (G.powerCut > 0) { G.powerCut -= dt; G.power = 0; if (G.powerCut <= 0) G.flickerT = 1.2; } else G.power = 1;
   let flick = 1; if (G.flickerT > 0) { G.flickerT -= dt; flick = Math.random() < 0.45 ? 0.05 : 1; }
   const pw = G.power * flick;
@@ -1438,7 +1563,7 @@ function startAmbience() {
 
 /* ---------------- ending ---------------- */
 function endSequence() {
-  G.ending = true; flag('escaped');
+  G.ending = true; flag('escaped'); FIN.on = false; O.eyesBig.visible = false;
   S.lamp = false; S.ceil = false; S.tv.on = true; S.tv.ch = 13; SET.chShown = G.time; sThunk(POS.tv, 0.7, 80);
   sTone([55, 58], 3.5, 0.05);
   subtitle('', '<i>Behind you, in the dark room, the television switches itself on.</i>', 0);
@@ -1476,7 +1601,11 @@ const ROOM406 = {
   build() { makeTextures(); makeMaterials(); buildRoom(); makeTV(); registerInteractions(); },
   defaults, applyState, startAmbience, penalty,
   spawn: { x: 0.15, z: -1.55, yaw: Math.atan2(-0.55, -0.83) },
-  markSkip: ['start', 'early'], markMerge: { early: 'padlock' },
+  markSkip: ['early'], markMerge: {},
+  // at the door during the way out you can reach behind you for the padlock without turning round
+  promptOverride: () => finActive() && nearDoorBehind() && !FIN.unlocking && !G.carrying ? '<span class="act"><kbd>E</kbd>Reach behind you for the padlock</span>' : '',
+  actOverride: i => { if (i === 0 && finActive() && nearDoorBehind() && !FIN.unlocking) { unlockPadlock(true); return true; } return false; },
+  touchOverride: () => finActive() && nearDoorBehind() && !FIN.unlocking ? [{ label: 'Reach behind you for the padlock', run: () => unlockPadlock(true), main: true }] : null,
   invHidden: id => id === S.vcr,
   invNote: id => S.vcr === id ? ' <span class="muted">(in the VCR)</span>' : '',
   backText: 'Back in Room 406.',
@@ -1490,6 +1619,7 @@ const ROOM406 = {
     after(3.7, () => { G.cutscene = false; $('#fx').className = ''; flag('woke'); updatePrompt(true); toast(ctrlHint(), 7000); });
   },
   titleFx: null,
+  /*DEBUG*/ debug: { O, FIN, SET, VCR, PH, feedStage, startFinale, finTick, caught, playTape, insertTape, tvSwitchesOn, unlockPadlock, nearDoorBehind, screenMode, onTVChange, openPhone, dial, reachVent, unscrewVent, endSequence, showEnd, placeChairMesh, VENT_EYE }, /*END*/
   touchExtras: () => has('flashlight') ? [{ label: G.flashOn ? 'Flashlight off' : 'Flashlight', run: () => ROOM406.toggleFlash() }] : [],
 };
 
