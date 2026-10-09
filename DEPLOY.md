@@ -152,6 +152,7 @@ It then runs every night at 2:30 a.m. India time. The files are encrypted, so th
   - **Rooms:** players, plays, completion, typical time, where most drop off, and how many rated it good.
   - **Acquisition:** new visitors, sign-up rate, times shared, and a table of where new visitors came from (shared links, each site, direct) with how many signed up.
   - **Feedback:** the share of good, okay and bad faces, and the latest comments.
+  - **Users:** everyone who has signed up, by email, most recently active first: when they signed up, when they were last active, plays and rooms escaped. 20 a page, not limited to the period.
   - **Errors:** a one-line count.
 
   "Active user" means a signed-in person who visited or played that day. Your own activity is included; the link at the bottom leaves it out. Bots, link previews and headless browsers aren't counted.

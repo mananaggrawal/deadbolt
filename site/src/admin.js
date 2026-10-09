@@ -23,7 +23,8 @@ export function adminOptions(query, saved) {
   const range = RANGES[query.range] ? query.range : '30d';
   const by = query.by === 'day' || query.by === 'week' ? query.by : (range === '7d' || range === '30d' ? 'day' : 'week');
   const me = query.me === '0' ? false : query.me === '1' ? true : saved !== '0';
-  return { range, by, me };
+  const upage = Math.min(10000, Math.max(1, parseInt(query.upage, 10) || 1));   // page of the Users list
+  return { range, by, me, upage };
 }
 
 /* ---------- queries with named parameters: @name becomes $n ---------- */
@@ -64,6 +65,7 @@ async function context(opts) {
   return {
     ...opts, ...r, since, prev,
     p: { since, prev: prev || since, tz: cfg.timeZone, unit: opts.by, xu: opts.me ? [] : own.ids, xa: opts.me ? [] : own.anons },
+    ownIds: own.ids,
   };
 }
 
@@ -74,6 +76,18 @@ const pct = (a, b) => (b ? Math.round(100 * a / b) : 0);
 const pctOr = (a, b) => (b ? `${pct(a, b)}%` : '–');
 const pl = (n, one, many = `${one}s`) => `${num(n)} ${n === 1 ? one : many}`;
 const mins = sec => { sec = Math.max(0, Math.round(sec || 0)); return !sec ? '–' : sec < 60 ? `${sec}s` : sec < 3600 ? `${Math.round(sec / 60)} min` : `${Math.floor(sec / 3600)} h ${Math.round(sec % 3600 / 60)} min`; };
+const shortFmt = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: cfg.timeZone });
+const yearFmt = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: cfg.timeZone });
+const dateShort = d => (new Date(d).getFullYear() === new Date().getFullYear() ? shortFmt : yearFmt).format(new Date(d));
+function ago(d) {
+  if (!d) return '–';
+  const s = (Date.now() - new Date(d)) / 1000;
+  if (s < 300) return 'just now';
+  if (s < 3600) return `${Math.round(s / 60)} min ago`;
+  if (s < 86400) return `${Math.round(s / 3600)} h ago`;
+  if (s < 30 * 86400) return `${Math.round(s / 86400)} d ago`;
+  return dateShort(d);
+}
 const dayFmt = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 const dowFmt = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
 const dateLabel = (d, by, long) => { const x = new Date(`${d}T00:00:00Z`); return by === 'week' ? `${long ? 'Week of ' : ''}${dayFmt.format(x)}` : (long ? dowFmt : dayFmt).format(x); };
@@ -104,6 +118,29 @@ function barChart(points, by, noun) {
   const first = points[0], last = points[points.length - 1];
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${esc(noun)}s by ${by}">${bars}<line x1="0" x2="${W}" y1="${yb}" y2="${yb}" class="base" vector-effect="non-scaling-stroke"/></svg>
     <div class="xl"><span>${first ? esc(dateLabel(first.k, by)) : ''}</span><span>peak ${num(max)}</span><span>${last && points.length > 1 ? esc(dateLabel(last.k, by)) : ''}</span></div>`;
+}
+
+/* ---------- Users: every sign-up by email, most recently active first, 20 a page ---------- */
+const USERS_PER_PAGE = 20;
+async function usersSection(ctx, q, activeWeek) {
+  const P = { xu: ctx.p.xu };
+  const total = (await O(`select count(*)::int n from "user" where not (id = any(@xu::text[]))`, P)).n;
+  const pages = Math.max(1, Math.ceil(total / USERS_PER_PAGE)), page = Math.min(ctx.upage, pages);
+  const list = await R(`select u.id, u.email, u."createdAt" created,
+       greatest(u."createdAt", (select max(last_seen) from players where user_id = u.id), (select max(last_seen) from plays where user_id = u.id)) last_active,
+       (select count(*) from plays where user_id = u.id)::int plays,
+       (select count(distinct room) from plays where user_id = u.id and outcome = 'escaped')::int escaped
+     from "user" u where not (u.id = any(@xu::text[]))
+     order by last_active desc, u."createdAt" desc limit @lim offset @off`, { ...P, lim: USERS_PER_PAGE, off: (page - 1) * USERS_PER_PAGE });
+  const rowsHtml = list.map(u => `<tr><td>${esc(u.email || '–')}${ctx.ownIds.includes(u.id) ? ' <span class="muted">(you)</span>' : ''}</td>
+    <td class="nw">${esc(dateShort(u.created))}</td><td class="nw">${esc(ago(u.last_active))}</td><td class="n">${num(u.plays)}</td><td class="n">${num(u.escaped)}</td></tr>`).join('');
+  const link = (n, label) => `<a href="${q({ upage: n })}#users">${label}</a>`;
+  const pager = pages > 1 ? `<nav class="pager" aria-label="Users pages">${page > 1 ? link(page - 1, '&larr; Previous') : '<span></span>'}
+    <span class="muted">Page ${num(page)} of ${num(pages)}</span>${page < pages ? link(page + 1, 'Next &rarr;') : '<span></span>'}</nav>` : '';
+  return `<section id="users"><h2>Users <small class="muted">${pl(total, 'sign-up')} · ${num(activeWeek)} active in the last 7 days</small></h2>
+${total ? `<div class="scroll"><table class="t"><thead><tr><th>Email</th><th>Signed up</th><th>Last active</th><th class="n">Plays</th><th class="n">Rooms escaped</th></tr></thead><tbody>${rowsHtml}</tbody></table></div>${pager}`
+    : '<p class="muted">Nobody has signed up yet.</p>'}
+<p class="muted small">Everyone who has signed up, most recently active first. Not limited to the period above.</p></section>`;
 }
 
 /* ---------- the dashboard ---------- */
@@ -274,6 +311,8 @@ ${srcRows ? `<h3>Where new visitors came from</h3><div class="scroll"><table cla
 
 <section><h2>Feedback</h2><div class="tiles three">${fbTiles}</div>${fbList ? `<h3>Latest comments</h3><ol class="feed">${fbList}</ol>` : ''}</section>
 
+${await usersSection(ctx, q, act.wau)}
+
 <section><h2>Errors</h2>${errLine}</section>
 
 <footer class="dfoot"><a href="${q({ me: ctx.me ? '0' : '1' })}">${ctx.me ? 'Leave out my own activity' : 'Include my own activity'}</a>
@@ -383,6 +422,8 @@ details summary{cursor:pointer;color:var(--muted);font-size:14px;padding:10px 0}
 .errline{font-size:14.5px;margin:0}.errline code{font:12.5px var(--mono);color:var(--ink2)}
 .face{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;vertical-align:-3px}.face .fi{width:16px;height:16px;flex:none;color:var(--muted)}
 .face-good .fi{color:#199e70}.face-okay .fi{color:#c98500}.face-bad .fi{color:#3987e5}
+.dash h2 small{font-size:14px;font-weight:400;margin-left:8px}.t td.nw{white-space:nowrap}
+.pager{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:14px;font-size:14px}.pager a{color:var(--ink2);border-bottom:1px solid var(--faint)}.pager a:hover{color:var(--ink)}
 .dfoot{margin-top:56px;padding-top:20px;border-top:1px solid var(--line);display:flex;flex-direction:column;align-items:flex-start;gap:6px;color:var(--muted);font-size:13px}
 .dfoot a{color:var(--ink2);border-bottom:1px solid var(--faint)}
 @media(max-width:640px){.dash h1{font-size:28px;line-height:36px}.feed li{grid-template-columns:minmax(0,1fr);gap:0}}`;
