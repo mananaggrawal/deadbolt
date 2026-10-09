@@ -8,6 +8,11 @@ function hullWithHoles(geo, holes, uvOf, mat, wPx = 2048, hPx = 512) {
     g.fillStyle = '#fff'; g.fillRect(0, 0, W2, H2); g.fillStyle = '#000';
     for (const h of holes) {
       const [u, v] = uvOf(h.p);
+      if (h.arch) {   // straight sides and a round top, like the tunnel: p is the middle of its sill; mu, mv are u and v per metre
+        const pts = [[-h.hw, 0], [-h.hw, h.ht - h.hw]]; for (let k = 1; k < 24; k++) { const a = Math.PI - k / 24 * Math.PI; pts.push([Math.cos(a) * h.hw, h.ht - h.hw + Math.sin(a) * h.hw]); } pts.push([h.hw, h.ht - h.hw], [h.hw, 0]);
+        for (const off of [0, W2, -W2]) { g.beginPath(); pts.forEach(([s2, t2], k) => { const X = (u + s2 * h.mu) * W2 + off, Y = (1 - (v + t2 * h.mv)) * H2; if (k) g.lineTo(X, Y); else g.moveTo(X, Y); }); g.closePath(); g.fill(); }
+        continue;
+      }
       const ru = h.ru, rv = h.rv;
       g.beginPath(); g.ellipse(u * W2, (1 - v) * H2, ru * W2, rv * H2, 0, 0, TAU); g.fill();
       if (h.wrap) { g.beginPath(); g.ellipse(u * W2 + W2, (1 - v) * H2, ru * W2, rv * H2, 0, 0, TAU); g.fill(); g.beginPath(); g.ellipse(u * W2 - W2, (1 - v) * H2, ru * W2, rv * H2, 0, 0, TAU); g.fill(); }
@@ -40,17 +45,17 @@ function buildStation() {
   // holes in the wet room's wall: three portholes, and the hatch to the tunnel on the east
   const wHoles = [
     { p: POS.portN, ru: 0, rv: 0, r: 0.2 }, { p: POS.portS, ru: 0, rv: 0, r: 0.2 }, { p: POS.portW, ru: 0, rv: 0, r: 0.2 },
-    { p: new THREE.Vector3(WR.r, FY + 0.08 + TUN.h / 2, 0), r: 0, w: TUN.w, h: TUN.h, oval: true },
+    { p: new THREE.Vector3(WR.r, FY + 0.08, 0), arch: true, hw: TUN.w / 2, ht: TUN.h },
   ];
   const wallUV = R => p => { const th = Math.atan2(p.x, p.z); return [((th % TAU) + TAU) % TAU / TAU, (p.y - FY) / H]; };
-  for (const h of wHoles) { if (h.oval) { h.ru = (h.w / 2) / (TAU * WR.r); h.rv = (h.h / 2) / H; } else { h.ru = h.r / (TAU * WR.r); h.rv = h.r / H; } h.wrap = true; }
+  for (const h of wHoles) { if (h.arch) { h.mu = 1 / (TAU * WR.r); h.mv = 1 / H; } else { h.ru = h.r / (TAU * WR.r); h.rv = h.r / H; } h.wrap = true; }
   {
     const geo = new THREE.CylinderGeometry(WR.r, WR.r, H, 96, 6, true);
     const m = hullWithHoles(geo, wHoles, wallUV(WR.r), paintFor(M.paintIn, TAU * WR.r / 1.4, H / 1.4), 3072, 512);
     m.position.set(0, FY + H / 2, 0); m.receiveShadow = true; O.wet.add(m); O.wetWall = m;
     // the outside skin (yellow), with the same holes, 10 cm further out
     const geo2 = new THREE.CylinderGeometry(WR.r + 0.1, WR.r + 0.1, H + 0.2, 96, 6, true);
-    const holes2 = wHoles.map(h => Object.assign({}, h, { ru: h.ru * WR.r / (WR.r + 0.1), rv: h.rv * H / (H + 0.2) }));
+    const holes2 = wHoles.map(h => h.arch ? Object.assign({}, h, { p: h.p.clone().setY(FY - 0.01), hw: TUN.w / 2 + 0.09, ht: TUN.h + 0.18, mu: 1 / (TAU * (WR.r + 0.1)), mv: 1 / (H + 0.2) }) : Object.assign({}, h, { ru: h.ru * WR.r / (WR.r + 0.1), rv: h.rv * H / (H + 0.2) }));
     const m2 = hullWithHoles(geo2, holes2, p => { const th = Math.atan2(p.x, p.z); return [((th % TAU) + TAU) % TAU / TAU, (p.y - FY + 0.1) / (H + 0.2)]; }, paintFor(M.hullOut, TAU * WR.r / 2.5, H / 2.5), 3072, 512);
     m2.position.set(0, FY + H / 2, 0); O.ext.add(m2);
   }
@@ -68,15 +73,16 @@ function buildStation() {
     const rib = mbox(0.07, H - 0.1, 0.07, M.paintDark, x, FY + H / 2, z, O.wet, 0.5); rib.rotation.y = a;
   }
   torus(WR.r - 0.04, 0.035, M.paintDark, 0, FY + 2.05, 0, O.wet, 72, 6).rotation.x = Math.PI / 2;
-  torus(WR.r - 0.03, 0.05, M.paintDark, 0, FY + 0.05, 0, O.wet, 72, 6).rotation.x = Math.PI / 2;
+  { const gap = Math.asin((TUN.w / 2 + 0.06) / (WR.r - 0.03)); torus(WR.r - 0.03, 0.05, M.paintDark, 0, FY + 0.05, 0, O.wet, 72, 6, TAU - 2 * gap).rotation.set(Math.PI / 2, 0, gap); }   /* not across the hatch */
   // portholes
   porthole(O.wet, POS.portN.clone().setZ(-WR.r + 0.02), new THREE.Vector3(0, 0, 1));
   porthole(O.wet, POS.portS.clone().setZ(WR.r - 0.02), new THREE.Vector3(0, 0, -1));
   porthole(O.wet, POS.portW.clone().setX(-WR.r + 0.02), new THREE.Vector3(1, 0, 0));
   // the hatch frame on the east wall, its door swung back against the wall
   { const g = grp(WR.r - 0.02, FY + 0.08 + TUN.h / 2, 0, O.wet); g.rotation.y = -Math.PI / 2;
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(1, 0.05, 8, 40), M.steel); ring.scale.set(TUN.w / 2 + 0.04, TUN.h / 2 + 0.04, 1); g.add(ring);
-    const door = grp(-(TUN.w / 2 + 0.06), 0, 0.04, g); door.rotation.y = -1.9;
+    { const hw = TUN.w / 2 + 0.03, b = -TUN.h / 2, c = TUN.h / 2 - TUN.w / 2, pts = [[-hw, b + 0.02], [-hw, (b + c) / 2], [-hw, c]]; for (let k = 1; k < 16; k++) { const a = Math.PI - k / 16 * Math.PI; pts.push([Math.cos(a) * hw, c + Math.sin(a) * hw]); } pts.push([hw, c], [hw, (b + c) / 2], [hw, b + 0.02]);
+      tube(pts.map(([x, y]) => [x, y, 0]), 0.05, M.steel, g, 48, 8); }
+    const door = grp(TUN.w / 2 + 0.06, 0, 0.04, g); door.rotation.y = -0.51; O.wetHatchDoor = door;   /* swung right back, flat along the south wall */
     const leaf = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.05, 32), M.paint); leaf.scale.set(TUN.w / 2 + 0.04, 1, TUN.h / 2 + 0.04); leaf.rotation.x = Math.PI / 2; leaf.position.x = TUN.w / 2 + 0.04; door.add(leaf);
     const wheel = torus(0.13, 0.014, M.steel, TUN.w / 2 + 0.04, 0, 0.06, door, 20, 6); for (let k = 0; k < 4; k++) { const sp = mbox(0.26, 0.012, 0.012, M.steel, TUN.w / 2 + 0.04, 0, 0.06, door, 1); sp.rotation.z = k * Math.PI / 4; }
     for (let k = 0; k < 6; k++) { const a = k / 6 * TAU; mbox(0.05, 0.08, 0.04, M.steel, TUN.w / 2 + 0.04 + Math.cos(a) * (TUN.w / 2 + 0.02), Math.sin(a) * (TUN.h / 2 + 0.02), -0.02, door, 1); }
@@ -123,7 +129,7 @@ function buildStation() {
     const ring = torus(0.06, 0.012, M.steel, -0.35, 0.06, 0, lid, 14, 5); ring.rotation.x = Math.PI / 2;
     // the dogs: four clamps on the rim that swing over the lid's edge
     O.dogs = []; for (let k = 0; k < 4; k++) { const a = k / 4 * TAU + Math.PI / 4; const d = grp(Math.cos(a) * (MP.r + 0.14), FY + 0.12, Math.sin(a) * (MP.r + 0.14), scene); d.userData.keep = true; d.userData.a = a; const arm = grp(0, 0, 0, d); mbox(0.12, 0.04, 0.05, M.steel, -0.04, 0.07, 0, arm, 1); pole([0.02, 0.05, 0], [0.02, 0.2, 0], 0.012, M.steel, arm, 6); cyl(0.022, 0.022, 0.1, M.steelDark, 0, 0.03, 0, d, 8); d.rotation.y = -a; O.dogs.push(d); d.userData.arm = arm; }
-    for (let k = 0; k < 3; k++) mbox(0.06, 0.03, 0.08, M.steel, MP.r + 0.04, -0.02, -0.4 + k * 0.4, hinge, 1);
+    for (let k = 0; k < 3; k++) mbox(0.06, 0.03, 0.08, M.steel, 0.02, -0.02, -0.4 + k * 0.4, hinge, 1);
     // the lead: four blocks of it, stacked
     O.leads = []; const lp = [[-0.2, 0.05, -0.14], [0.08, 0.05, -0.2], [-0.12, 0.05, 0.16], [-0.08, 0.17, -0.02]];
     lp.forEach(([x, y, z], k) => { const b = grp(x, FY + 0.17 + (y - 0.05), z, scene); b.userData.keep = true; bev(0.3, 0.12, 0.16, M.lead, 0, 0.06, 0, b, 0.012); b.rotation.y = hash1(k * 9) * 0.8 - 0.4; O.leads.push(b); b.userData.home = b.position.clone(); b.userData.homeR = b.rotation.y; });
@@ -174,8 +180,8 @@ function buildStation() {
     for (let k = 0; k < 4; k++) { const s = buildSuit(k); s.position.set(-0.56 + k * 0.37, FY + 1.98, 0.14); s.rotation.y = (hash1(k) - 0.5) * 0.3; g.add(s); O.suits.push(s); }
     O.masks = []; for (let k = 0; k < 4; k++) { const m = buildMask(); m.position.set(-0.56 + k * 0.37, FY + 2.12, 0.05); m.rotation.set(0.15, 0, 0); g.add(m); O.masks.push(m); }
     // a shelf below with fins
-    mbox(1.5, 0.03, 0.3, M.paintDark, 0, FY + 0.42, 0.2, g, 1); for (let k = 0; k < 6; k++) { const f = buildFin(); f.position.set(-0.6 + k * 0.24, FY + 0.45, 0.2); f.rotation.y = 0.1; g.add(f); }
-    for (let k = 0; k < 4; k++) { const b = mbox(0.06, 0.02, 0.5, M.black, -0.6 + k * 0.4, FY + 0.18, 0.22, g, 1); }
+    mbox(1.5, 0.03, 0.3, M.paintDark, 0, FY + 0.42, 0.2, g, 1); for (let k = 0; k < 6; k++) { const f = buildFin(); f.position.set(-0.6 + k * 0.24, FY + 0.45, 0.02); f.rotation.y = 0.1; g.add(f); }
+    for (let k = 0; k < 4; k++) { const b = mbox(0.06, 0.02, 0.5, M.black, -0.6 + k * 0.4, FY + 0.18, 0.12, g, 1); }
   }
   // the tank rack on the west wall: four crew tanks and a white one, and the empty slot that was yours
   O.tanks = [];
@@ -214,20 +220,25 @@ function buildStation() {
   { const a = 2.45, x = Math.sin(a) * (WR.r - 0.1), z = Math.cos(a) * (WR.r - 0.1); const g = grp(x, FY, z, O.wet); g.lookAt(0, FY, 0);
     pole([0, FY + 2.0 - FY, 0], [0, FY + 2.2 - FY, 0], 0.012, M.chrome, g, 6); const rose = cyl(0.06, 0.03, 0.04, M.chrome, 0, 2.0, 0.12, g, 14); pole([0, 2.02, 0], [0, 2.02, 0.12], 0.01, M.chrome, g, 6); cyl(0.03, 0.03, 0.03, M.chrome, 0, 1.2, 0.02, g, 10).rotation.x = Math.PI / 2;
     const drain = new THREE.Mesh(new THREE.CircleGeometry(0.08, 16), M.steelDark); drain.rotation.x = -Math.PI / 2; drain.position.set(0, 0.005, 0.4); g.add(drain); }
-  { const a = Math.PI + 0.3; const g = grp(Math.sin(a) * (WR.r - 0.25), FY, Math.cos(a) * (WR.r - 0.25), O.wet); g.lookAt(0, FY, 0); bev(0.9, 0.05, 0.32, M.wood, 0, 0.46, 0, g, 0.01); pole([-0.38, 0, -0.08], [-0.38, 0.44, -0.08], 0.015, M.steel, g, 6); pole([0.38, 0, -0.08], [0.38, 0.44, -0.08], 0.015, M.steel, g, 6); }
+  { const a = Math.PI + 0.3; const g = grp(Math.sin(a) * (WR.r - 0.25), FY, Math.cos(a) * (WR.r - 0.25), O.wet); g.lookAt(0, FY, 0); O.benchG = g; bev(0.9, 0.05, 0.32, M.wood, 0, 0.46, 0, g, 0.01); pole([-0.38, 0, -0.08], [-0.38, 0.44, -0.08], 0.015, M.steel, g, 6); pole([0.38, 0, -0.08], [0.38, 0.44, -0.08], 0.015, M.steel, g, 6); }
 
   /* ---------- the tunnel ---------- */
-  { const len = TUN.x1 - TUN.x0 + 0.3, cx = (TUN.x0 + TUN.x1) / 2 + 0.05;
-    const sh = new THREE.Shape(); const w = TUN.w / 2, hh = TUN.h;
-    sh.moveTo(-w, 0); sh.lineTo(w, 0); sh.lineTo(w, hh - w); sh.absarc(0, hh - w, w, 0, Math.PI, false); sh.lineTo(-w, 0);
-    const pts = sh.getPoints(24); const g = new THREE.BufferGeometry(); const pos = [], uv = []; let acc = 0; const L2 = pts.length;
-    for (let i = 0; i < L2 - 1; i++) { const a = pts[i], b = pts[i + 1], s = a.distanceTo(b); for (const [p, u] of [[a, acc], [b, acc + s]]) { pos.push(-len / 2, p.y, p.x, len / 2, p.y, p.x); uv.push(u, 0, u, len); } acc += s; }
-    const idx = []; for (let i = 0; i < L2 - 1; i++) { const o = i * 4; idx.push(o, o + 2, o + 1, o + 1, o + 2, o + 3); }
-    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
-    const tm = new THREE.Mesh(g, M.paintIn); tm.material = M.paint.clone(); tm.material.side = THREE.DoubleSide; tm.position.set(cx, FY + 0.08, 0); tm.receiveShadow = true; O.wet.add(tm);
+  { const w = TUN.w / 2, hh = TUN.h;
+    // an arched tube along x, open at both ends; out = true turns its faces outward
+    const arch = (hw, y0, len, out) => {
+      const sh = new THREE.Shape(); sh.moveTo(-hw, y0); sh.lineTo(hw, y0); sh.lineTo(hw, hh - w); sh.absarc(0, hh - w, hw, 0, Math.PI, false); sh.lineTo(-hw, y0);
+      const pts = sh.getPoints(24); const g = new THREE.BufferGeometry(); const pos = [], uv = []; let acc = 0; const L2 = pts.length;
+      for (let i = 0; i < L2 - 1; i++) { const a = pts[i], b = pts[i + 1], s = a.distanceTo(b); for (const [p, u] of [[a, acc], [b, acc + s]]) { pos.push(-len / 2, p.y, p.x, len / 2, p.y, p.x); uv.push(u, 0, u, len); } acc += s; }
+      const idx = []; for (let i = 0; i < L2 - 1; i++) { const o = i * 4; if (out) idx.push(o, o + 1, o + 2, o + 1, o + 3, o + 2); else idx.push(o, o + 2, o + 1, o + 1, o + 2, o + 3); }
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); return g;
+    };
+    // inside: from the wet room's wall to the main module's bulkhead, and no further into either room
+    const x0 = TUN.in0, x1 = TUN.in1, len = x1 - x0, cx = (x0 + x1) / 2;
+    const tm = new THREE.Mesh(arch(w, 0, len, false), M.paint.clone()); tm.material.side = THREE.DoubleSide; tm.position.set(cx, FY + 0.08, 0); tm.receiveShadow = true; O.wet.add(tm);
     mbox(len, 0.08, TUN.w, M.deck, cx, FY + 0.04, 0, O.wet, 1);
-    // its outside
-    const to = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, len, 20, 1, true), M.hullOut); to.rotation.z = Math.PI / 2; to.position.set(cx, FY + 1.0, 0); O.ext.add(to); }
+    // its outside: the same arch, ten centimetres out, from the wet room's skin to the main module's end
+    const ox0 = TUN.out0, ox1 = MM.x0 + 0.01, olen = ox1 - ox0;
+    const to = new THREE.Mesh(arch(w + 0.1, -0.1, olen, true), paintFor(M.hullOut, 0.4, 0.4)); to.position.set((ox0 + ox1) / 2, FY + 0.08, 0); O.ext.add(to); }
 
   /* ---------- the main module ---------- */
   {
@@ -267,6 +278,11 @@ function buildStation() {
     for (const x of [5.0, 9.0]) { const g = grp(x, MM.ay + 1.36, 0, scene); g.userData.keep = true; const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 10), M.bulbRed); bulb.userData.noRay = true; g.add(bulb); for (let k = 0; k < 6; k++) { const a = k / 6 * TAU; pole([Math.cos(a) * 0.07, 0.04, Math.sin(a) * 0.07], [Math.cos(a) * 0.07, -0.07, Math.sin(a) * 0.07], 0.004, M.steel, g, 4); } torus(0.07, 0.005, M.steel, 0, -0.07, 0, g, 16, 4).rotation.x = Math.PI / 2; cyl(0.05, 0.07, 0.05, M.steel, 0, 0.07, 0, g, 12); O.mmBulbs.push(bulb); }
   }
   buildControls(); buildGalley(); buildBerth(); buildBulkhead(); buildExterior();
+  // the intercom, the telephone and the tag board hang on the main module's curved wall, not in the air in front of it
+  const toHull = (g, back) => { const dy = g.position.y - MM.ay, zw = Math.sqrt(MM.r * MM.r - dy * dy) * Math.sign(g.position.z || -1), a = Math.asin(dy / MM.r);
+    g.rotation.set(-Math.sign(zw) * a, g.rotation.y, 0); const n = new THREE.Vector3(0, -dy, -zw).normalize(); g.position.set(g.position.x, MM.ay + dy, zw).addScaledVector(n, back); };
+  toHull(O.icG, 0.075); toHull(O.phoneG, 0.045); toHull(O.boardG, 0.012);
+  POS.intercom.copy(O.icG.position); POS.phone.copy(O.phoneG.position);
 }
 
 /* ---------- the control corner: gauges, the light switch, the intercom, the telephone, the scrubber ---------- */
@@ -326,7 +342,7 @@ function buildGalley() {
     // the knife rack, empty
     O.knifeRack = grp(6.85, 1.3, 0.28, g); bev(0.4, 0.06, 0.03, M.wood, 0, 0, 0, O.knifeRack, 0.008); for (let k = 0; k < 4; k++) mbox(0.012, 0.03, 0.035, M.black, -0.15 + k * 0.1, 0.0, -0.005, O.knifeRack, 1);
     // a shelf with tins and cups
-    bev(1.2, 0.03, 0.22, M.wood, 5.6, 1.6, 0.18, g, 0.006); for (let k = 0; k < 4; k++) cyl(0.04, 0.04, 0.12, std({ color: [0x8a3a2a, 0x2a4a6a, 0xc8a040, 0x5a7a3a][k], roughness: 0.4, metalness: 0.5 }), 5.15 + k * 0.14, 1.675, 0.2, g, 12);
+    bev(1.2, 0.03, 0.22, M.wood, 5.95, 1.6, 0.18, g, 0.006); for (let k = 0; k < 4; k++) cyl(0.04, 0.04, 0.12, std({ color: [0x8a3a2a, 0x2a4a6a, 0xc8a040, 0x5a7a3a][k], roughness: 0.4, metalness: 0.5 }), 5.5 + k * 0.14, 1.675, 0.2, g, 12);
     // the washbasin, the towel over the mirror above it
     lathe([[0, 0], [0.16, 0], [0.18, 0.1], [0.19, 0.12], [0, 0.12]], M.chrome, 8.15, 0.82, 0.02, g, 20); pole([8.15, 0.94, 0.2], [8.15, 1.04, 0.1], 0.01, M.chrome, g, 6);
     O.mirror = grp(8.15, 1.42, 0.28, g); bev(0.34, 0.44, 0.02, M.chrome, 0, 0, 0, O.mirror, 0.006);
@@ -397,8 +413,10 @@ function buildExterior() {
   // the main module's end dome, and the bunk room beyond it
   { const len = BUNK.x1 - BUNK.x0, cx = (BUNK.x0 + BUNK.x1) / 2;
     const c = new THREE.Mesh(new THREE.CylinderGeometry(MM.r + 0.1, MM.r + 0.1, len, 48, 1, true), paintFor(M.hullOut, 4, 2)); c.rotation.z = Math.PI / 2; c.position.set(cx, MM.ay, 0); e.add(c); O.bunkHull = c;
-    const d = new THREE.Mesh(new THREE.SphereGeometry(MM.r + 0.1, 32, 12, 0, TAU, 0, Math.PI / 2), paintFor(M.hullOut, 3, 2)); d.rotation.z = -Math.PI / 2; d.scale.set(0.5, 1, 1); d.position.set(BUNK.x1, MM.ay, 0); e.add(d);
-    const d2 = new THREE.Mesh(new THREE.SphereGeometry(MM.r + 0.1, 32, 12, 0, TAU, 0, Math.PI / 2), paintFor(M.hullOut, 3, 2)); d2.rotation.z = Math.PI / 2; d2.scale.set(0.35, 1, 1); d2.position.set(MM.x0, MM.ay, 0); e.add(d2);
+    const d = new THREE.Mesh(new THREE.SphereGeometry(MM.r + 0.1, 32, 12, 0, TAU, 0, Math.PI / 2), paintFor(M.hullOut, 3, 2)); d.rotation.z = -Math.PI / 2; d.scale.set(1, BUNK.dome / (MM.r + 0.1), 1); d.position.set(BUNK.x1, MM.ay, 0); e.add(d);
+    const d2 = new THREE.Mesh(new THREE.SphereGeometry(MM.r + 0.1, 32, 12, 0, TAU, 0, Math.PI / 2), paintFor(M.hullOut, 3, 2)); d2.rotation.z = Math.PI / 2; d2.scale.set(1, MM.dome / (MM.r + 0.1), 1); d2.position.set(MM.x0, MM.ay, 0); e.add(d2);
+    // the tunnel goes in through the middle of the west dome: cut its outline out of the dome
+    { const m = d2.material; m.onBeforeCompile = sh => { sh.uniforms.tunY = { value: FY + 0.08 + TUN.h - TUN.w / 2 }; sh.uniforms.tunW = { value: TUN.w / 2 + 0.09 }; sh.uniforms.tunB = { value: FY - 0.01 }; sh.vertexShader = 'varying vec3 vWPt;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvWPt = (modelMatrix * vec4(position, 1.0)).xyz;'); sh.fragmentShader = 'uniform float tunY, tunW, tunB; varying vec3 vWPt;\n' + sh.fragmentShader.replace('void main() {', 'void main() {\n if (abs(vWPt.z) < tunW && vWPt.y > tunB && (vWPt.y < tunY || length(vec2(vWPt.z, vWPt.y - tunY)) < tunW)) discard;'); }; m.customProgramCacheKey = () => 'tunhole'; }
     for (const x of [MM.x0 + 0.1, 7.0, MM.x1, BUNK.x1 - 0.2]) torus(MM.r + 0.12, 0.05, M.hullOut, x, MM.ay, 0, e, 40, 6).rotation.y = Math.PI / 2;
   }
   // the bunk room's window on the north side, lit from inside (the faces are in part C)

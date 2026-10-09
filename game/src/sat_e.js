@@ -69,7 +69,7 @@ function ledgeDown() {
   climbPath([top, lip, bot, end], 3.6, { x: end.x, y: end.y, z: end.z, yaw: -Math.PI / 2 + 0.6, pitch: -0.5 }, { noHold: 'Not with your hands full.', yaw: Math.PI / 2, pitch: -0.4, rungs: 7, done: () => { V.onLedge = true; O.ledgeSolid.on = true; O.poolSolid.on = false; flag('onLedgeOnce'); if (!S.ev.ledgeSeen) { S.ev.ledgeSeen = true; after(0.6, () => sayI('You stand on the ledge inside the skirt, steel walls round you running with water. Below your feet the tube opens into the sea, black and still, two metres of it and then nothing.', 8000)); after(9, () => { if (V.onLedge) { V.handPast = 3; sSlap(new THREE.Vector3(0, FY - SKIRT - 0.2, 0), 0.08); } }); } } });
 }
 function ledgeUp() {
-  const p0 = new THREE.Vector3(P.x, BODY.y, P.z), bot = new THREE.Vector3(-MP.r + 0.24, FY - LEDGE_D, 0), lip = new THREE.Vector3(-MP.r + 0.24, FY + 0.12, 0), top = new THREE.Vector3(-MP.r - 0.35, FY, 0);
+  const p0 = new THREE.Vector3(P.x, BODY.y, P.z), bot = new THREE.Vector3(-MP.r + 0.24, FY - LEDGE_D, 0), lip = new THREE.Vector3(-MP.r + 0.24, FY + 0.12, 0), top = new THREE.Vector3(-MP.r - 0.48, FY, 0);
   V.onLedge = false; O.ledgeSolid.on = false; O.poolSolid.on = true;
   climbPath([p0, bot, lip, top], 3.4, { x: top.x, y: FY, z: 0, yaw: -Math.PI / 2 }, { yaw: -Math.PI / 2, pitch: 0.4, rungs: 7 });
 }
@@ -169,7 +169,7 @@ function burp() {
   S.lvl = 0.3; S.wrong++; save(); G.shake = Math.max(G.shake || 0, 0.9); G.fearT = Math.max(G.fearT || 0, 0.5);
   sBurp(); sSlap(new THREE.Vector3(0, FY, 0), 0.6); for (let i = 0; i < 26; i++) after(i * 0.05, () => bubble(new THREE.Vector3(rand(-1.4, 1.4), FY - SKIRT - 0.2, rand(-1.4, 1.4)), rand(0.05, 0.16), 1.6));
   if (S.outOpen.station) { S.outOpen.station = false; const w = O.outWheels[1], r0 = w.rotation.z; tween(0.4, t => { w.rotation.z = r0 - t * Math.PI * 1.5; }); }
-  if (V.onLedge) { V.onLedge = false; O.ledgeSolid.on = false; O.poolSolid.on = true; after(0.2, () => { bodyPlace(-MP.r - 0.4, FY, 0, -Math.PI / 2); G.pitch = 0; }); }
+  if (V.onLedge) { V.onLedge = false; O.ledgeSolid.on = false; O.poolSolid.on = true; after(0.2, () => { bodyPlace(-MP.r - 0.48, FY, 0, -Math.PI / 2); G.pitch = 0; }); }
   after(0.3, () => sayI('The water drops past the bottom of the skirt and the gas goes out under it all at once, with a roar. The whole station heaves and bangs down on its legs, and the sea comes slapping back up the moon pool almost to the deck. You lunge for the STATION wheel and shut it.', 9000));
   after(4, () => sSob(POS.hatch.clone(), 0.07));
 }
@@ -450,7 +450,7 @@ function enterWater(at) {
 }
 function leaveWater() {
   V.mode = 'station'; S.mode = 'station'; BODY.on = true; setWorldLook('station'); $('#satMask').hidden = true; O.gaugeHand.visible = false;
-  bodyPlace(-MP.r - 0.4, FY, 0, -Math.PI / 2); G.pitch = 0; sSlap(new THREE.Vector3(0, FY - S.lvl, 0), 0.3);
+  bodyPlace(-MP.r - 0.48, FY, 0, -Math.PI / 2); G.pitch = 0; sSlap(new THREE.Vector3(0, FY - S.lvl, 0), 0.3);
   if (S.flags.bodyTow && !S.flags.bodyClipped) { S.flags.bodyTow = false; sayI('You can\'t haul him up the ladder. You let him go, and he drifts down below the skirt.', 5000); placeBodyFree(); }
   sayI('You climb out onto the deck, streaming water.', 3000); save();
 }
@@ -459,31 +459,118 @@ function swimConstrain(p) {
   // the engine moved you horizontally at a walk: slow it to a swim, and less so the more you look up or down
   const pr = V.sp || { x: p.x, z: p.z }; const k = (keys.ShiftLeft || keys.ShiftRight ? 0.62 : 0.42) * (0.3 + 0.7 * Math.cos(G.pitch));
   p.x = pr.x + (p.x - pr.x) * k; p.z = pr.z + (p.z - pr.z) * k;
-  swimCollide(p, G.eye, pr);
+  if (G.cutscene) return;
+  const y = swimCollide(p, G.eye, pr); if (Math.abs(y - G.eye) > 1e-6) G.eye = G.eyeT = y;
+}
+/* ---------------- swimming: what you bump into ----------------
+   Everything outside is solid: the station's hulls (sides, roofs and undersides), the gas banks, the legs and their
+   braces, the ballast, the coral heads, the bell with her bottles and weights, the frame and the clump she stands on,
+   the umbilical, the floods, and him on the line. You're pushed out whichever way is shortest, so you slide over a
+   roof, under a hull, round a leg. Returns your height, which a roof or an underside can change. */
+const SW = { r: 0.3, thin: 0.25, under: 0.32 };
+function swimPushSeg(q, ax, ay, az, bx, by, bz, R) {
+  const dx = bx - ax, dy = by - ay, dz = bz - az, l2 = dx * dx + dy * dy + dz * dz;
+  const t = l2 ? clamp(((q.x - ax) * dx + (q.y - ay) * dy + (q.z - az) * dz) / l2, 0, 1) : 0;
+  const cx = ax + dx * t, cy = ay + dy * t, cz = az + dz * t, ex = q.x - cx, ey = q.y - cy, ez = q.z - cz, d = Math.hypot(ex, ey, ez);
+  if (d >= R) return;
+  if (d < 1e-6) { q.y = cy + R; return; }
+  q.x = cx + ex / d * R; q.y = cy + ey / d * R; q.z = cz + ez / d * R;
+}
+// a box (turned about y by rot, as three.js measures it) that you leave by the nearest of the faces allowed
+function swimPushBox(q, cx, cz, hx, hz, y0, y1, rot = 0, faces = 'XxZzUD') {
+  const c = Math.cos(rot), n = Math.sin(rot), dx = q.x - cx, dz = q.z - cz;
+  let lx = dx * c - dz * n, lz = dx * n + dz * c; const ex = hx + SW.r, ez = hz + SW.r, top = y1 + SW.r, bot = y0 - SW.under;
+  if (Math.abs(lx) >= ex || Math.abs(lz) >= ez || q.y >= top || q.y <= bot) return;
+  const opts = [['X', ex - lx], ['x', lx + ex], ['Z', ez - lz], ['z', lz + ez], ['U', top - q.y], ['D', q.y - bot]].filter(o => faces.includes(o[0]));
+  let best = opts[0]; for (const o of opts) if (o[1] < best[1]) best = o;
+  if (best[0] === 'X') lx = ex; else if (best[0] === 'x') lx = -ex; else if (best[0] === 'Z') lz = ez; else if (best[0] === 'z') lz = -ez; else if (best[0] === 'U') { q.y = top; return; } else { q.y = bot; return; }
+  q.x = cx + lx * c + lz * n; q.z = cz - lx * n + lz * c;
+}
+// the wet room: a standing cylinder with a domed roof; its floor has the moon pool's skirt through it
+function swimPushWet(q) {
+  const Rh = WR.r + 0.1, Ro = Rh + SW.r, h = Math.hypot(q.x, q.z); if (h >= Ro) return;
+  const bot = FY - 0.16 - SW.under, dR = Rh / Math.sin(0.62), dC = WR.top + 0.1 - dR * Math.cos(0.62), hh = Math.min(h, Rh), top = dC + Math.sqrt(dR * dR - hh * hh) + SW.r;
+  if (q.y <= bot || q.y >= top) return;
+  const side = Ro - h, down = q.y - bot, up = top - q.y;
+  if (side <= down && side <= up) { if (h < 1e-6) q.x = Ro; else { q.x *= Ro / h; q.z *= Ro / h; } }
+  else if (down <= up) q.y = bot; else q.y = top;
+}
+// the main module and the bunk room: one lying cylinder with a shallow dome at each end
+function swimPushMain(q) {
+  const Ro = MM.r + 0.1 + SW.r, rad = Ro;
+  // the domes: out along the dome's own shape (an ellipsoid), so swimming at one head-on pushes you back, not sideways
+  if (q.x < MM.x0 || q.x > BUNK.x1) {
+    const x0 = q.x < MM.x0 ? MM.x0 : BUNK.x1, a = (q.x < MM.x0 ? MM.dome : BUNK.dome) + SW.r, ux = (q.x - x0) / a, uy = (q.y - MM.ay) / Ro, uz = q.z / Ro, u = Math.hypot(ux, uy, uz);
+    if (u >= 1) return; if (u < 1e-6) { q.x = x0 + Math.sign(q.x - x0 || 1) * a; return; }
+    q.x = x0 + ux / u * a; q.y = MM.ay + uy / u * Ro; q.z = uz / u * Ro; return;
+  }
+  const dy = q.y - MM.ay, d = Math.hypot(dy, q.z); if (d >= rad) return;
+  if (d < 1e-6) { q.y = MM.ay - rad; return; }
+  q.y = MM.ay + dy / d * rad; q.z = q.z / d * rad;
+}
+// a coral head or a reef rock: a height field from its own triangles (see buildSea), widened by your size
+function rockTop(k, x, z) { const i = Math.floor((x - k.x0) / k.cell), j = Math.floor((z - k.z0) / k.cell); if (i < 0 || j < 0 || i >= k.nx || j >= k.nz) return -Infinity; return k.h[j * k.nx + i]; }
+function swimPushRock(q, k) {
+  if (q.x < k.x0 || q.x > k.x0 + k.nx * k.cell || q.z < k.z0 || q.z > k.z0 + k.nz * k.cell || q.y > k.top + SW.r) return;
+  const H = rockTop(k, q.x, q.z); if (q.y >= H + SW.r) return;
+  const up = H + SW.r - q.y; let dx = q.x - k.cx, dz = q.z - k.cz; const d = Math.hypot(dx, dz) || 1e-6; dx /= d; dz /= d;
+  for (let s = k.cell; s < up; s += k.cell) if (rockTop(k, q.x + dx * s, q.z + dz * s) + SW.r <= q.y) { q.x += dx * s; q.z += dz * s; return; }
+  q.y += up;
 }
 function swimCollide(p, y, pr) {
-  const r = 0.3, hr = Math.hypot(p.x, p.z), prr = Math.hypot(pr.x, pr.z);
-  // the skirt: inside it you stay inside, outside it you stay out (between its bottom and the deck)
-  if (y > FY - SKIRT - 0.15 && y < FY + 0.2) {
-    if (prr < 0.62) { if (hr > 0.48) { p.x *= 0.48 / hr; p.z *= 0.48 / hr; } }
-    else if (hr < 0.95) { const a = Math.atan2(p.z, p.x); p.x = Math.cos(a) * 0.95; p.z = Math.sin(a) * 0.95; }
+  const r = SW.r, q = { x: p.x, y, z: p.z }, prr = Math.hypot(pr.x, pr.z), inSkirt = prr < 0.62 && y < FY + 0.2;   /* in the skirt's tube, not over the roof */
+  for (let it = 0; it < 2; it++) {
+    // the skirt: inside it you stay inside, outside it you stay out (between its bottom and the deck)
+    const hr = Math.hypot(q.x, q.z);
+    if (q.y > FY - SKIRT - 0.15 && q.y < FY + 0.2) {
+      const ri = q.y < FY - LEDGE_D + 0.1 ? 0.56 - SW.thin : MP.r - SW.thin;   // the tube is narrower below the ledge
+      if (inSkirt) { if (hr > ri) { q.x *= ri / hr; q.z *= ri / hr; } }
+      else if (hr < 1.0) { const a = Math.atan2(q.z, q.x); q.x = Math.cos(a) * 1.0; q.z = Math.sin(a) * 1.0; }
+    }
+    // the hulls: wet room, tunnel, main module and bunk room
+    if (!inSkirt) swimPushWet(q);
+    swimPushBox(q, (TUN.out0 + MM.x0) / 2, 0, (MM.x0 - TUN.out0) / 2, TUN.w / 2 + 0.1, FY - 0.02, FY + 0.08 + TUN.h + 0.1, 0, 'ZzUD');
+    swimPushMain(q);
+    // the legs and their braces, the ballast blocks chained to them
+    for (const [x, z] of LEGS) { const dx = q.x - x, dz = q.z - z, d = Math.hypot(dx, dz); if (d < 0.38 && q.y < 3) { q.x = x + dx / (d || 1) * 0.38; q.z = z + dz / (d || 1) * 0.38; } }
+    for (const b of BRACES) swimPushSeg(q, b[0], b[1], b[2], b[3], b[4], b[5], 0.05 + SW.thin);
+    for (const [x, z] of BALLAST) swimPushBox(q, x, z, 0.45, 0.45, 0, 0.5, hash1(x), 'XxZzU');
+    // the gas banks on their bracket outside the south porthole, and their pipes up to the hull
+    swimPushBox(q, 0, 3.035, 1.35, 0.585, FY - 1.05, FY + 1.6, 0, 'XxZUD');
+    // the floods on the roofs, and the umbilical going up from the main module into the dark
+    swimPushSeg(q, 8.6, MM.ay + MM.r + 0.08, -0.7, 8.6, MM.ay + MM.r + 0.4, -0.7, 0.14 + SW.thin);
+    swimPushSeg(q, -0.4, WR.top + 0.12, 2.0, -0.4, WR.top + 0.44, 2.0, 0.14 + SW.thin);
+    for (let i = 0; i < UMB.length - 1; i++) swimPushSeg(q, ...UMB[i], ...UMB[i + 1], 0.09 + SW.thin);
+    // the bell: her hull (in from underneath, through the door, is an action), her bottles and weights, her cable,
+    // the frame she sits in and the concrete clump under it
+    { const bx = BELL.x, bz = BELL.z, by = BELL.cy, vpA = Math.atan2(O.bellViewDir.z, O.bellViewDir.x);
+      if (!(Math.hypot(q.x - bx, q.z - bz) < 0.32 && q.y < by - 1.05)) swimPushSeg(q, bx, by, bz, bx, by, bz, BELL.r + r);   /* up to her door, not through her */
+      if (!V.ride) {
+        for (const s of [-1, 0, 1]) { const a = vpA + Math.PI + s * 0.32, cx = bx + Math.cos(a) * 1.14, cz = bz + Math.sin(a) * 1.14; swimPushSeg(q, cx, by - 0.32, cz, cx, by + 0.6, cz, 0.09 + SW.thin); }
+        for (const w of O.ballast) { const wp = w.getWorldPosition(V.tmpV || (V.tmpV = new THREE.Vector3())); swimPushSeg(q, wp.x, wp.y - 0.2, wp.z, wp.x, wp.y + 0.5, wp.z, 0.2 + SW.thin); }
+        swimPushSeg(q, bx, by + BELL.r + 0.1, bz, bx, 40, bz, 0.03 + SW.thin);
+      }
+      for (let k = 0; k < 4; k++) { const a = k / 4 * TAU + vpA + Math.PI / 4; swimPushSeg(q, bx + Math.cos(a), PLINTH.h, bz + Math.sin(a), bx + Math.cos(a) * 0.95, by - 0.45, bz + Math.sin(a) * 0.95, 0.06 + SW.thin); }
+      swimPushBox(q, bx, bz, PLINTH.w / 2, PLINTH.w / 2, -1, PLINTH.h, -vpA, 'XxZzU'); }
+    // him, on the line or drifting free (once you've got hold of him he comes with you)
+    if (O.body.visible && O.body.parent === scene && !S.flags.bodyTow && !S.flags.bodyClipped) { const b = O.body.position, w = V.limbV || (V.limbV = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()]);
+      O.bodyPivot.updateWorldMatrix(true, false); O.bodyPivot.localToWorld(w[0].set(0, -0.4, 0)); O.bodyPivot.localToWorld(w[1].set(0, 0.5, 0)); swimPushSeg(q, w[0].x, w[0].y, w[0].z, w[1].x, w[1].y, w[1].z, 0.2 + SW.thin);   // his trunk and head
+      for (const limb of O.bodyLimbs) for (let i = 0; i < limb.length - 1; i++) { limb[i].getWorldPosition(w[0]); limb[i + 1].getWorldPosition(w[1]); swimPushSeg(q, w[0].x, w[0].y, w[0].z, w[1].x, w[1].y, w[1].z, 0.08 + SW.thin); } }   /* his arms floating out in front of him, his legs trailing */
+    // the coral heads and the reef
+    for (const k of O.rockCols) swimPushRock(q, k);
+    for (const f of O.fanCols) swimPushBox(q, f.x, f.z, f.hx, 0.03, f.y0, f.y1, f.rot);   // the sea fans on them
   }
-  // legs
-  for (const [x, z] of LEGS) { const dx = p.x - x, dz = p.z - z, d = Math.hypot(dx, dz); if (d < 0.38 && y < 3) { p.x = x + dx / (d || 1) * 0.38; p.z = z + dz / (d || 1) * 0.38; } }
-  // the bell: you can't swim through its hull (in from underneath is an action)
-  { const dx = p.x - BELL.x, dz = p.z - BELL.z, dy = y - BELL.cy, d = Math.hypot(dx, dy, dz); if (d < BELL.r + r && !(Math.hypot(dx, dz) < 0.32 && y < BELL.cy - 0.85)) { const h = Math.hypot(dx, dz) || 1; const need = Math.sqrt(Math.max(0, (BELL.r + r) ** 2 - dy * dy)); if (h < need) { p.x = BELL.x + dx / h * need; p.z = BELL.z + dz / h * need; } } }
-  // the concrete clump under the bell
-  { const dx = p.x - BELL.x, dz = p.z - BELL.z, hw = PLINTH.w * 0.72 + r; if (y < PLINTH.h + 0.3 && Math.abs(dx) < hw && Math.abs(dz) < hw) { if (Math.abs(dx) > Math.abs(dz)) p.x = BELL.x + Math.sign(dx || 1) * hw; else p.z = BELL.z + Math.sign(dz || 1) * hw; } }
   // how far you can go before the dark turns you round
-  const cx = 4.5, cz = -2.5, dd = Math.hypot(p.x - cx, p.z - cz); if (dd > SWIM_R) { p.x = cx + (p.x - cx) / dd * SWIM_R; p.z = cz + (p.z - cz) / dd * SWIM_R; if (G.time - (V.toldDark || -99) > 15) { V.toldDark = G.time; toast('Beyond the floodlight the water is black as ink. Go any further and you\'d never find your way back.', 4500); } }
+  const cx = 4.5, cz = -2.5, dd = Math.hypot(q.x - cx, q.z - cz); if (dd > SWIM_R) { q.x = cx + (q.x - cx) / dd * SWIM_R; q.z = cz + (q.z - cz) / dd * SWIM_R; if (G.time - (V.toldDark || -99) > 15) { V.toldDark = G.time; toast('Beyond the floodlight the water is black as ink. Go any further and you\'d never find your way back.', 4500); } }
+  p.x = q.x; p.z = q.z; return clamp(q.y, 0.42, swimCeil(q.x, q.z, y));
 }
 const LEGS = [[1.75, 1.75], [-1.75, 1.75], [1.75, -1.75], [-1.75, -1.75], [4.6, -1.05], [4.6, 1.05], [8.0, -1.05], [8.0, 1.05], [11.4, -1.05], [11.4, 1.05], [13.6, -1.05], [13.6, 1.05]];
-function swimCeil(x, z) {
-  const hr = Math.hypot(x, z);
-  if (hr < 0.5) return FY - S.lvl - 0.12;                       // up the moon pool, to the surface
-  if (hr < WR.r + 0.15) return FY - 0.16 - 0.32;                 // under the wet room's deck
-  if (x > 1.9 && x < 3.2 && Math.abs(z) < 0.7) return FY + 0.38 - 0.32;
-  if (x > 2.6 && x < 14.6 && Math.abs(z) < 1.75) return MM.ay - MM.r - 0.1 - 0.32;
+const BRACES = [[1.75, 1.0, 1.75, -1.75, 1.0, 1.75], [1.75, 1.0, -1.75, -1.75, 1.0, -1.75], [4.6, 0.9, -1.05, 13.6, 0.9, -1.05], [4.6, 0.9, 1.05, 13.6, 0.9, 1.05]];
+const BALLAST = [[2.6, 2.4], [-2.6, -2.2], [7.0, 2.1], [12.0, -2.1]];
+const UMB = [[6.0, MM.ay + MM.r + 0.1, 0.3], [6.1, MM.ay + 2.6, 0.6], [5.6, 9, 2.4]];
+// the only ceiling left is the moon pool's surface (the hulls' undersides are part of their shapes above)
+function swimCeil(x, z, y) {
+  if (Math.hypot(x, z) < 0.5 && (y === undefined || y < FY + 0.2)) return FY - S.lvl - 0.12;
   return 7.5;
 }
 function swimUpdate(dt) {
@@ -492,16 +579,16 @@ function swimUpdate(dt) {
   let vy = 0; const fwd = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0) + (TOUCH.stick ? -TOUCH.my : 0);
   vy += fwd * Math.sin(G.pitch) * 0.9; if (swimUp()) vy += 0.75; if (swimDown()) vy -= 0.75; if (keys.ShiftLeft || keys.ShiftRight) vy *= 1.4;
   if (V.tUp > 0) V.tUp -= dt; if (V.tDown > 0) V.tDown -= dt;
-  let y = G.eye + vy * dt; const ceil = swimCeil(P.x, P.z); y = clamp(y, 0.42, ceil); if (y > 7.4 && G.time - (V.toldUp || -99) > 15) { V.toldUp = G.time; toast('Thirty metres of black water over your head. Without the bell, the bends would kill you before you reached the surface.', 5000); }
+  let y = G.eye + vy * dt; const ceil = swimCeil(P.x, P.z, G.eye); y = clamp(y, 0.42, ceil); if (y > 7.4 && G.time - (V.toldUp || -99) > 15) { V.toldUp = G.time; toast('Thirty metres of black water over your head. Without the bell, the bends would kill you before you reached the surface.', 5000); }
+  if (!G.cutscene) y = swimCollide(P, y, { x: P.x, z: P.z });
   G.eye = G.eyeT = y + Math.sin(G.time * 1.1) * 0.004;
-  swimCollide(P, y, { x: P.x, z: P.z });
   V.sp = { x: P.x, z: P.z };
   // the snow around you, and the light
   O.nearSnow.position.set(Math.floor(P.x / 6) * 6, Math.floor(y / 6) * 6, Math.floor(P.z / 6) * 6);
   // the body: the reveal, then cut free, tow, clip
   bodyUpdate(dt);
   // the surface inside the skirt: climb out
-  V.atSurface = Math.hypot(P.x, P.z) < 0.5 && y > FY - S.lvl - 0.5;
+  V.atSurface = Math.hypot(P.x, P.z) < 0.5 && y > FY - S.lvl - 0.5 && y < FY;
   V.underBell = Math.hypot(P.x - BELL.x, P.z - BELL.z) < 0.55 && y < BELL.cy - 0.75 && y > 0.4;
   updatePrompt();
 }
@@ -799,7 +886,7 @@ function registerInteractions() {
   O.masks.forEach((m, k) => { inter('mask' + k, m, { name: 'A diving mask', reach: 2.0, enabled: () => !(k === 2 && took('mask')), actions: () => k === 2 ? [A_('Take the mask', () => { give('mask'); m.visible = false; kitCheck(); })] : [look(['Morel\'s mask, the strap mended with tape.', 'Vasseur\'s mask, the glass cracked across one corner.', '', 'Ribes\'s mask, dry.'][k]), took('mask') ? null : A_('Take it', () => sayI('Idris\'s fits you better: the one next to it.', 3000))] }); hb('mask' + k, m, 0.03); });
   O.tanks.forEach((t, k) => { inter('tank' + k, t, { name: () => t.userData.slot === 5 ? 'A white tank' : 'A yellow tank', reach: 2.0, enabled: () => t.visible, actions: () => tankActions(k) }); hb('tank' + k, t, 0.03); });
   O.rackShelfHit = hit(0.6, 0.15, 0.6, -1.46, FY + 0.47, -1.41); inter('fins', O.rackShelfHit, { name: 'Fins', actions: () => [look('Fins on the shelf. Yours are somewhere at sixty metres.')] });
-  inter('locker', O.lockerG, { name: 'The dive locker', reach: 2.0, actions: () => { if (!S.lockerOpen) return [A_('Open it', () => { S.lockerOpen = true; save(); sCreak(POS.locker.clone().setY(FY + 1), 0.6, 0.15, 160); tween(0.7, t => { O.lockerDoor.rotation.y = -t * 1.7; }); })]; if (!S.flags.lampTaken) return [A_('Take the hand lamp', () => { flag('lampTaken'); give('lamp'); O.lampWorld.visible = false; syncLamp(); toast(`${G.touch ? 'The Lamp button' : '<kbd>F</kbd>'} turns the lamp on and off.`, 5000); }), look('Spare straps, a coil of line, a red lift bag, and on the shelf a heavy hand lamp in a rubber case.')]; return [look('Spare straps, a coil of line, a red lift bag.')]; } });
+  inter('locker', O.lockerG, { name: 'The dive locker', reach: 2.0, actions: () => { if (!S.lockerOpen) return [A_('Open it', () => { S.lockerOpen = true; save(); sCreak(POS.locker.clone().setY(FY + 1), 0.6, 0.15, 160); tween(0.7, t => { O.lockerDoor.rotation.y = -t * 1.7; }, syncDoorSolids); })]; if (!S.flags.lampTaken) return [A_('Take the hand lamp', () => { flag('lampTaken'); give('lamp'); O.lampWorld.visible = false; syncLamp(); toast(`${G.touch ? 'The Lamp button' : '<kbd>F</kbd>'} turns the lamp on and off.`, 5000); }), look('Spare straps, a coil of line, a red lift bag, and on the shelf a heavy hand lamp in a rubber case.')]; return [look('Spare straps, a coil of line, a red lift bag.')]; } });
   O.lockerHit = hit(0.55, 1.95, 0.5, POS.locker.x, FY + 0.97, POS.locker.z); O.lockerHit.userData.iid = 'locker';
   inter('pot', O.potG, { name: 'The supply pot', reach: 2.0, actions: potActions }); { const m = hit(0.56, 0.6, 0.56, POS.pot.x, FY + 0.3, POS.pot.z); m.userData.iid = 'pot'; } /* the body only: the purge screw on the lid stands above it */
   inter('purge', O.purge, { name: 'A little screw on the lid', reach: 1.6, enabled: () => !S.potOpen, actions: purgeActions }); hb('purge', O.purge, 0.03);
@@ -891,7 +978,7 @@ function applyState() {
   // the intercom
   O.icKnob.rotation.z = -IC_SEL.indexOf(S.icSel) * Math.PI / 2; O.icOut.rotation.z = S.icOut === 'sas' ? 0.6 : -0.6; O.icLever.rotation.z = S.icListen ? 0.5 : -0.5; icChangedQuiet();
   // the locker, the lamp, the masks, the tanks, the stand
-  O.lockerDoor.rotation.y = S.lockerOpen ? -1.7 : 0; O.lampWorld.visible = !f.lampTaken; syncLamp();
+  O.lockerDoor.rotation.y = S.lockerOpen ? -1.7 : 0; syncDoorSolids(); O.lampWorld.visible = !f.lampTaken; syncLamp();
   O.masks[2].visible = !took('mask');
   O.tanks.forEach(t => { t.visible = !(t.userData.slot === S.tankSlot && S.tankAt !== 'rack'); });
   O.standTank.visible = S.tankAt === 'stand';
@@ -918,7 +1005,7 @@ function icChangedQuiet() { O.icLamp.material.emissiveIntensity = S.icListen ? 2
 function resumed() {
   // saved on the way up: you are still in the bell, and she goes up again
   if (S.flags.released && !S.flags.escaped) { S.flags.released = false; V.mode = 'bell'; S.mode = 'bell'; BODY.on = false; P.x = BELL.x; P.z = BELL.z; G.eye = G.eyeT = BELL_FLOOR + 0.82; G.pitch = -0.1; setWorldLook('bell'); S.doorShut = S.doorDogged = true; S.keyIn = true; O.bellDoorHinge.rotation.z = 0; O.bellKey.visible = true; after(1.2, release); return; }
-  if ((!inWet() && !inMM()) || BODY.y < FY - 0.1 || BODY.y > FY + 0.6) { bodyPlace(-MP.r - 0.45, FY, 0, -Math.PI / 2); G.pitch = 0; }
+  if ((!inWet() && !inMM()) || BODY.y < FY - 0.1 || BODY.y > FY + 0.6) { bodyPlace(-MP.r - 0.48, FY, 0, -Math.PI / 2); G.pitch = 0; }
 }
 
 /* ---------------- title: a porthole at night, the sea outside, the dark ---------------- */
@@ -987,6 +1074,17 @@ function endFrame(skipEnv) {
 }
 
 /* ---------------- build ---------------- */
+// a solid set on a group's own axes (lx, lz in its frame; y absolute): furniture turned to face the middle of a round room
+function solidOn(id, g, lx0, lx1, lz0, lz1, y0, y1) {
+  g.updateWorldMatrix(true, false);
+  const e = g.matrixWorld.elements, c = new THREE.Vector3((lx0 + lx1) / 2, 0, (lz0 + lz1) / 2).applyMatrix4(g.matrixWorld);
+  return solidRot(id, c.x, c.z, Math.atan2(-e[2], e[0]), (lx1 - lx0) / 2, (lz1 - lz0) / 2, y0, y1);
+}
+function syncDoorSolids() {
+  const d = O.lockerDoorSolid; if (!d) return; d.on = !!S.lockerOpen; if (!d.on) return;
+  const g = O.lockerDoor; g.updateWorldMatrix(true, false); const e = g.matrixWorld.elements, c = new THREE.Vector3(0.245, 0, 0.02).applyMatrix4(g.matrixWorld);
+  solidTurn(d, c.x, c.z, Math.atan2(-e[2], e[0]), 0.255, 0.05, FY, FY + 1.9);
+}
 function buildRoom() {
   scene.fog = new THREE.FogExp2(0x02080a, 0.1);
   camera.far = 90; camera.near = 0.03; camera.updateProjectionMatrix(); post.uniforms.far.value = camera.far; post.uniforms.near.value = camera.near;
@@ -1020,16 +1118,31 @@ function buildRoom() {
   // a solid you stand on while climbing
   O.climbSolid = solid('climb', 0, 0, -50, -50, 0, 0); O.climbSolid.on = false;
   // furniture you bump into
-  solid('pot', POS.pot.x - 0.25, POS.pot.x + 0.25, FY, FY + 0.62, POS.pot.z - 0.25, POS.pot.z + 0.25);
-  solid('pool', -MP.r - 0.18, MP.r + 0.18, FY - 3, FY + 1.0, -MP.r - 0.18, MP.r + 0.18);
-  solid('scrub', POS.scrubber.x - 0.25, POS.scrubber.x + 0.25, FY, FY + 1.0, POS.scrubber.z - 0.25, POS.scrubber.z + 0.3);
+  solidRound('pot', POS.pot.x, POS.pot.z, 0.24, FY, FY + 0.62);
+  solidRound('pool', 0, 0, MP.r + 0.2, FY - 3, FY + 2.0, { noStand: true });   // the rail round the moon pool (too tall to jump, and nothing to stand on)
+  solidRound('scrub', POS.scrubber.x, POS.scrubber.z, 0.24, FY, FY + 1.0);
   solid('console', POS.panel.x - 0.76, POS.panel.x + 0.76, FY, FY + 0.85, -MMW, -MMW + 0.58);
   solid('galley', 5.28, 8.42, FY, FY + 0.92, MMW - 0.62, MMW + 0.2);
   solid('table', POS.table.x - 0.76, POS.table.x + 0.76, FY + 0.7, FY + 0.78, -MMW, -MMW + 0.64);
   solid('berth', POS.berth.x - 0.96, POS.berth.x + 0.96, FY, FY + 0.7, POS.berth.z - 0.38, POS.berth.z + 0.5);
-  solid('tanks', -2.4, -1.85, FY, FY + 1.0, -0.75, 0.75);
-  solid('locker', POS.locker.x - 0.3, POS.locker.x + 0.3, FY, FY + 1.95, POS.locker.z - 0.3, POS.locker.z + 0.3);
-  solid('bench', -1.2, -0.3, FY, FY + 0.48, 2.0, 2.4);
+  // the wet room's furniture stands at angles round its wall: solids turned to match each piece
+  solidOn('tanks', O.tankRack, -0.77, 0.77, -0.24, 0.13, FY, FY + 1.25);   /* taller than it is, so you can't climb on top */
+  solidOn('locker', O.lockerG, -0.26, 0.26, -0.22, 0.25, FY, FY + 1.95);
+  O.lockerDoorSolid = solidOn('lockerDoor', O.lockerDoor, -0.01, 0.5, -0.03, 0.07, FY, FY + 1.9); O.lockerDoorSolid.on = false;
+  solidOn('bench', O.benchG, -0.46, 0.46, -0.17, 0.17, FY, FY + 0.485);
+  solidOn('rack', O.rackG, -0.79, 0.79, -0.04, 0.42, FY, FY + 2.2);                    // the suits, the fin shelf and the belts under it
+  solidOn('fill', O.fillG, -0.17, 0.17, -0.07, 0.28, FY, FY + 1.25);                    // the fill stand (and a tank standing in it)
+  solidOn('fillHose', O.manifoldG, 0.3, 0.7, -0.02, 0.36, FY + 0.1, FY + 0.98);          // the whip hanging from the gas wall down to it
+  solidOn('gasWall', O.manifoldG, -0.64, 0.64, -0.04, 0.13, FY + 0.93, FY + 1.9);        // the wheels and gauges on the gas wall
+  solidOn('hatchDoor', O.wetHatchDoor, -0.01, 1.0, -0.05, 0.1, FY, FY + 2.06);          // the hatch door, swung back against the wall
+  solid('tunFloor', TUN.in0, TUN.in1, FY - 0.2, FY + 0.08, -TUN.w / 2, TUN.w / 2);      // the tunnel's floor plate, a step up
+  // the main module: the two stools at the table, the gap between the galley and your berth, the kitbag on the berth
+  for (const sx of [-0.4, 0.4]) solidOn('stool', O.tableG, sx - 0.19, sx + 0.19, 0.43, 0.81, FY, FY + 0.5);
+  solid('galleyEnd', 8.4, POS.berth.x - 0.95, FY, FY + 0.92, MMW - 0.62, MMW + 0.2);
+  solid('kitbag', POS.berth.x - 0.62, POS.berth.x + 0.12, FY + 0.6, FY + 1.1, POS.berth.z - 0.24, POS.berth.z + 0.24);
+  // the main module's curved roof, in strips along it: your head can't go through it, so nothing up against the
+  // wall (the counter, the table, the console, the scrubber, the berth) is somewhere you can climb up and stand
+  for (let z = -1.4; z < 1.39; z += 0.2) { const zc = z + 0.1, top = Math.max(FY + 1.78, MM.ay + Math.sqrt(MM.r * MM.r - zc * zc)); solid('mmRoof', MM.x0, MM.x1, top, FY + 3.5, z, z + 0.2); }
   // the deck you stand on: four slabs round the moon pool's hole, and the main module's floor
   solid('deckA', -2.7, -0.76, FY - 0.2, FY, -2.7, 2.7); solid('deckB', 0.76, MM.x1 + 0.2, FY - 0.2, FY, -2.7, 2.7);
   solid('deckC', -0.76, 0.76, FY - 0.2, FY, -2.7, -0.76); solid('deckD', -0.76, 0.76, FY - 0.2, FY, 0.76, 2.7);
@@ -1067,6 +1180,26 @@ function fogPass() {
   inMats.forEach(m => { m.fog = false; m.needsUpdate = true; });
 }
 
+function bodyStuck(p, r) {
+  const allow = BODY.ground ? BODY.STEP : BODY.AIRSTEP, h = BODY.crouch ? BODY.crouchH : BODY.standH, skip = DRAG.cur ? DRAG.cur.solid : null;
+  for (const s of BODY.solids) { if (!s.on || s === skip || s.ghost || s.y1 <= BODY.y + allow || s.y0 >= BODY.y + h - 0.02) continue; if (circleHits(s, p.x, p.z, r - 0.02)) return true; }
+  const q = { x: p.x, z: p.z }; stationWalls(q, r); return Math.hypot(q.x - p.x, q.z - p.z) > 0.005;
+}
+// the station's walls: the round wet room with the hatch in its east side, the tunnel, the main module with the
+// tunnel's mouth in its west bulkhead; the four door jambs are corners you slide round
+function stationWalls(p, r) {
+  const hw = TUN.w / 2, tw = hw - r, Rw = WR.r - 0.06, jx = Math.sqrt(Rw * Rw - hw * hw);
+  if (p.x < jx) {
+    const d = Math.hypot(p.x, p.z), R = Rw - r;
+    if (d > R && !(p.x > 0 && Math.abs(p.z) / d * Rw < hw)) { p.x *= R / d; p.z *= R / d; }   // the wall, except where the hatch is
+  } else if (p.x < MM.x0) p.z = clamp(p.z, -tw, tw);                                          // the tunnel
+  else {
+    p.z = clamp(p.z, -MMW + r + 0.02, MMW - r - 0.02); p.x = Math.min(p.x, MM.x1 - r - 0.05);
+    if (Math.abs(p.z) > hw && p.x < MM.x0 + r) p.x = MM.x0 + r;                              // the west bulkhead, either side of the tunnel
+  }
+  for (const [cx, cz] of [[jx, hw], [jx, -hw], [MM.x0, hw], [MM.x0, -hw]]) { const dx = p.x - cx, dz = p.z - cz, d = Math.hypot(dx, dz); if (d < r && d > 1e-6) { p.x = cx + dx / d * r; p.z = cz + dz / d * r; } }
+}
+
 /* ---------------- the room module ---------------- */
 return {
   id: 'sat', title: 'Saturation', saveKey: 'lethe.roomsat.v1',
@@ -1082,18 +1215,17 @@ return {
   dropHeld() { if (G.cutscene || V.mode !== 'station') return; if (HOLD.cur) holdDrop(); },
   onHold, stepSound,
   onLand(v) { if (v > 1.5) sStep(0.3); },
-  savePlayer(p) { if (V.mode !== 'station' || V.climb) { p.x = -MP.r - 0.4; p.z = 0; p.y = FY; } },
+  savePlayer(p) { if (V.mode !== 'station' || V.climb) { p.x = -MP.r - 0.48; p.z = 0; p.y = FY; } },
   resumed,
   constrain(p, r) {
     if (V.mode === 'swim') { swimConstrain(p); return; }
     if (V.mode === 'bell' || V.ride) { if (!V.ride) { p.x = BELL.x; p.z = BELL.z; } return; }
     if (V.onLedge) { p.x = clamp(p.x, -0.55, -0.4); p.z = clamp(p.z, -0.2, 0.2); return; }
-    // the wet room is round; a corridor runs east through the hatch to the main module
-    const tw = TUN.w / 2 - r;
-    if (p.x > 1.7 && Math.abs(p.z) <= tw + 0.02 && p.x < MM.x0 + 0.02) { p.z = clamp(p.z, -tw, tw); return; }
-    if (p.x < TUN.x0) { const R = WR.r - 0.06 - r, d = Math.hypot(p.x, p.z); if (d > R) { p.x *= R / d; p.z *= R / d; } return; }
-    if (p.x < MM.x0) { p.z = clamp(p.z, -tw, tw); return; }
-    p.z = clamp(p.z, -MMW + r + 0.02, MMW - r - 0.02); p.x = Math.min(p.x, MM.x1 - r - 0.05);
+    // the walls, then the furniture again (the walls can push you back into it), then the walls once more
+    for (let it = 0; it < 3; it++) { stationWalls(p, r); if (it < 2) bodyResolve(p, BODY.y, BODY.ground ? BODY.STEP : BODY.AIRSTEP, DRAG.cur ? DRAG.cur.solid : null); }
+    // a gap narrower than you (a stool and the table, the console and the bulkhead): the pushes can't get you clear,
+    // so you stay where you last stood clear instead of being shoved back and forth through it
+    if (bodyStuck(p, r)) { if (V.okP && Math.hypot(p.x - V.okP.x, p.z - V.okP.z) < 0.5) { p.x = V.okP.x; p.z = V.okP.z; } } else V.okP = { x: p.x, z: p.z };
   },
   actOverride(i) { if (V.mode === 'swim') { const a = swimActs()[i]; if (a) { a.run(); updatePrompt(true); } return true; } return false; },
   promptOverride() { if (V.mode === 'swim' && !G.cutscene) return swimPrompt() || ' '; return ''; },
@@ -1120,5 +1252,5 @@ return {
     after(19, () => sayI('The last thing you remember is the wreck: the black of the forward hold, your line snagging on something, Jean\'s lamp swinging away above you. Then nothing.', 8500));
     after(29, () => { if (!S.ev.toldKeys) { S.ev.toldKeys = true; toast(G.touch ? 'The notebook and hints are top right.' : '<kbd>Tab</kbd> notebook &middot; <kbd>H</kbd> hints &middot; <kbd>C</kbd> crouch', 7000); } });
   },
-  debug: { O, L, V, T, M, BODY, HOLD, POS, BANKS, progress, applyState, turnBank, turnOutlet, gasCheck, openCover, knockDogs, openPot, tryPot, toggleFloods, toggleLamp, unscrewCap, ledgeDown, ledgeUp, startDive, enterWater, leaveWater, cutBody, clipBody, enterBell, release, endFrame, knock, takeKey, playConv, pickUp, scrubActions, potActions, purgeActions, coverActions, fillActions, tankActions, bankActions, outletActions, bellDoorActions, releaseActions, passActions, hatchActions, icActions, swimActs, setWorldLook, inWet, inMM, trueLightAt },
+  debug: { O, L, V, T, M, BODY, HOLD, POS, BANKS, progress, applyState, turnBank, turnOutlet, gasCheck, openCover, knockDogs, openPot, tryPot, toggleFloods, toggleLamp, unscrewCap, ledgeDown, ledgeUp, startDive, enterWater, leaveWater, cutBody, clipBody, enterBell, release, endFrame, knock, takeKey, playConv, pickUp, scrubActions, potActions, purgeActions, coverActions, fillActions, tankActions, bankActions, outletActions, bellDoorActions, releaseActions, passActions, hatchActions, icActions, swimActs, swimCollide, swimCeil, stationWalls, setWorldLook, inWet, inMM, trueLightAt },
 };

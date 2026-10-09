@@ -9,18 +9,48 @@ function rockGeo(r, detail = 2, seed = 1, squash = 0.7) {
   g.computeVertexNormals(); const uv = g.attributes.uv; for (let i = 0; i < p.count; i++) uv.setXY(i, p.getX(i) * 0.8 + p.getY(i) * 0.3, p.getZ(i) * 0.8 + p.getY(i) * 0.3); uv.needsUpdate = true; return g;
 }
 
+// a rock's height field, for swimming over and round it: the top of its own triangles on a grid, widened by the
+// swimmer's size so that the test is one look-up
+function rockField(m, cell) {
+  m.updateMatrixWorld(true);
+  const g = m.geometry, pa = g.attributes.position, idx = g.index, n = idx ? idx.count : pa.count, W = [];
+  const v = new THREE.Vector3(); let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9, top = -1e9;
+  for (let i = 0; i < pa.count; i++) { v.fromBufferAttribute(pa, i).applyMatrix4(m.matrixWorld); W.push(v.x, v.y, v.z); x0 = Math.min(x0, v.x); x1 = Math.max(x1, v.x); z0 = Math.min(z0, v.z); z1 = Math.max(z1, v.z); top = Math.max(top, v.y); }
+  const pad = 0.4; x0 -= pad; z0 -= pad; x1 += pad; z1 += pad;
+  const nx = Math.ceil((x1 - x0) / cell), nz = Math.ceil((z1 - z0) / cell), h = new Float32Array(nx * nz).fill(-Infinity);
+  for (let t = 0; t < n; t += 3) {
+    const a = (idx ? idx.getX(t) : t) * 3, b = (idx ? idx.getX(t + 1) : t + 1) * 3, c = (idx ? idx.getX(t + 2) : t + 2) * 3;
+    const ax = W[a], ay = W[a + 1], az = W[a + 2], bx = W[b], by = W[b + 1], bz = W[b + 2], cx = W[c], cy = W[c + 1], cz = W[c + 2];
+    const den = (bz - cz) * (ax - cx) + (cx - bx) * (az - cz); if (Math.abs(den) < 1e-9) continue;
+    const i0 = Math.max(0, Math.floor((Math.min(ax, bx, cx) - x0) / cell)), i1 = Math.min(nx - 1, Math.floor((Math.max(ax, bx, cx) - x0) / cell));
+    const j0 = Math.max(0, Math.floor((Math.min(az, bz, cz) - z0) / cell)), j1 = Math.min(nz - 1, Math.floor((Math.max(az, bz, cz) - z0) / cell));
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+      const px = x0 + (i + 0.5) * cell, pz = z0 + (j + 0.5) * cell;
+      const l1 = ((bz - cz) * (px - cx) + (cx - bx) * (pz - cz)) / den, l2 = ((cz - az) * (px - cx) + (ax - cx) * (pz - cz)) / den, l3 = 1 - l1 - l2;
+      if (l1 < -0.02 || l2 < -0.02 || l3 < -0.02) continue;
+      const y = l1 * ay + l2 * by + l3 * cy; if (y > h[j * nx + i]) h[j * nx + i] = y;
+    }
+  }
+  // the vertices too, so that thin slivers are never missed
+  for (let i = 0; i < W.length; i += 3) { const ci = Math.floor((W[i] - x0) / cell), cj = Math.floor((W[i + 2] - z0) / cell); if (ci >= 0 && cj >= 0 && ci < nx && cj < nz) h[cj * nx + ci] = Math.max(h[cj * nx + ci], W[i + 1]); }
+  // widen by the swimmer: the highest point within reach of each cell
+  const R = 0.3, k = Math.ceil(R / cell), d = new Float32Array(nx * nz).fill(-Infinity);
+  for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) { let best = -Infinity; for (let b = -k; b <= k; b++) for (let a = -k; a <= k; a++) { if ((a * a + b * b) * cell * cell > (R + cell * 0.7) ** 2) continue; const ii = i + a, jj = j + b; if (ii < 0 || jj < 0 || ii >= nx || jj >= nz) continue; best = Math.max(best, h[jj * nx + ii]); } d[j * nx + i] = best; }
+  return { x0, z0, nx, nz, cell, h: d, top, cx: m.position.x, cz: m.position.z };
+}
+
 function buildSea() {
-  O.sea = grp();
+  O.sea = grp(); O.rockCols = []; O.fanCols = [];
   // the sand, out to where the dark swallows it
   { const g = new THREE.CircleGeometry(70, 64); const p = g.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i); p.setZ(i, (fbm(x * 0.15, y * 0.15, 3) - 0.5) * 0.35 * clamp((Math.hypot(x, y) - 6) / 10, 0, 1)); } g.computeVertexNormals(); uvScale(g, 1 / 3, 1 / 3);
     const s = new THREE.Mesh(g, M.sand); s.rotation.x = -Math.PI / 2; s.receiveShadow = true; O.sea.add(s); }
   // the reef: a wall of coral rock to the east and south-east, rising out of the dark
-  for (let i = 0; i < 26; i++) { const a = -0.7 + i / 25 * 2.2, R = 17 + hash1(i * 3.3) * 5; const x = Math.cos(a) * R + 4, z = Math.sin(a) * R; const s = 2.2 + hash1(i * 7.1) * 3.2; const m = mesh(rockGeo(s, 2, i, 1.1 + hash1(i) * 0.6), M.rock, x, s * 0.5 - 0.6, z, O.sea); m.rotation.y = hash1(i * 5) * 6; }
+  for (let i = 0; i < 26; i++) { const a = -0.7 + i / 25 * 2.2, R = 17 + hash1(i * 3.3) * 5; const x = Math.cos(a) * R + 4, z = Math.sin(a) * R; const s = 2.2 + hash1(i * 7.1) * 3.2; const m = mesh(rockGeo(s, 2, i, 1.1 + hash1(i) * 0.6), M.rock, x, s * 0.5 - 0.6, z, O.sea); m.rotation.y = hash1(i * 5) * 6; if (Math.hypot(x - 4.5, z + 2.5) - s * 1.4 < SWIM_R + 0.5) O.rockCols.push(rockField(m, 0.25)); }
   // coral heads and boulders on the sand round the station
   const spots = [[-6, -5, 0.9], [-8, 3, 1.3], [4, 7, 0.8], [12, 6, 1.1], [15, -5, 1.4], [-4, 9, 0.7], [10, -11, 1.2], [-10, -9, 1.0], [2, -12, 0.9], [17, 2, 1.0]];
-  spots.forEach(([x, z, s], i) => { const m = mesh(rockGeo(s, 2, 30 + i, 0.6), M.rock, x, s * 0.25, z, O.sea); m.rotation.y = i;
+  spots.forEach(([x, z, s], i) => { const m = mesh(rockGeo(s, 2, 30 + i, 0.6), M.rock, x, s * 0.25, z, O.sea); m.rotation.y = i; O.rockCols.push(rockField(m, 0.1));
     // a sea fan on some of them
-    if (i % 3 === 0) { const f = new THREE.Mesh(new THREE.PlaneGeometry(1.0 * s, 0.9 * s), std({ map: T.fan, alphaTest: 0.4, side: THREE.DoubleSide, color: 0xb05a3a, roughness: 0.9 })); f.position.set(x + 0.2, s * 0.55 + 0.35 * s, z); f.rotation.y = i * 0.7; O.sea.add(f); }
+    if (i % 3 === 0) { const f = new THREE.Mesh(new THREE.PlaneGeometry(1.0 * s, 0.9 * s), std({ map: T.fan, alphaTest: 0.4, side: THREE.DoubleSide, color: 0xb05a3a, roughness: 0.9 })); f.position.set(x + 0.2, s * 0.55 + 0.35 * s, z); f.rotation.y = i * 0.7; O.sea.add(f); O.fanCols.push({ x: x + 0.2, z, rot: i * 0.7, hx: 0.5 * s, y0: f.position.y - 0.45 * s, y1: f.position.y + 0.45 * s }); }
     // urchins at the foot
     for (let k = 0; k < 2; k++) { const u = new THREE.Mesh(new THREE.IcosahedronGeometry(0.08, 0), M.black); u.position.set(x + s * 0.7 * Math.cos(k * 2 + i), 0.06, z + s * 0.7 * Math.sin(k * 2 + i)); O.sea.add(u); for (let j = 0; j < 10; j++) { const sp = pole([0, 0, 0], [0, 0.18, 0], 0.004, M.black, u, 3, 0.001); sp.rotation.set(hash1(j + k) * 6, hash1(j * 3) * 6, 0); } }
   });
@@ -145,11 +175,11 @@ function buildBody() {
     const hm = M.hair.clone(); hm.side = THREE.DoubleSide;
     for (let k = 0; k < 22; k++) { const a = hash1(k * 5.3) * TAU, b = 0.15 + hash1(k * 2.1) * 0.6; const s = new THREE.Mesh(new THREE.PlaneGeometry(0.012, 0.05 + hash1(k) * 0.03), hm); const dx = Math.sin(b) * Math.cos(a), dy = Math.cos(b), dz = Math.sin(b) * Math.sin(a) - 0.25; s.position.set(dx * 0.1, dy * 0.11 + 0.025, dz * 0.1); s.rotation.set(rand(-0.5, 0.5), a, rand(-0.4, 0.4)); head.add(s); O.bodyHair = O.bodyHair || []; O.bodyHair.push(s); } }
   // arms floating up in front of him, the elbows a little bent, the hands hanging open
-  O.bodyArms = [];
+  O.bodyArms = []; O.bodyLimbs = [];   // each limb's joints, root to tip, so that a swimmer bumps into him and not through him
   for (const s of [-1, 1]) {
     const sh = grp(s * 0.175, 0.24, 0, pivot); cap(0.05, 0.2, suit, sh, 0, -0.15, 0);
     const el = grp(0, -0.3, 0, sh); cap(0.043, 0.19, suit, el, 0, -0.13, 0);
-    const wr = grp(0, -0.265, 0, el); const hand = grp(0, 0, 0, wr);
+    const wr = grp(0, -0.265, 0, el); const hand = grp(0, 0, 0, wr); O.bodyLimbs.push([sh, el, wr, grp(0, -0.1, 0, hand)]);
     const palm = bev(0.075, 0.085, 0.026, skin, 0, -0.045, 0, hand, 0.01); palm.scale.x = 0.95;
     for (let f = 0; f < 4; f++) { const fg = grp(-0.027 + f * 0.018, -0.088, 0, hand); fg.rotation.x = -0.35 - f * 0.08; cap(0.0085, 0.038 - Math.abs(f - 1.5) * 0.004, skin, fg, 0, -0.026, 0); }
     const th = grp(s * -0.035, -0.035, 0.012, hand); th.rotation.set(-0.3, 0, s * 0.7); cap(0.01, 0.03, skin, th, 0, -0.022, 0);
@@ -161,7 +191,7 @@ function buildBody() {
   // legs trailing, the knees bent; one fin still on, one bare grey foot
   for (const s of [-1, 1]) {
     const hp = grp(s * 0.085, -0.38, 0, pivot); cap(0.072, 0.28, suit, hp, 0, -0.2, 0);
-    const kn = grp(0, -0.42, 0, hp); cap(0.058, 0.28, suit, kn, 0, -0.19, 0);
+    const kn = grp(0, -0.42, 0, hp); cap(0.058, 0.28, suit, kn, 0, -0.19, 0); O.bodyLimbs.push([hp, kn, grp(0, -0.42, 0.04, kn)]);
     hp.rotation.set(-0.55 + s * 0.15, 0, s * 0.08); kn.rotation.set(0.95 - s * 0.2, 0, 0);
     if (s < 0) { const f = buildFin(); f.position.set(0, -0.4, 0.04); f.rotation.x = -Math.PI / 2 + 0.5; kn.add(f); }
     else { const ft = grp(0, -0.39, 0.02, kn); ft.rotation.x = 0.35; bev(0.08, 0.05, 0.2, skin, 0, 0, 0.06, ft, 0.02); }

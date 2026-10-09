@@ -17,7 +17,24 @@ function solid(id, x0, x1, y0, y1, z0, z1, o = {}) {
   BODY.solids.push(s); return s;
 }
 function solidSet(s, x0, x1, y0, y1, z0, z1) { s.x0 = x0; s.x1 = x1; s.y0 = y0; s.y1 = y1; s.z0 = z0; s.z1 = z1; }
-function circleHits(s, x, z, r) { const cx = clamp(x, s.x0, s.x1), cz = clamp(z, s.z0, s.z1), dx = x - cx, dz = z - cz; return dx * dx + dz * dz < r * r; }
+/* A solid can also be turned about y (for furniture set at an angle, as in a round room): rot is its yaw the
+   way three.js measures rotation.y, (cx, cz) its middle and hx, hz its half sizes along its own x and z.
+   x0..x1, z0..z1 are then its bounding box, which is all a dragged box tests against. */
+function solidTurn(s, cx, cz, rot, hx, hz, y0, y1) {
+  const c = Math.cos(rot), n = Math.sin(rot), ex = Math.abs(c) * hx + Math.abs(n) * hz, ez = Math.abs(n) * hx + Math.abs(c) * hz;
+  Object.assign(s, { turned: true, cx, cz, c, n, hx, hz, y0, y1, x0: cx - ex, x1: cx + ex, z0: cz - ez, z1: cz + ez }); return s;
+}
+function solidRot(id, cx, cz, rot, hx, hz, y0, y1, o = {}) { const s = solid(id, 0, 0, y0, y1, 0, 0, o); return solidTurn(s, cx, cz, rot, hx, hz, y0, y1); }
+// and a round one (a pool's rail, a drum): rad round (cx, cz)
+function solidRound(id, cx, cz, rad, y0, y1, o = {}) { return solid(id, cx - rad, cx + rad, y0, y1, cz - rad, cz + rad, Object.assign({ round: rad, cx, cz }, o)); }
+// a point in a turned solid's own frame, and back
+const solidLocal = (s, x, z) => { const dx = x - s.cx, dz = z - s.cz; return [dx * s.c - dz * s.n, dx * s.n + dz * s.c]; };
+const solidWorld = (s, lx, lz) => [s.cx + lx * s.c + lz * s.n, s.cz - lx * s.n + lz * s.c];
+function circleHits(s, x, z, r) {
+  if (s.round) return Math.hypot(x - s.cx, z - s.cz) < r + s.round;
+  if (s.turned) { const [lx, lz] = solidLocal(s, x, z), dx = lx - clamp(lx, -s.hx, s.hx), dz = lz - clamp(lz, -s.hz, s.hz); return dx * dx + dz * dz < r * r; }
+  const cx = clamp(x, s.x0, s.x1), cz = clamp(z, s.z0, s.z1), dx = x - cx, dz = z - cz; return dx * dx + dz * dz < r * r;
+}
 function rectHits(s, x0, x1, z0, z1) { return x0 < s.x1 && x1 > s.x0 && z0 < s.z1 && z1 > s.z0; }
 // the highest top you could be standing on at (x, z), no higher than yMax
 function bodySupport(x, z, r, yMax, skip) {
@@ -38,6 +55,18 @@ function bodyResolve(p, y, allow, skip) {
   for (let it = 0; it < 3; it++) for (const s of BODY.solids) {
     if (!s.on || s === skip || s.ghost) continue;
     if (s.y1 <= y + allow || s.y0 >= y + h - 0.02) continue;
+    if (s.round) {
+      const dx = p.x - s.cx, dz = p.z - s.cz, d = Math.hypot(dx, dz), R = r + s.round; if (d >= R) continue;
+      hit = s; if (d < 1e-6) p.x = s.cx + R; else { p.x = s.cx + dx / d * R; p.z = s.cz + dz / d * R; } continue;
+    }
+    if (s.turned) {
+      const [lx, lz] = solidLocal(s, p.x, p.z), qx = clamp(lx, -s.hx, s.hx), qz = clamp(lz, -s.hz, s.hz), ex = lx - qx, ez = lz - qz, e2 = ex * ex + ez * ez;
+      if (e2 >= r * r) continue;
+      hit = s; let nx = lx, nz = lz;
+      if (e2 < 1e-9) { const l = lx + s.hx, rr = s.hx - lx, t = lz + s.hz, b = s.hz - lz, m = Math.min(l, rr, t, b); if (m === l) nx = -s.hx - r; else if (m === rr) nx = s.hx + r; else if (m === t) nz = -s.hz - r; else nz = s.hz + r; }
+      else { const d = Math.sqrt(e2); nx = qx + ex / d * r; nz = qz + ez / d * r; }
+      [p.x, p.z] = solidWorld(s, nx, nz); continue;
+    }
     const cx = clamp(p.x, s.x0, s.x1), cz = clamp(p.z, s.z0, s.z1), dx = p.x - cx, dz = p.z - cz, d2 = dx * dx + dz * dz;
     if (d2 >= r * r) continue;
     hit = s;
