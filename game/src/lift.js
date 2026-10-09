@@ -209,7 +209,8 @@ const PANEL_ROWS = [[9, 10], [7, 8], [5, 6], [3, 4], [1, 2]];     // 4 is printe
 const LABEL = n => n === 4 ? 'F' : String(n);
 // the other side: the same printed labels, but the Braille beside each button says where it really goes.
 // The button printed 3 is missing: that is the real 5, prised out.
-const OW_TRUE = { 1: 8, 2: 7, 3: 5, 4: 3, 5: 9, 6: 2, 7: 4, 8: 10, 9: 1, 10: 6 };
+const OW_TRUE = { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10 };   // (the buttons used to lie over there; now they don't)
+const GONE = 5;                                                     // the button Ji-yeon took out, on the other side
 const OW_BY_TRUE = Object.fromEntries(Object.entries(OW_TRUE).map(([p, t]) => [t, +p]));
 const BTN = {};    // printed label -> { cap, ring, x, y }
 
@@ -302,8 +303,8 @@ function buildPanel3D() {
     const face = new THREE.Mesh(new THREE.CircleGeometry(0.017, 24), std({ map: T.btnLabels[n], transparent: true, roughness: 0.4, metalness: 0.5 })); face.position.z = 0.0105; b.add(face);
     BTN[n] = { g: b, cap, ring, ringM, face, x: p.x, y: p.y };
   }));
-  // the hole where the "3" button was (on the other side): dark, two bare contacts
-  O.hole = grp(BTN[3].g.position.x, BTN[3].g.position.y, 0.009, O.panel);
+  // the hole where the 5 button was (on the other side): dark, two bare contacts
+  O.hole = grp(BTN[GONE].g.position.x, BTN[GONE].g.position.y, 0.009, O.panel);
   const hole = new THREE.Mesh(new THREE.CircleGeometry(0.02, 24), M.black); hole.position.z = 0.0005; O.hole.add(hole);
   for (const dx of [-0.006, 0.006]) { const c = cyl(0.0022, 0.0022, 0.008, M.brass, dx, 0, 0.002, O.hole, 8); c.rotation.x = Math.PI / 2; }
   O.hole.visible = false;
@@ -370,8 +371,8 @@ function buildShaft() {
     bev(DOOR.x1 - DOOR.x0 + 0.1, 0.03, 0.08, M.chrome, 0, -0.015, S0.z0 + 0.03, g, 0.004);
     // the interlock box and the door hanger over each landing door
     bev(1.3, 0.12, 0.1, M.steelDark, 0, DOOR.h + 0.12, S0.z0 + 0.06, g, 0.006);
-    // the fitters' painted floor mark
-    plane(0.3, 0.2, std({ map: T.fitterMarks[((f % 10) + 10) % 10], transparent: true, roughness: 0.9 }), 0.72, DOOR.h + 0.5, S0.z0 + 0.003, 0, g);
+    // the fitters' painted floor mark, big, on the left of the landing door where you can see it from the roof
+    { const mt = T.fitterMarks[((f % 10) + 10) % 10]; plane(0.46, 0.34, std({ map: mt, emissiveMap: mt, emissive: new THREE.Color(0xffffff), emissiveIntensity: 0.35, transparent: true, roughness: 0.9 }), -0.66, DOOR.h + 0.62, S0.z0 + 0.003, 0, g); }
   }
   // guide rails on the sides, and the counterweight on the back
   for (const sx of [-1, 1]) { box(0.06, H, 0.12, M.steelDark, sx * (S0.x1 - 0.05), (Y0 + Y1) / 2, 0.1, O.shaftMove).castShadow = false; }
@@ -895,10 +896,9 @@ const HEARD = {
 /* ---------------- Ji-yeon's scratches, on the other side ---------------- */
 // where: [x, y, z, rotY, w, h]
 const SCR = [
-  { id: 'lie', ko: '버튼 숫자는 거짓말이야', en: 'THE NUMBERS ON THE BUTTONS LIE', where: [CAR.x1 - 0.003, 1.72, -0.42, -Math.PI / 2, 0.44, 0.2] },
   { id: 'five', ko: '5는 내가 빼서 없는 층에 숨겼어. 그 여자가 못 타게.', en: 'I TOOK THE 5 OUT AND HID IT ON THE FLOOR THAT ISN\'T THERE. SO SHE CAN\'T GET ON.', where: [PNL.cx, 0.35, CAR.z0 + 0.004, 0, 0.26, 0.2] },
   { id: 'up', ko: '1 누르면 올라가. 여기선 다 반대야.', en: 'PRESS 1 AND IT GOES UP. HERE EVERYTHING GOES THE OTHER WAY.', where: [CAR.x0 + 0.003, 1.28, 0.3, Math.PI / 2, 0.46, 0.34] },
-  { id: 'roof', ko: '점검 스위치는 지붕 위에 ↑', en: 'THE INSPECTION SWITCH IS UP ON THE ROOF ↑', where: [(CAR.x0 + DOOR.x0) / 2 - 0.01, 1.86, CAR.z0 + 0.004, 0, 0.32, 0.26] },
+  { id: 'roof', ko: '지붕 위에서 움직일 수 있어 ↑', en: 'YOU CAN DRIVE IT FROM THE ROOF ↑', where: [(CAR.x0 + DOOR.x0) / 2 - 0.01, 1.86, CAR.z0 + 0.004, 0, 0.32, 0.26] },
   { id: 'days', ko: '', en: 'Tally marks, dozens of them, in groups of five. More than a week\'s worth. Far more.', where: [CAR.x0 + 0.003, 1.75, -0.35, Math.PI / 2, 0.5, 0.3], tally: true },
   { id: 'mirror', ko: '보지 마', en: 'DON\'T LOOK', where: [0, 1.62, CAR.z1 - 0.013, Math.PI, 0.6, 0.34], lipstick: true },
 ];
@@ -912,7 +912,7 @@ const DOCS = {
      <ol><li>Get in on the first floor.</li><li>Press <b>4, 2, 6, 2, 10</b>, in that order. Ride to each floor. Don't get out. If anyone gets on, it doesn't work: go back to the start.</li>
      <li>At 10, press <b>5</b>. At the fifth floor a young woman may get on. <b>Do not look at her. Do not speak to her.</b></li>
      <li>Press <b>1</b>. If the lift goes <b>up</b> to 10 instead of down, you have made it to the other place.</li>
-     <li>To come back, do the whole thing again.</li></ol>
+     <li>To come back, she has to ride with you again.</li></ol>
      <p class="lxp-warn">People who looked at her have not come back.</p>
      <p class="lxp-cmt">↳ <b>건물주</b>: lol my building doesn't even have a 4</p><p class="lxp-cmt">↳ <b>jy_0412</b>: which buildings have you tried it in?</p>`] },
   log: { title: 'Security log (on the guard\'s desk)', style: 'lxlog', pages: [
@@ -931,7 +931,6 @@ const DOCS = {
     `<h3>승강기 검사합격증명서</h3><p class="lxc-e">Lift inspection certificate</p>
      <div class="lxc-t"><div><span>Building</span><b>청운빌딩 Cheongun Bldg.</b></div><div><span>Car</span><b>No. 1 · passenger · 6 persons / 450 kg</b></div><div><span>Maker</span><b>Sinil Elevator Co., 1981 (modernised 1998)</b></div><div><span>Floors served</span><b>1, 2, 3, F, 5, 6, 7, 8, 9, 10</b></div><div><span>Inspected</span><b>2004. 06. 14. · PASSED</b></div></div>
      <p class="lxc-f">In an emergency press the ☎ button on the panel to speak to the Sinil 24-hour centre. Do not force the doors. Do not climb out.</p>`] },
-  panel: { title: 'The lift\'s buttons, as you first saw them', style: 'lxpanel', pages: () => [`<div class="lxpn">${panelSVG('real', false, {})}</div><p class="lxpn-c">Every button had its own little plate of Braille beside it.</p>`] },
   badge: { title: 'Ji-yeon\'s ID card (from her bag)', style: 'lxbadge', pages: () => [
     `<div class="lxb"><div class="lxb-top">MIRAE DESIGN · 미래디자인</div><div class="lxb-row"><img src="${T.jyURL || ''}" alt="Ji-yeon\'s photo"><div><p class="lxb-n">한지연</p><p class="lxb-e">Han Ji-yeon</p><p>Designer · 9F</p><p class="lxb-k">No. 0412</p></div></div></div><p class="lxb-back">On the back, in her handwriting: <i>"모두에게 미안해" — "Sorry to everyone."</i> The ink has run, as if it got wet.</p>`] },
   scratches: { title: 'Scratched into the steel, in Ji-yeon\'s handwriting', style: 'lxscr', pages: () => [
@@ -962,31 +961,26 @@ const HINTS = [
     'When the doors open at 6, somebody comes running for the lift.',
     'There\'s a button on the panel that closes the doors without waiting.',
     'As soon as the doors open at 6, press the close-doors button (▶|◀) on the panel.' ] },
-  { id: 'she', title: 'The woman from the fifth floor', when: s => !s.flags.sheBoarded ? 'hidden' : s.world === 'other' ? 'solved' : 'active', tiers: [
+  { id: 'she', title: 'The woman from the fifth floor', when: s => !s.flags.sheBoarded ? 'hidden' : (s.world === 'other' || s.flags.transit) ? 'solved' : 'active', tiers: [
     'The printout says: don\'t look at her, don\'t speak to her.',
     'She stands behind you. Keep your eyes on the doors and the panel.',
     'Press 1, as the printout says.',
     'Don\'t turn round. Press 1.' ] },
-  { id: 'dead', title: 'The lift won\'t move', when: s => s.world !== 'other' ? 'hidden' : !s.insp ? 'solved' : 'active', tiers: [
-    'The display over the doors says 점검 중: under inspection. Ji-yeon has scratched something by it.',
-    'An inspection switch on the roof of the car stops it answering its buttons. The hatch in the ceiling goes up there.',
-    'The hatch is latched on its top side. From below you\'d need something long to push the latch with. Look on the landing outside.',
-    'Take the window pole from beside the fire hose cabinet, push the hatch latch with it, climb up, and set the box on the roof to NORMAL.' ] },
-  { id: 'numbers', title: 'The buttons lie', when: s => !s.flags.lieSeen ? 'hidden' : s.flags.brailleUsed ? 'solved' : 'active', tiers: [
-    'The floor you press isn\'t the floor you get. The number painted on the landing wall tells you where you really are.',
-    'Ji-yeon scratched it by the panel: the numbers on the buttons lie. Something else beside each button can\'t be changed.',
-    'The Braille plates. Compare them with the buttons as you first saw them (in your notebook).',
-    'The real floors, by what the buttons say: "9" is 1, "6" is 2, "F" is 3, "7" is 4, the gap where "3" was is 5, "10" is 6, "2" is 7, "1" is 8, "5" is 9, "8" is 10.' ] },
-  { id: 'cap', title: 'The missing button', when: s => !(s.flags.holeSeen || s.flags.scr_five) ? 'hidden' : s.capIn ? 'solved' : 'active', tiers: [
-    'Ji-yeon prised a button out: her note says it\'s the 5, and that she hid it on the floor that isn\'t there.',
-    'Which floor isn\'t there, in this building?',
-    'The fourth floor: the one they call F. On this side, the real 4 is whichever button\'s Braille says 4.',
-    'Press "7" (its Braille says 4). Take the button off the dish on the altar, then press it back into the gap on the panel.' ] },
+  { id: 'dead', title: 'The lift won\'t move', when: s => s.world !== 'other' ? 'hidden' : s.flags.drove ? 'solved' : 'active', tiers: [
+    'The display over the doors says 점검 중: under inspection. Ji-yeon has scratched something by the doors.',
+    'Under inspection, a lift is driven from its roof. The hatch in the ceiling goes up there, but it\'s latched on the top side. You need something long to push the latch with.',
+    'There\'s a window pole leaning by the fire hose cabinet on the landing outside. Push the hatch latch with it and climb up.',
+    'Take the window pole from beside the fire hose cabinet, push the hatch latch with it, climb onto the roof, and press DOWN on the yellow inspection box.' ] },
+  { id: 'cap', title: 'The missing button', when: s => !(s.flags.holeSeen || s.flags.scr_five || s.flags.drove) ? 'hidden' : s.capIn ? 'solved' : 'active', tiers: [
+    'The 5 button is gone. Ji-yeon scratched a note by the panel: she hid it on the floor that isn\'t there.',
+    'Which floor isn\'t there, in this building? The one with no number on the buttons.',
+    'The fourth floor. Drive the car down from the roof until the floor painted in front of you is a red 4, then climb back down into the car.',
+    'From the roof, press DOWN until the painted 4. Climb down, take the button off the dish at the funeral, and press it into the hole on the panel.' ] },
   { id: 'back', title: 'Getting back', when: s => !(s.capIn || s.flags.scr_up) ? 'hidden' : s.flags.escaped ? 'solved' : 'active', tiers: [
-    'The printout: to come back, do the whole thing again.',
-    'Ride to the real F, 2, 6, 2 and 10 (read the Braille, not the numbers), then the real 5.',
-    'On the first side, pressing 1 took you up. Ji-yeon found out why: on this side everything goes the other way.',
-    'After she gets on at 5, don\'t press the real 1. Press the real 10 (it says "8") and the lift goes down.' ] },
+    'The printout: to come back, she has to ride with you again. She gets on at the fifth floor.',
+    'Press 5 and let her on. Don\'t look at her.',
+    'On the first side, pressing 1 took you up. Ji-yeon found out why: over here everything goes the other way.',
+    'Press 5. When she\'s on, don\'t press 1: press 10, and the lift goes down.' ] },
   { id: 'walk', title: 'Don\'t look back', when: s => !s.flags.final ? 'hidden' : s.flags.escaped ? 'solved' : 'active', tiers: [
     'She is behind you.',
     'Walk to the glass doors at the front of the lobby.',
@@ -1041,7 +1035,7 @@ function paintThings() {
   T.bueuiTex = ctex(128, 96, (g, w, h) => { g.fillStyle = '#f2f0ea'; g.fillRect(0, 0, w, h); g.fillStyle = '#1a1a1a'; g.font = `700 50px ${MYEONG}`; g.textAlign = 'center'; g.fillText('賦儀', w / 2, 66); });
   T.faceTex = ctex(512, 768, (g, w, h) => paintFace(g, w, h));
   T.eyeTex = ctex(128, 280, (g, w, h) => paintEye(g, w, h));
-  T.fitterMarks = []; for (let i = 0; i < 10; i++) T.fitterMarks.push(ctex(128, 96, (g, w, h) => { g.clearRect(0, 0, w, h); g.fillStyle = 'rgba(210,60,40,0.8)'; g.font = `64px ${PEN}`; g.textAlign = 'center'; g.fillText(['1', '2', '3', 'F', '5', '6', '7', '8', '9', '10'][i] + 'F', w / 2, 66); }));
+  T.fitterMarks = []; for (let i = 0; i < 10; i++) T.fitterMarks.push(ctex(128, 96, (g, w, h) => { g.clearRect(0, 0, w, h); const four = i === 3; g.fillStyle = four ? 'rgba(200,16,10,0.95)' : 'rgba(235,225,200,0.85)'; g.font = `${four ? 84 : 64}px ${PEN}`; g.textAlign = 'center'; g.fillText(four ? '4' : (i + 1) + 'F', w / 2, four ? 76 : 66); if (four) { g.fillStyle = 'rgba(200,16,10,0.7)'; for (let k = 0; k < 4; k++) g.fillRect(48 + k * 11, 74, 2, 8 + Math.random() * 18); } }));
   T.checker = tex(pix(128, 128, (x, y) => { const u = (x % 32), v = (y % 32); const d1 = Math.abs((u - 8) + (v - 8) * 0.5) < 3 && Math.abs(u - 8) < 6, d2 = Math.abs((u - 24) - (v - 24) * 0.5) < 3 && Math.abs(u - 24) < 6; const b = (d1 || d2) ? 150 : 100; const n = tfbm(x, y, 128, 128, 4, 2) * 30; return [b + n, b + n, b + n]; }), { repeat: [1, 1] });
   T.boxTex = ctex(200, 260, (g, w, h) => { g.fillStyle = '#c8a020'; g.fillRect(0, 0, w, h); g.fillStyle = '#1a1a1a'; g.font = kFont(18, 900); g.textAlign = 'center'; g.fillText('점검 운전반', w / 2, 30); g.font = kFont(16, 700); g.fillText('NORMAL', 54, 70); g.fillText('INSP', 150, 70); g.fillText('정상', 54, 90); g.fillText('점검', 150, 90); g.font = kFont(20, 900); g.fillText('STOP · 정지', w / 2, 230); g.strokeStyle = '#1a1a1a'; g.lineWidth = 3; g.beginPath(); g.moveTo(100, 100); g.lineTo(100, 150); g.stroke(); });
   T.certTex = ctex(220, 310, (g, w, h) => { g.fillStyle = '#f4f0e4'; g.fillRect(0, 0, w, h); g.strokeStyle = '#2a4a8a'; g.lineWidth = 4; g.strokeRect(8, 8, w - 16, h - 16); g.fillStyle = '#1a1a1a'; g.font = kFont(17, 900); g.textAlign = 'center'; g.fillText('승강기 검사합격증명서', w / 2, 44); g.font = kFont(12, 400); ['청운빌딩 1호기', '정원 6인 450kg', '신일엘리베이터 1981', '2004. 06. 14. 합격'].forEach((t, i) => g.fillText(t, w / 2, 90 + i * 26)); g.strokeStyle = '#b01810'; g.lineWidth = 3; g.beginPath(); g.arc(160, 250, 26, 0, TAU); g.stroke(); g.fillStyle = '#b01810'; g.font = kFont(14, 900); g.fillText('합격', 160, 255); });
@@ -1221,14 +1215,14 @@ function panelSVG(world, capIn, lit, opts = {}) {
   const dot = (x, y) => `<circle cx="${x}" cy="${y}" r="2.3" fill="#3a3c3e"/>`;
   PANEL_ROWS.forEach((row, r) => row.forEach((n, c) => {
     const x = 112 + c * 112, y = 86 + r * 64, tf = other ? OW_TRUE[n] : n;
-    const gone = other && n === 3 && !capIn;
+    const gone = other && n === GONE && !capIn;
     // Braille: number sign, then the digits
     const cells = brailleCells(tf), bx = x - 64 - (cells.length - 2) * 11;
     cells.forEach((cell, ci) => cell.forEach(d => { const dc = d <= 3 ? 0 : 1, dr = (d - 1) % 3; s += dot(bx + ci * 13 + dc * 5.5, y - 7 + dr * 7); }));
     if (gone) { s += `<g data-b="hole"><circle cx="${x}" cy="${y}" r="21" fill="#0a0a0a" stroke="#555"/><circle cx="${x - 6}" cy="${y}" r="2.6" fill="#b8903a"/><circle cx="${x + 6}" cy="${y}" r="2.6" fill="#b8903a"/></g>`; return; }
     const on = lit[n];
-    const lab = other && n === 3 ? '' : LABEL(n);
-    s += `<g data-b="${n}" class="pb"><circle cx="${x}" cy="${y}" r="24" fill="${on ? '#ffb040' : '#5a4a30'}" opacity="${on ? 1 : 0.35}"/><circle cx="${x}" cy="${y}" r="20" fill="#d0d4d8" stroke="#7a7e82" stroke-width="2"/>${other && n === 3 ? `<g stroke="#8a8e92" stroke-width="1.2">${[...Array(9)].map((_, i) => `<line x1="${x - 11}" y1="${y - 10 + i * 2.5}" x2="${x + 11}" y2="${y - 8 + i * 2.2}"/>`).join('')}</g>` : `<text x="${x}" y="${y + 8}" text-anchor="middle" class="pbl">${lab}</text>`}</g>`;
+    const lab = other && n === GONE ? '' : LABEL(n);
+    s += `<g data-b="${n}" class="pb"><circle cx="${x}" cy="${y}" r="24" fill="${on ? '#ffb040' : '#5a4a30'}" opacity="${on ? 1 : 0.35}"/><circle cx="${x}" cy="${y}" r="20" fill="#d0d4d8" stroke="#7a7e82" stroke-width="2"/>${other && n === GONE ? `<g stroke="#8a8e92" stroke-width="1.2">${[...Array(9)].map((_, i) => `<line x1="${x - 11}" y1="${y - 10 + i * 2.5}" x2="${x + 11}" y2="${y - 8 + i * 2.2}"/>`).join('')}</g>` : `<text x="${x}" y="${y + 8}" text-anchor="middle" class="pbl">${lab}</text>`}</g>`;
   }));
   const sb = (key, x, y, sym, col) => `<g data-b="${key}" class="pb"><circle cx="${x}" cy="${y}" r="24" fill="${lit[key] ? col : '#5a4a30'}" opacity="${lit[key] ? 1 : 0.35}"/><circle cx="${x}" cy="${y}" r="20" fill="${key === 'bell' ? '#d8b020' : '#d0d4d8'}" stroke="#7a7e82" stroke-width="2"/>${sym}</g>`;
   const y1 = 86 + 5 * 64 + 22, y2 = y1 + 70, xl = 112, xr = 224;
@@ -1255,7 +1249,7 @@ function wrapA(a) { a = (a + Math.PI) % TAU; if (a < 0) a += TAU; return a - Mat
 const other = () => S.world === 'other';
 const inCar = () => P.z > CAR.z0 - 0.02 && !V.onTop;
 const RIT = [4, 2, 6, 2, 10];
-function progCount() { const f = S.flags; return [f.pole, !S.insp && other(), f.lieSeen, took('cap') || S.capIn, S.capIn, S.rit2 >= 3, f.final].filter(Boolean).length; }
+function progCount() { const f = S.flags; return [f.pole, f.roofVisited, f.drove, took('cap') || S.capIn, S.capIn, !S.insp && other(), f.final].filter(Boolean).length; }
 
 /* ---------------- voices ---------------- */
 function line(id, who, text, opts = {}) { return say(who, text, Object.assign({ clip: 'l_' + id }, opts)); }
@@ -1337,7 +1331,7 @@ function setFloor(world, floor) {
       if (floor === 4) { LS.main = 0.35; }
     } else {
       LS.main = 1.6; LS.mainC = 0xff2a1a; LS.aux = 0.7; LS.auxC = 0xff1a10; LS.aux2 = 0.4; LS.aux2C = 0x8a1010; LS.tube = 0;
-      if (floor === 2) { if (S.rit2 === 3 && !S.ev.crowdDone) { D.crowd.visible = true; COL.crowd.on = true; } else if (!S.ev.crowdDone) D.shoes.visible = true; }
+      if (floor === 2) { if (!S.ev.crowdDone) { D.crowd.visible = true; COL.crowd.on = true; } else D.shoes.visible = true; }
       if (floor === 3) D.smear.visible = true;
       if (floor === 4) { D.funeral.visible = true; O.desks.visible = false; D.vacant.visible = false; O.hose.visible = false; COL.altar.on = COL.offer.on = COL.screen.on = COL.ctable.on = true; LS.main = S.ev.funeralDark ? 0.04 : 0.14; LS.mainC = 0xc8d4ff; LS.tube = S.ev.funeralDark ? 0 : 1; LS.aux = S.ev.funeralDark ? 0 : 0.75; LS.auxC = 0xffa850; LS.auxPos = [0, 1.3, -2.85]; LS.aux2 = S.ev.funeralDark ? 0 : 0.9; LS.aux2C = 0xffb070; LS.aux2Pos = [-2.6, 1.0, -2.2]; LS.fog = 0.14; LS.fogC = 0x030202; O.capOnDish.visible = !took('cap') && !S.capIn; O.candles.forEach(c => c.visible = !S.ev.funeralDark); }
       if (floor === 5) { D.her.visible = true; LS.main = 0.35; LS.mainC = 0xc8d8ff; LS.tube = 1; }
@@ -1410,8 +1404,8 @@ const doorsOpen = () => V.doorK >= 0.999 && V.doorT === 1;
 /* ---------------- the panel ---------------- */
 function openPanelUI() {
   if (V.onTop) return;
-  if (!S.flags.panelSeen && !other()) { S.flags.panelSeen = true; if (!S.docs.includes('panel')) S.docs.push('panel'); save(); after(0.3, () => sayI('An old stainless panel. Every button has a little plate of Braille dots beside it.', 5200)); }
-  if (other() && !S.flags.owPanel) { S.flags.owPanel = true; save(); after(0.3, () => sayI('The same panel, the same numbers in the same places. Except the button that said 3 is gone. There\'s just a hole.', 6000)); }
+  if (!S.flags.panelSeen && !other()) { S.flags.panelSeen = true; save(); }
+  if (other() && !S.flags.owPanel) { S.flags.owPanel = true; save(); after(0.3, () => sayI('The same panel, the same numbers. Except the 5 is gone. There\'s just a hole where it was.', 5200)); }
   const draw = () => {
     const lit = Object.assign({}, V.lit || {});
     UI.show('box', `<button class="x">Close &middot; Esc</button><h2>Lift buttons</h2><p class="sub">${esc(panelStatus())}</p><div class="lxui">${panelSVG(S.world, S.capIn, lit)}</div><p class="muted" style="font-size:11px;margin:10px 0 0">${G.touch ? 'Tap a button' : 'Click a button · number keys work too (0 is 10, F is F)'}</p>`, { cls: 'ui-card lxpanel-ui',
@@ -1445,13 +1439,15 @@ function pressFloor(n) {
   if (V.ride) { sayI('It\'s already moving.', 2000); return; }
   if (V.cleanerIn) { sayI('Not with her standing there. She\'s already pressed 1.', 3000); return; }
   if (V.onTop) return;
+  if (other() && n === GONE && !S.capIn) { press('hole'); return; }
   if (other() && S.insp) { lightBtn(n, true); after(0.5, () => lightBtn(n, false)); flag('deadTried'); ann('a_insp'); after(1.4, () => sayI('The button lights, and goes out again. The lift doesn\'t move. Over the doors, the display just says 점검 중: under inspection.', 6000)); return; }
-  if (other() && n === 3 && !S.capIn) { press('hole'); return; }
+  // the button's back: press 5 and she comes for it
+  if (other() && n === GONE && S.capIn && !S.flags.final && S.floor === GONE) { lightBtn(n, true); after(0.6, () => { UI.kind === 'box' && UI.close(); lightBtn(n, false); }); if (V.doorT === 0) doorsTo(true); after(1.6, herFinalBoarding); return; }
   // she is in the car on the first side: only 1 will light
   if (!other() && V.sheIn) { if (n !== 1) { sayI('The button won\'t light. Only one of them will now.', 3200); return; } lightBtn(1, true); flag('pressed1'); after(0.6, () => UI.kind === 'box' && UI.close()); startTransition(); return; }
   const target = other() ? OW_TRUE[n] : n;
   lightBtn(n, true);
-  if (other() && V.sheIn && S.flags.final) { after(0.6, () => UI.kind === 'box' && UI.close()); if (target === 10) startFinalDown(n); else startLoopUp(n); return; }
+  if (other() && V.sheIn && S.flags.final) { if (target === S.floor) { after(0.4, () => lightBtn(n, false)); sayI('This is the floor she got on at. The lift doesn\'t move.', 3000); return; } after(0.6, () => UI.kind === 'box' && UI.close()); if (target === 10) startFinalDown(n); else startLoopUp(n); return; }
   if (target === S.floor) { after(0.4, () => lightBtn(n, false)); if (V.doorT === 0) doorsTo(true); else { sDing(POS.speaker, 0.06); } return; }
   after(0.6, () => UI.kind === 'box' && UI.close());
   startRide(target, n);
@@ -1504,12 +1500,8 @@ function onArrive(r) {
     }
     save(); return;
   }
-  // the way back, on the other side
-  if (r.label && r.label !== f && !S.flags.lieSeen) { flag('lieSeen'); after(1.2, () => sayI(`The sign painted on the wall out there says ${f === 4 ? '4' : LABEL(f)}. You pressed ${LABEL(r.label)}.`, 5200)); }
-  if (S.rit2 < 5) {
-    if (f === RIT[S.rit2]) S.rit2++; else S.rit2 = f === RIT[0] ? 1 : 0;
-  } else if (S.rit2 === 5) { if (f === 5 && S.capIn) { herFinalBoarding(); return; } S.rit2 = f === RIT[0] ? 1 : 0; }
-  if (f === 4 || S.rit2 >= 2) { if (!S.flags.brailleUsed) flag('brailleUsed'); }
+  // the way back, on the other side: the 5 is back, so she can get on
+  if (f === GONE && S.capIn && !S.flags.final) { herFinalBoarding(); return; }
   owTableau(f);
   save();
 }
@@ -1706,13 +1698,15 @@ function pushLatch() {
 function climbUp() {
   if (V.sheIn) { sayI('Not with her behind you.', 2400); return; }
   G.cutscene = true; releasePointer(); flag('roofVisited');
+  if (V.doorT !== 0) { V.silentClose = true; doorsTo(false); V.silentClose = false; }
+  shaftAt(S.floor);
   const x0 = P.x, z0 = P.z, p0 = G.pitch;
   tween(0.7, k => { P.x = lerp(x0, 0, k); P.z = lerp(z0, 0.08, k); G.pitch = lerp(p0, 1.0, k); });
   after(0.8, () => { sScrape(POS.hatch, 0.8, 0.12); sStep(0.2); V.onTop = true; O.shaft.visible = true; tween(1.3, k => { G.eyeT = G.eye = lerp(1.62, TOP + 1.1, k); G.pitch = lerp(1.0, 0.1, k); }); });
   after(2.2, () => { const y1 = G.yaw; tween(0.8, k => { P.x = lerp(0, -0.35, k); P.z = lerp(0.08, 0.46, k); G.eyeT = G.eye = lerp(TOP + 1.1, TOP + 1.58, k); G.yaw = y1 + wrapA(-0.76 - y1) * k; G.pitch = lerp(G.pitch, -0.2, k); }); COL.hatchTop.on = true; });
   after(3.1, () => {
     G.cutscene = false; updatePrompt(true); V.envDue = true;
-    if (!S.ev.roof1) { S.ev.roof1 = true; save(); sayI('The roof of the car. Greasy steel, the ropes running up into the dark, a yellow box of switches by the corner.', 5200); after(6, () => { if (V.onTop) faller(); }); }
+    if (!S.ev.roof1) { S.ev.roof1 = true; save(); sayI('The roof of the car. Greasy steel, the ropes running up into the dark, and a yellow box with UP and DOWN buttons by the corner.', 5600); after(6, () => { if (V.onTop && !S.ev.faller) faller(); }); }
   });
 }
 function faller() {
@@ -1724,32 +1718,40 @@ function faller() {
   sCrash(1.6, 0.7);
   after(2.6, () => sayI('Something fell past. Right past you, down the gap between the car and the wall. It was the size of a person.', 5600));
 }
+// under inspection the car is driven from its roof: UP and DOWN on the yellow box, one floor a press
 function boxActions() {
-  return [S.insp ? { label: 'Switch it to NORMAL', run: toNormal } : { label: 'Switch it to INSPECTION', run: toInsp }, look('The inspection box: a switch marked NORMAL and INSP, UP and DOWN buttons, and a red STOP knob. The switch is at ' + (S.insp ? 'INSP.' : 'NORMAL.'))];
+  if (!S.insp) return [look('The switch on the box has gone over to NORMAL. You didn\'t touch it.')];
+  return [{ label: 'Press DOWN', run: () => drive(-1) }, { label: 'Press UP', run: () => drive(1) }];
 }
-function toInsp() { S.insp = true; save(); sClick(POS.box, 0.5, 1400); O.boxToggle.rotation.x = 0.5; sayI('Back to INSPECTION. Below you, the lift goes quiet.', 3400); V.power = 0.3; }
-function toNormal() {
-  sClick(POS.box, 0.6, 1400); sThunk(POS.box, 0.3, 300); O.boxToggle.rotation.x = -0.5;
-  S.insp = false; save();
-  if (S.ev.topRide) { V.power = 0.8; sayI('NORMAL. Below, the lift hums back to life.', 3400); return; }
-  S.ev.topRide = true;
-  // the car lurches, and goes down, with you on top
-  V.forceShut = true; V.doorT = 0; sDoor(false, 0.12); after(2.2, () => { V.forceShut = false; });
-  G.frozen = true; after(0.6, () => { sThunk(POS.under, 0.9, 70); G.shake = 1.0; sayI('The car jerks under your feet, and starts to move. Down.', 3800); V.topRide = { t: 0, from: 10, to: 7 }; if (A.ready) setGain(A.loops.wind, 0.14, 0.4); });
+const markAt = f => f === 4 ? 'a red 4' : `${f}F`;
+function shaftAt(fl) {
+  V.shaftY = -(fl - 1) * FH; O.shaftMove.position.y = V.shaftY;
+  O.cwt.position.y = clamp(-20 + 2 * (10 - fl) * FH, -30, 40);     // the counterweight goes the other way, and passes you on the way
 }
-function topRideUpdate(dt) {
-  const r = V.topRide; if (!r) return;
-  r.t += dt; const dur = 7, k = clamp(r.t / dur, 0, 1), e = smooth(k);
-  V.shaftY = (r.from - (r.from + (r.to - r.from) * e)) * FH;     // the building moves up past you
-  O.shaftMove.position.y = V.shaftY; O.cwt.position.y = 6 - V.shaftY * 2;
+function drive(dir) {
+  if (V.drive) return;
+  const to = S.floor + dir;
+  if (to < 1 || to > 10) { sClick(POS.box, 0.4, 900); sayI(dir < 0 ? 'Nothing happens. This is the bottom.' : 'Nothing happens. This is as high as it goes.', 3000); return; }
+  sClick(POS.box, 0.5, 1300); sThunk(POS.under, 0.7, 70); G.shake = 0.5;
+  V.drive = { t: 0, from: S.floor, to, dur: 3.2 };
+  if (A.ready) setGain(A.loops.wind, 0.12, 0.4);
+  if (!S.flags.drove && dir < 0) after(0.4, () => sayI('The car jerks under your feet, and creeps down. The shaft wall slides up past you.', 4200));
+}
+function driveUpdate(dt) {
+  const r = V.drive; if (!r) return;
+  r.t += dt; const k = clamp(r.t / r.dur, 0, 1), e = smooth(k), fl = lerp(r.from, r.to, e);
+  shaftAt(fl);
   V.moveK = k < 0.15 ? k / 0.15 : k > 0.85 ? (1 - k) / 0.15 : 1;
-  // fingers in the gap of the ninth floor's doors as they go by
-  O.fingers.visible = true; O.fingers.position.y = (9 - 10) * FH + 8 * 0;
-  if (!r.cl && k > 0.4) { r.cl = true; sayI('A landing door slides up past you. In the gap between its two halves, fingers. Holding on.', 5000); G.fearT = 0.6; sCrack(new THREE.Vector3(0, TOP + 1.2, -0.8), 4); }
+  // fingers in the gap of the ninth floor's landing doors, the first time you go past
+  if (!S.ev.fingers && r.from === 10 && r.to === 9 && k > 0.35) { S.ev.fingers = true; O.fingers.visible = true; O.fingers.position.y = (9 - 1) * FH; sayI('The ninth floor\'s landing doors slide up past you. In the gap between the two halves, fingers. Holding on.', 5200); G.fearT = 0.6; sCrack(new THREE.Vector3(0, TOP + 1.2, -0.8), 4); after(6, () => { O.fingers.visible = false; }); }
+  if (!S.ev.cwt && Math.abs(fl - 6.6) < 0.25) { S.ev.cwt = true; sWhoosh(1.2, 0.35); after(0.6, () => sayI('The counterweight slides past behind you, a hand\'s width from the car, going up.', 4200)); }
   if (k >= 1) {
-    V.topRide = null; G.frozen = false; S.floor = 7; save(); sThunk(POS.under, 0.8, 70); G.shake = 0.8; V.moveK = 0;
+    V.drive = null; V.moveK = 0; sThunk(POS.under, 0.8, 80); G.shake = 0.4; sClack(0.12);
+    setFloor('other', r.to); flag('drove'); save();
     if (A.ready) setGain(A.loops.wind, 0.03, 0.4);
-    after(2.0, () => { sBreath(new THREE.Vector3(0, CAR.h - 0.5, 0.1), 3, 0.35, true); after(3, () => { sayI('It stops, between floors. Below you, through the open hatch, someone is breathing.', 5200); O.car.userData.hum = true; }); });
+    const f = r.to;
+    if (f === 4 && !S.ev.at4) { S.ev.at4 = true; V.wail = true; V.wailT = 0.4; after(1.0, () => sayI('Painted on the wall in front of you, in red: 4. Through the landing doors, wailing. Incense. The floor that isn\'t there.', 6400)); G.fearT = 0.7; }
+    else after(0.4, () => sayI(`It stops, level with a landing. Painted on the wall in front of you: ${markAt(f)}.`, 3600));
   }
 }
 function hatchTopActions() { return [{ label: 'Climb back down', run: climbDown }]; }
@@ -1771,11 +1773,12 @@ function climbDown() {
       V.power = 0.8; V.flick = 1.5; sClick(POS.ceil, 0.5, 1200);
       tween(1.6, k => { G.eyeT = G.eye = lerp(0.55, 1.62, k); G.pitch = lerp(0.3, 0, k); });
       after(1.0, () => sayI('You\'re on the floor of the car. The lights stutter on. There\'s nobody in here but you.', 5200));
-      // the car levels at 7, and the doors open on it
-      after(3.2, () => { sDing(); setFloor('other', 7); dispSet('--', '', 0.7); after(1.0, () => { doorsTo(true); G.cutscene = false; updatePrompt(true); V.envDue = true; }); });
+      // the doors open by themselves, on whatever floor the car is standing at
+      after(3.2, () => { sDing(); dispSet(S.insp ? '점검' : '--', '', 0.7); after(1.0, () => { doorsTo(true); G.cutscene = false; updatePrompt(true); V.envDue = true; owTableau(S.floor); }); });
     });
   } else {
     after(2.1, () => { V.onTop = false; O.shaft.visible = S.hatch === 'open'; G.cutscene = false; updatePrompt(true); });
+    after(2.6, () => { if (!V.onTop && V.doorT === 0 && !V.ride) { sDing(POS.speaker, 0.06); doorsTo(true); owTableau(S.floor); } });
   }
 }
 
@@ -1851,9 +1854,15 @@ function takeCap() {
 function fitCap() {
   drop('cap'); S.capIn = true; save();
   sClick(POS.panel, 0.6, 1600); sThunk(POS.panel, 0.3, 300);
-  O.hole.visible = false; BTN[3].g.visible = true; BTN[3].face.material.map = T.btnLabels.capX; BTN[3].face.material.needsUpdate = true;
+  O.hole.visible = false; BTN[GONE].g.visible = true; BTN[GONE].face.material.map = T.btnLabels.capX; BTN[GONE].face.material.needsUpdate = true;
   refreshPanelUI(); sayI('You press the button back into the hole. It clicks home. Its ring flickers, once.', 4600);
-  lightBtn(3, true); after(0.4, () => lightBtn(3, false));
+  lightBtn(GONE, true); after(0.4, () => lightBtn(GONE, false));
+  if (S.insp) {
+    // footsteps cross the roof, and the inspection switch goes over
+    after(2.4, () => { for (let i = 0; i < 4; i++) after(i * 0.6, () => sKnock(new THREE.Vector3(lerp(-0.4, 0.5, i / 3), CAR.h + 0.4, lerp(0.3, -0.5, i / 3)), 0.5, 0, 1)); G.fearT = Math.max(G.fearT, 0.6); });
+    after(5.0, () => { sThunk(POS.roof, 0.7, 260); sClick(POS.roof, 0.5, 1300); O.boxToggle.rotation.x = -0.5; S.insp = false; flag('normal'); save(); V.power = 0.8; V.flick = 0.6; dispSet('--', '', 0.85); refreshPanelUI(); });
+    after(6.2, () => sayI('Footsteps crossed the roof over your head. Then a clunk: the inspection switch. The lights come up, and the panel\'s rings glow.', 6400));
+  }
 }
 
 /* ---------------- her, the second time; the way back ---------------- */
@@ -1957,7 +1966,7 @@ const EVENTS = [
   { id: 'settle', ok: () => !other(), run: () => { sCreak(new THREE.Vector3(rand(-1, 1), CAR.h + 1, 0), 1.4, 0.08, 80); } },
 ];
 function director(dt) {
-  if (G.cutscene || G.uiOpen || V.finale || V.ride || V.topRide || V.busy) return;
+  if (G.cutscene || G.uiOpen || V.finale || V.ride || V.drive || V.busy) return;
   V.dirT -= dt; if (V.dirT > 0) return;
   const opts = EVENTS.filter(e => e.id !== V.last && e.ok());
   for (let tr = 0; tr < 4 && opts.length; tr++) { const e = opts.splice(Math.floor(Math.random() * opts.length), 1)[0]; if (e.run() !== false) { V.last = e.id; break; } }
@@ -2023,8 +2032,8 @@ function startAmbience() {
 function soundUpdate(dt) {
   if (!A.ready || !A.loops.hum) return;
   const ow = other(), lobby = S.floor === 1;
-  setGain(A.loops.move, V.moveK * 0.14 + (V.topRide ? 0.08 : 0), 0.2);
-  setGain(A.loops.wind, (V.onTop ? 0.05 : 0) + V.moveK * 0.03 + (V.topRide ? 0.12 : 0), 0.4);
+  setGain(A.loops.move, V.moveK * 0.14 + (V.drive ? 0.08 : 0), 0.2);
+  setGain(A.loops.wind, (V.onTop ? 0.05 : 0) + V.moveK * 0.03 + (V.drive ? 0.12 : 0), 0.4);
   setGain(A.loops.buzz, (V.power * V.lightK > 0.3 ? 0.012 : 0) * (V.onTop ? 0.3 : 1), 0.05);
   setGain(A.loops.city, lobby && !ow && doorsOpen() ? 0.05 : 0, 0.5);
   setGain(A.loops.radio, lobby && !ow ? 0.05 : 0, 0.5);
@@ -2053,8 +2062,8 @@ function registerInteractions() {
   // Ji-yeon's scratches
   O.scr.forEach(({ s, m }) => inter('scr_' + s.id, m, { name: s.lipstick ? 'Lipstick on the mirror' : s.tally ? 'Scratches in the steel' : 'Scratched into the steel', enabled: () => other() && !V.onTop, actions: () => [{ label: 'Read it', run: () => readScratch(s) }] }));
   // the roof
-  inter('box', O.box, { name: () => `Inspection box (${S.insp ? 'INSP' : 'NORMAL'})`, enabled: () => V.onTop && !V.topRide, actions: boxActions });
-  inter('hatchTop', O.hatchTopHit, { name: 'The open hatch', reach: 2.4, enabled: () => V.onTop && !V.topRide, actions: hatchTopActions });
+  inter('box', O.box, { name: () => S.insp ? 'Inspection box' : 'Inspection box (NORMAL)', note: () => S.insp ? `In front of you: ${markAt(S.floor)}` : '', enabled: () => V.onTop && !V.drive, actions: boxActions });
+  inter('hatchTop', O.hatchTopHit, { name: 'The open hatch', reach: 2.4, enabled: () => V.onTop && !V.drive, actions: hatchTopActions });
   // landings
   inter('callBtn', O.callBtn, { name: 'Call button', actions: () => [{ label: 'Press it', run: () => { sBeep(); O.callRing[0].material.emissiveIntensity = 2; after(0.6, () => O.callRing[0].material.emissiveIntensity = 0); if (V.doorT === 0 && !V.ride && !V.lunge) doorsTo(true); } }] }); hitbox('callBtn', O.callBtn, 0.03);
   inter('gdoor', O.gdoor, { name: () => TENANTS[S.floor] ? `Glass doors: ${TENANTS[S.floor][1]}` : 'Glass doors', actions: () => [{ label: 'Try the doors', run: () => { sThunk(POS.office, 0.3, 140); sayI(other() ? officeLook() : 'Locked. Everybody went home hours ago.', 5200); } }, look(officeLook())] });
@@ -2087,7 +2096,6 @@ function officeLook() {
 }
 function readScratch(s) {
   if (!S.flags['scr_' + s.id]) { S.flags['scr_' + s.id] = true; if (!S.docs.includes('scratches')) S.docs.push('scratches'); save(); }
-  if (s.id === 'lie') flag('lieSeen');
   sayI(s.lipstick ? `In lipstick across the mirror: ${s.ko}. "${s.en}"` : s.tally ? s.en : `Scratched into the steel in Korean, in Ji-yeon's handwriting: ${s.ko} "${s.en}"`, 7000);
 }
 function buildScratches() {
@@ -2111,12 +2119,12 @@ function buildScratches() {
 /* ---------------- per frame ---------------- */
 function roomUpdate(dt) {
   G.flash = Math.max(0, (G.flash || 0) - dt * 2.2);   // a flash is a flash: it never lingers
-  doorsUpdate(dt); rideUpdate(dt); topRideUpdate(dt); cleanerUpdate(dt); lungeUpdate(dt);
+  doorsUpdate(dt); rideUpdate(dt); driveUpdate(dt); cleanerUpdate(dt); lungeUpdate(dt);
   lightsUpdate(dt); soundUpdate(dt); lookUpdate(dt); walkUpdate(dt);
   // the scratches only exist on the other side
   const ow = other(); O.scr.forEach(({ m }) => m.visible = ow);
-  O.brOther.visible = ow; O.brReal.visible = !ow;
-  O.hole.visible = ow && !S.capIn; BTN[3].g.visible = !ow || S.capIn;
+  O.brOther.visible = false; O.brReal.visible = true;
+  O.hole.visible = ow && !S.capIn; BTN[GONE].g.visible = !ow || S.capIn;
   // the shaft shows through the open hatch, and around you on the roof
   O.shaft.visible = V.onTop || S.hatch === 'open';
   // but never the back of a landing door right in front of the car's own doors: that landing is the real one
@@ -2146,10 +2154,11 @@ function defaults() {
 }
 function applyState() {
   const f = S.flags;
-  V.ride = null; V.topRide = null; V.onTop = false; V.finale = 0; V.lunge = null; V.cleanerGo = false; V.cleanerIn = false; V.busy = false; V.scare = false; V.strobe = 0; V.lit = {}; V.memo = false; V.talking = false;
+  V.ride = null; V.drive = null; V.onTop = false; V.finale = 0; V.lunge = null; V.cleanerGo = false; V.cleanerIn = false; V.busy = false; V.scare = false; V.strobe = 0; V.lit = {}; V.memo = false; V.talking = false;
   V.fc1 = V.fc2 = V.fc3 = false; V.sheFollow = false; V.shaftY = 0; O.shaftMove.position.y = 0; O.fingers.visible = false; O.hand.visible = false; O.face.visible = false;
   // a mid-ride save lands you where you were going, doors open
   setFloor(S.world || 'real', S.floor || 1);
+  if (S.capIn && S.insp) S.insp = false;
   V.power = other() ? (S.insp ? 0 : 0.8) : 1;
   V.doorK = 1; V.doorT = 1; V.forceShut = false;
   sheIn(false);
@@ -2161,7 +2170,9 @@ function applyState() {
   const k = smooth(V.doorK); O.cdoor.forEach(d => d.position.x = d.userData.base + d.userData.sx * 0.455 * k); (S.floor === 1 ? O.lobDoor : O.ldoor).forEach(d => d.position.x = d.userData.base + d.userData.sx * 0.455 * k);
   O.hatchPivot.rotation.x = S.hatch === 'open' ? -2.85 : 0; O.poleCar.visible = S.hatch === 'open';
   O.boxToggle.rotation.x = S.insp ? 0.5 : -0.5;
-  if (S.capIn) { BTN[3].face.material.map = T.btnLabels.capX; BTN[3].face.material.needsUpdate = true; }
+  if (S.capIn) { BTN[GONE].face.material.map = T.btnLabels.capX; BTN[GONE].face.material.needsUpdate = true; }
+  if (S.capIn && S.insp) { S.insp = false; V.power = 0.8; }       // saved in the seconds before the switch went over
+  shaftAt(S.floor || 1); O.fingers.visible = false;
   O.gdoors.forEach(d => d.rotation.y = 0);
   dispSet(other() ? (S.insp ? '점검' : '--') : floorText(S.floor), '', other() ? 0.85 : 1);
   if (P.z < CAR.z0 - 0.05 && V.doorK < 0.5) { P.z = 0; P.x = 0; }
@@ -2240,7 +2251,7 @@ function buildRoom() {
 
 /* ---------------- the room module ---------------- */
 return {
-  id: 'lift', title: 'Doors Closing', saveKey: 'lethe.roomlift.v1',
+  id: 'lift', title: 'Doors Closing', saveKey: 'lethe.roomlift.v2',
   DOCS, ITEMS, HEARD, HINTS, openDoc,
   inspectItem(id, back) {
     if (id !== 'phone') return inspectItem(id, back);
@@ -2276,7 +2287,7 @@ return {
     after(3.2, () => { G.cutscene = false; $('#fx').className = ''; flag('woke'); updatePrompt(true); toast(ctrlHint(), 7000); });
     after(4.0, () => { sayI('Her phone is in your hand. You play the memo one more time.', 3600); after(3.8, playMemo); });
   },
-  debug: { O, L, V, T, M, D, BTN, COL, setFloor, startRide, press, pressFloor, openPanelUI, herFirstBoarding, startTransition, pushLatch, climbUp, toNormal, climbDown, takeCap, fitCap, herFinalBoarding, startFinalDown, startLoopUp, startWalk, pushOut, endFrame, lookScare, showFace, cleanerScene, faller, dispSet, doorsTo, playMemo, other, progCount },
+  debug: { O, L, V, T, M, D, BTN, COL, setFloor, startRide, press, pressFloor, openPanelUI, herFirstBoarding, startTransition, pushLatch, climbUp, drive, climbDown, takeCap, fitCap, herFinalBoarding, startFinalDown, startLoopUp, startWalk, pushOut, endFrame, lookScare, showFace, cleanerScene, faller, dispSet, doorsTo, playMemo, other, progCount },
 };
 
 })();
