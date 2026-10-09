@@ -297,12 +297,19 @@ app.post('/api/me/results', async c => {
              tiers = excluded.tiers, marks = excluded.marks where results.day > excluded.day`,
       [uid, id, r.day, secs, int(r.hints, 0, 999) || 0, int(r.wrong, 0, 999) || 0, JSON.stringify(r.tiers && typeof r.tiers === 'object' ? r.tiers : {}).slice(0, 4000), JSON.stringify(marksJson(r.marks))]);
   }
-  if (anon) {   // this browser's guest plays and share links now belong to the account
+  if (anon) {
     await touchPlayer(anon, uid, c);
-    await q('update plays set user_id = $1 where anon_id = $2 and user_id is null', [uid, anon]);
-    await q('update shares set user_id = $1 where anon_id = $2 and user_id is null', [uid, anon]);
-    await q('update events set user_id = $1 where anon_id = $2 and user_id is null and ts > now() - interval \'90 days\'', [uid, anon]);
-    await q('update feedback set user_id = $1 where anon_id = $2 and user_id is null', [uid, anon]);
+    // this browser's guest plays, share links, visits and feedback now belong to the account, unless another account has
+    // already used this browser: then whose they were can't be told, and they stay anonymous (a second account signing in
+    // on someone's browser shouldn't take over their signed-out activity)
+    const other = await one(`select 1 x where exists (select 1 from events where anon_id = $1 and user_id is not null and user_id <> $2)
+                               or exists (select 1 from plays where anon_id = $1 and user_id is not null and user_id <> $2)`, [anon, uid]);
+    if (!other) {
+      await q('update plays set user_id = $1 where anon_id = $2 and user_id is null', [uid, anon]);
+      await q('update shares set user_id = $1 where anon_id = $2 and user_id is null', [uid, anon]);
+      await q('update events set user_id = $1 where anon_id = $2 and user_id is null and ts > now() - interval \'90 days\'', [uid, anon]);
+      await q('update feedback set user_id = $1 where anon_id = $2 and user_id is null', [uid, anon]);
+    }
   }
   const res = await rows('select room, to_char(day, \'YYYY-MM-DD\') as day, seconds, hints, wrong, tiers, marks from results where user_id = $1', [uid]);
   const sh = await rows("select distinct on (room) room, code from shares where user_id = $1 and kind = 'result' order by room, created_at", [uid]);

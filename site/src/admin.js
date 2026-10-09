@@ -2,10 +2,15 @@
 //   /admin                  the dashboard (?range=7d|30d|90d|all, ?by=day|week; ?me=0 leaves out the owner's own activity, remembered in a cookie)
 //   /admin/export/<t>.csv   raw rows
 // Definitions (India time):
-//   active user  a signed-in person with any activity that day (a visit or a play); browsers link to their account once signed in
+//   visitor      a browser that opened a page on the site (a page_view; the dashboard itself sends none). Per browser, not per person.
+//   new visitor  a browser whose first page view falls in the period
+//   active user  a signed-in person with any activity that day (a visit or a play). A browser's signed-out activity counts for
+//                its account only if exactly one account has ever used that browser.
 //   new user     a Google sign-up
-//   D1, D7, D30  % of sign-ups active again exactly 1, 7 or 30 days after the day they signed up (among those old enough)
-//   M1           % of sign-ups active at any point in days 30–59 after signing up
+//   D1, D7, D30  % of sign-ups active again exactly 1, 7 or 30 days after the day they signed up, among sign-ups whose day has ended
+//   M1           % of sign-ups active at any point in days 30–59 after signing up, among those 60 days old
+//   stickiness   average daily active ÷ distinct active, over the full days (up to 30, today left out) since the site opened
+//   "me"         the owner: their account, and every browser that has ever been signed in to it
 import { cfg } from './config.js';
 import { rows, one } from './db.js';
 import { allRooms, fmtTime, retiredTitle } from './rooms.js';
@@ -40,18 +45,27 @@ function bind(text, p) {
 const R = (text, p) => rows(...bind(text, p));
 const O = (text, p) => one(...bind(text, p));
 
-// rows made by the owner (signed in as an admin, or on a browser that has signed in as one) are left out when ?me=0
+// rows made by the owner (signed in as an admin, or on a browser that has ever been signed in as one) are left out when ?me=0
 const notMe = (a = '') => `not coalesce(${a}user_id = any(@xu::text[]), false) and not coalesce(${a}anon_id = any(@xa::uuid[]), false)`;
+// the one account a browser belongs to: browsers used by two or more accounts belong to none, so their signed-out
+// activity isn't guessed onto whoever signed in last
+const SOLE = `sole as (select anon_id, min(user_id) uid from events where user_id is not null and anon_id is not null group by anon_id having count(distinct user_id) = 1)`;
 // one row per signed-in person per day they did anything (India time)
-const ACT = `act as (select coalesce(e.user_id, pl.user_id) uid, (e.ts at time zone @tz)::date d
-  from events e left join players pl on pl.anon_id = e.anon_id
-  where e.ts > @asince and coalesce(e.user_id, pl.user_id) is not null and not (coalesce(e.user_id, pl.user_id) = any(@xu::text[]))
+const ACT = `${SOLE}, act as (select coalesce(e.user_id, s.uid) uid, (e.ts at time zone @tz)::date d
+  from events e left join sole s on s.anon_id = e.anon_id
+  where e.ts > @asince and coalesce(e.user_id, s.uid) is not null
+    and not (coalesce(e.user_id, s.uid) = any(@xu::text[])) and not coalesce(e.anon_id = any(@xa::uuid[]), false)
   group by 1, 2)`;
 
 async function context(opts) {
   const r = RANGES[opts.range] || RANGES['30d'];
-  const own = await O(`select coalesce(array_agg(distinct u.id), '{}') ids, coalesce(array_agg(distinct p.anon_id) filter (where p.anon_id is not null), '{}') anons
-                       from "user" u left join players p on p.user_id = u.id where lower(u.email) = any(@admins::text[])`, { admins: cfg.admins });
+  // the owner's browsers: every browser that has ever carried the owner's account, not only those still signed in to it
+  const own = await O(`with a as (select id from "user" where lower(email) = any(@admins::text[]))
+    select coalesce((select array_agg(id) from a), '{}') ids,
+      coalesce((select array_agg(distinct x.anon_id) from (
+        select anon_id from players where user_id in (select id from a)
+        union all select anon_id from events where user_id in (select id from a)
+        union all select anon_id from plays where user_id in (select id from a)) x where x.anon_id is not null), '{}') anons`, { admins: cfg.admins });
   // periods start at midnight India time, so days line up: "Last 7 days" is today and the six days before it
   let since, prev = null;
   if (r.days) {
@@ -62,8 +76,12 @@ async function context(opts) {
     const f = await O(`select date_trunc('day', least((select min(first_seen) from players), (select min("createdAt") from "user"), now()) at time zone @tz) at time zone @tz t`, { tz: cfg.timeZone });
     since = f.t;
   }
+  // week by week, the charts and table cover whole weeks: from the Monday of the period's first week
+  const seriesSince = opts.by === 'week'
+    ? (await O(`select date_trunc('week', @since::timestamptz at time zone @tz) at time zone @tz w`, { since, tz: cfg.timeZone })).w
+    : since;
   return {
-    ...opts, ...r, since, prev,
+    ...opts, ...r, since, prev, seriesSince,
     p: { since, prev: prev || since, tz: cfg.timeZone, unit: opts.by, xu: opts.me ? [] : own.ids, xa: opts.me ? [] : own.anons },
     ownIds: own.ids,
   };
@@ -113,24 +131,30 @@ function barChart(points, by, noun) {
   const bars = points.map((p, i) => {
     const h = p.v ? Math.max(2, (H - 6) * p.v / max) : 0, x = i * bw + gap / 2, w = Math.max(1, bw - gap), y = yb - h, r = Math.min(4, w / 2, h);
     const bar = h ? `<path d="M${x.toFixed(1)},${yb} V${(y + r).toFixed(1)} Q${x.toFixed(1)},${y.toFixed(1)} ${(x + r).toFixed(1)},${y.toFixed(1)} H${(x + w - r).toFixed(1)} Q${(x + w).toFixed(1)},${y.toFixed(1)} ${(x + w).toFixed(1)},${(y + r).toFixed(1)} V${yb} Z"/>` : '';
-    return `<g class="col">${bar}<rect class="hit" x="${(i * bw).toFixed(1)}" y="0" width="${bw.toFixed(1)}" height="${H}"><title>${esc(dateLabel(p.k, by, true))}: ${pl(p.v, noun)}</title></rect></g>`;
+    return `<g class="col${p.cur ? ' cur' : ''}">${bar}<rect class="hit" x="${(i * bw).toFixed(1)}" y="0" width="${bw.toFixed(1)}" height="${H}"><title>${esc(dateLabel(p.k, by, true))}${p.cur ? ' (so far)' : ''}: ${pl(p.v, noun)}</title></rect></g>`;
   }).join('');
   const first = points[0], last = points[points.length - 1];
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${esc(noun)}s by ${by}">${bars}<line x1="0" x2="${W}" y1="${yb}" y2="${yb}" class="base" vector-effect="non-scaling-stroke"/></svg>
     <div class="xl"><span>${first ? esc(dateLabel(first.k, by)) : ''}</span><span>peak ${num(max)}</span><span>${last && points.length > 1 ? esc(dateLabel(last.k, by)) : ''}</span></div>`;
 }
 
+// each person's latest activity (events, with a browser's signed-out events going to its one account)
+const LAST = `${SOLE}, la as (select coalesce(e.user_id, s.uid) uid, max(e.ts) last from events e left join sole s on s.anon_id = e.anon_id
+  where coalesce(e.user_id, s.uid) is not null and not coalesce(e.anon_id = any(@xa::uuid[]), false) group by 1)`;
+
 /* ---------- Users: every sign-up by email, most recently active first, 20 a page ---------- */
 const USERS_PER_PAGE = 20;
 async function usersSection(ctx, q, activeWeek) {
-  const P = { xu: ctx.p.xu };
+  const P = { xu: ctx.p.xu, xa: ctx.p.xa };
   const total = (await O(`select count(*)::int n from "user" where not (id = any(@xu::text[]))`, P)).n;
   const pages = Math.max(1, Math.ceil(total / USERS_PER_PAGE)), page = Math.min(ctx.upage, pages);
-  const list = await R(`select u.id, u.email, u."createdAt" created,
-       greatest(u."createdAt", (select max(last_seen) from players where user_id = u.id), (select max(last_seen) from plays where user_id = u.id)) last_active,
+  // last active: the latest of sign-up and the person's latest activity, counted the same way as Active users
+  // (opening the dashboard isn't activity)
+  const list = await R(`with ${LAST}
+     select u.id, u.email, u."createdAt" created, greatest(u."createdAt", la.last) last_active,
        (select count(*) from plays where user_id = u.id)::int plays,
        (select count(distinct room) from plays where user_id = u.id and outcome = 'escaped')::int escaped
-     from "user" u where not (u.id = any(@xu::text[]))
+     from "user" u left join la on la.uid = u.id where not (u.id = any(@xu::text[]))
      order by last_active desc, u."createdAt" desc limit @lim offset @off`, { ...P, lim: USERS_PER_PAGE, off: (page - 1) * USERS_PER_PAGE });
   const rowsHtml = list.map(u => `<tr><td>${esc(u.email || '–')}${ctx.ownIds.includes(u.id) ? ' <span class="muted">(you)</span>' : ''}</td>
     <td class="nw">${esc(dateShort(u.created))}</td><td class="nw">${esc(ago(u.last_active))}</td><td class="n">${num(u.plays)}</td><td class="n">${num(u.escaped)}</td></tr>`).join('');
@@ -157,43 +181,50 @@ export async function adminPage(opts) {
         (select count(*) from "user" where "createdAt" > @prev and "createdAt" <= @since and not (id = any(@xu::text[])))::int new_users_prev,
         (select count(*) from plays where started_at > @since and ${notMe()})::int plays,
         (select count(*) from plays where started_at > @prev and started_at <= @since and ${notMe()})::int plays_prev`, P),
-    // active users in the period, and the standard daily / weekly / monthly actives as of today
-    O(`with ${ACT}, today as (select (now() at time zone @tz)::date t0)
+    // active users in the period, and the standard daily / weekly / monthly actives. Today is still running, so daily
+    // active is yesterday's, and stickiness uses full days only: up to the last 30, never before the site opened.
+    O(`with ${ACT}, today as (select (now() at time zone @tz)::date t0),
+         w as (select t0, greatest(t0 - 30, coalesce((select min((first_seen at time zone @tz)::date) from players), t0)) w0 from today)
        select count(distinct uid) filter (where d >= ${SINCE_D})::int active,
          count(distinct uid) filter (where d >= ${PREV_D} and d < ${SINCE_D})::int active_prev,
-         count(distinct uid) filter (where d = t0)::int dau,
+         count(distinct uid) filter (where d = t0 - 1)::int dau,
+         count(distinct uid) filter (where d = t0)::int dau_today,
          count(distinct uid) filter (where d > t0 - 7)::int wau,
          count(distinct uid) filter (where d > t0 - 30)::int mau,
-         (count(*) filter (where d > t0 - 30))::float / 30 avg_dau
-       from act, today`, { ...P, asince: new Date(Math.min(new Date(P.prev).getTime(), Date.now() - 31 * 864e5)) }),
-    // day by day, or week by week
+         (select t0 - w0 from w)::int full_days,
+         count(*) filter (where d >= w0 and d < t0)::int person_days,
+         count(distinct uid) filter (where d >= w0 and d < t0)::int window_users
+       from act, w`, { ...P, asince: new Date(Math.min(new Date(P.prev).getTime(), Date.now() - 31 * 864e5)) }),
+    // day by day, or week by week (whole weeks); cur marks the day or week still running
     R(`with ${ACT},
          b as (select generate_series(date_trunc(@unit, @since::timestamptz at time zone @tz), date_trunc(@unit, now() at time zone @tz), ('1 ' || @unit)::interval)::date k),
          v as (select date_trunc(@unit, ts at time zone @tz)::date k, count(distinct anon_id)::int n from events where name = 'page_view' and ts > @since and ${notMe()} group by 1),
          nu as (select date_trunc(@unit, "createdAt" at time zone @tz)::date k, count(*)::int n from "user" where "createdAt" > @since and not (id = any(@xu::text[])) group by 1),
          au as (select date_trunc(@unit, d)::date k, count(distinct uid)::int n from act group by 1),
          pp as (select date_trunc(@unit, started_at at time zone @tz)::date k, count(*)::int n, count(*) filter (where outcome = 'escaped')::int e from plays where started_at > @since and ${notMe()} group by 1)
-       select to_char(b.k, 'YYYY-MM-DD') k, coalesce(v.n, 0) visitors, coalesce(nu.n, 0) new_users, coalesce(au.n, 0) active, coalesce(pp.n, 0) plays, coalesce(pp.e, 0) escapes
-       from b left join v using (k) left join nu using (k) left join au using (k) left join pp using (k) order by b.k`, { ...P, asince: P.since }),
-    // retention across everyone who has signed up, counting only people old enough for each measure
+       select to_char(b.k, 'YYYY-MM-DD') k, b.k = date_trunc(@unit, now() at time zone @tz)::date cur,
+         coalesce(v.n, 0) visitors, coalesce(nu.n, 0) new_users, coalesce(au.n, 0) active, coalesce(pp.n, 0) plays, coalesce(pp.e, 0) escapes
+       from b left join v using (k) left join nu using (k) left join au using (k) left join pp using (k) order by b.k`, { ...P, since: ctx.seriesSince, asince: ctx.seriesSince }),
+    // retention across everyone who has signed up, counting only sign-ups whose day 1, 7 or 30 (or days 30–59) has ended
     O(`with ${ACT}, today as (select (now() at time zone @tz)::date t0),
          c as (select id, ("createdAt" at time zone @tz)::date d0 from "user" where not (id = any(@xu::text[])))
-       select count(*) filter (where d0 <= t0 - 1)::int d1n,
-         count(*) filter (where d0 <= t0 - 1 and exists (select 1 from act where uid = c.id and d = d0 + 1))::int d1,
-         count(*) filter (where d0 <= t0 - 7)::int d7n,
-         count(*) filter (where d0 <= t0 - 7 and exists (select 1 from act where uid = c.id and d = d0 + 7))::int d7,
-         count(*) filter (where d0 <= t0 - 30)::int d30n,
-         count(*) filter (where d0 <= t0 - 30 and exists (select 1 from act where uid = c.id and d = d0 + 30))::int d30,
-         count(*) filter (where d0 <= t0 - 60)::int m1n,
-         count(*) filter (where d0 <= t0 - 60 and exists (select 1 from act where uid = c.id and d between d0 + 30 and d0 + 59))::int m1
+       select count(*) filter (where d0 + 1 < t0)::int d1n,
+         count(*) filter (where d0 + 1 < t0 and exists (select 1 from act where uid = c.id and d = d0 + 1))::int d1,
+         count(*) filter (where d0 + 7 < t0)::int d7n,
+         count(*) filter (where d0 + 7 < t0 and exists (select 1 from act where uid = c.id and d = d0 + 7))::int d7,
+         count(*) filter (where d0 + 30 < t0)::int d30n,
+         count(*) filter (where d0 + 30 < t0 and exists (select 1 from act where uid = c.id and d = d0 + 30))::int d30,
+         count(*) filter (where d0 + 59 < t0)::int m1n,
+         count(*) filter (where d0 + 59 < t0 and exists (select 1 from act where uid = c.id and d between d0 + 30 and d0 + 59))::int m1
        from c, today`, { ...P, asince: EPOCH }),
-    // weekly cohorts: people who signed up in a week, and the % active in each of the weeks after (week n = days 7n to 7n+6)
+    // weekly cohorts: people who signed up in a week, and the % active in each of the weeks after (week n = days 7n to 7n+6),
+    // once that week has ended for them
     R(`with ${ACT}, today as (select (now() at time zone @tz)::date t0),
          c as (select id, ("createdAt" at time zone @tz)::date d0, date_trunc('week', "createdAt" at time zone @tz)::date wk from "user"
                where not (id = any(@xu::text[])) and "createdAt" at time zone @tz >= date_trunc('week', now() at time zone @tz) - interval '7 weeks')
        select to_char(c.wk, 'YYYY-MM-DD') wk, g.n, count(*)::int size,
-         count(*) filter (where c.d0 + 7 * g.n + 6 <= t0)::int elig,
-         count(*) filter (where c.d0 + 7 * g.n + 6 <= t0 and exists (select 1 from act a where a.uid = c.id and a.d between c.d0 + 7 * g.n and c.d0 + 7 * g.n + 6))::int ret
+         count(*) filter (where c.d0 + 7 * g.n + 6 < t0)::int elig,
+         count(*) filter (where c.d0 + 7 * g.n + 6 < t0 and exists (select 1 from act a where a.uid = c.id and a.d between c.d0 + 7 * g.n and c.d0 + 7 * g.n + 6))::int ret
        from c cross join generate_series(1, 6) g(n) cross join today group by 1, 2 order by 1 desc, 2`, { ...P, asince: EPOCH }),
     // engagement in the period
     O(`select count(*)::int plays, count(distinct coalesce(user_id, anon_id::text))::int players, count(*) filter (where outcome = 'escaped')::int escapes,
@@ -204,16 +235,23 @@ export async function adminPage(opts) {
     R(`select room, count(*)::int plays, count(distinct coalesce(user_id, anon_id::text))::int players, count(*) filter (where outcome = 'escaped')::int escapes,
          round(percentile_cont(0.5) within group (order by seconds) filter (where outcome = 'escaped'))::int med
        from plays where started_at > @since and ${notMe()} group by room`, P),
-    R(`select room, steps_done, count(*)::int n from plays
-       where started_at > @since and outcome <> 'escaped' and last_seen < now() - interval '2 hours' and ${notMe()} group by room, steps_done`, P),
+    // where people stopped: each player's latest play in each room, if it isn't escaped and has been quiet for 2 hours
+    // (a play they started over, or went on to finish, isn't a drop-off)
+    R(`with lp as (select distinct on (room, coalesce(user_id, anon_id::text)) room, steps_done, outcome, last_seen from plays
+                   where started_at > @since and ${notMe()} order by room, coalesce(user_id, anon_id::text), started_at desc)
+       select room, steps_done, count(*)::int n from lp where outcome <> 'escaped' and last_seen < now() - interval '2 hours' group by room, steps_done`, P),
     R(`select room, count(*)::int n, count(*) filter (where face = 'good')::int good from feedback
        where kind = 'rating' and face is not null and created_at > @since and ${notMe()} group by room`, P),
-    // acquisition: where new visitors (browsers seen for the first time) came from, and how many of them signed up
-    R(`with nb as (select anon_id, user_id, first_seen, from_at from players where first_seen > @since and ${notMe()}),
-         f as (select distinct on (e.anon_id) e.anon_id, e.data->>'ref' ref from events e join nb using (anon_id) where e.name = 'page_view' order by e.anon_id, e.ts)
-       select case when nb.from_at is not null then 'Shared links' when coalesce(f.ref, '') in ('', @host) then 'Direct' else regexp_replace(f.ref, '^www[.]', '') end src,
-         count(*)::int visitors, count(u.id)::int signed
-       from nb left join f using (anon_id) left join "user" u on u.id = nb.user_id and u."createdAt" >= nb.first_seen - interval '5 minutes'
+    // acquisition: new visitors are browsers whose first page view falls in the period (the same page views Visitors counts),
+    // where they came from, and how many of them signed up (an account created no earlier than that first visit, used on that browser)
+    R(`with fv as (select distinct on (anon_id) anon_id, ts first_ts, data->>'ref' ref from events where name = 'page_view' and anon_id is not null order by anon_id, ts),
+         nb as (select fv.anon_id, fv.first_ts, fv.ref, p.from_at from fv left join players p using (anon_id)
+                where fv.first_ts > @since and not (fv.anon_id = any(@xa::uuid[]))),
+         su as (select distinct nb.anon_id from nb join events e on e.anon_id = nb.anon_id and e.user_id is not null
+                join "user" u on u.id = e.user_id and u."createdAt" >= nb.first_ts - interval '5 minutes' and not (u.id = any(@xu::text[])))
+       select case when nb.from_at is not null then 'Shared links' when coalesce(nb.ref, '') in ('', @host) then 'Direct' else regexp_replace(nb.ref, '^www[.]', '') end src,
+         count(*)::int visitors, count(su.anon_id)::int signed
+       from nb left join su using (anon_id)
        group by 1 order by 2 desc, 3 desc`, { ...P, host: host() }),
     O(`select count(*)::int shares, count(distinct coalesce(user_id, anon_id::text))::int sharers from events where name = 'share_click' and ts > @since and ${notMe()}`, P),
     // feedback
@@ -222,7 +260,8 @@ export async function adminPage(opts) {
     R(`select created_at, room, face, text from feedback where coalesce(text, '') <> '' and created_at > @since and ${notMe()} order by created_at desc limit 8`, P),
     // errors
     O(`select count(*) filter (where name = 'client_error' and ${notMe()})::int client, count(*) filter (where name = 'server_error')::int server,
-         (select coalesce(data->>'message', '?') from events where name in ('client_error', 'server_error') and ts > @since group by 1 order by count(*) desc limit 1) top
+         (select coalesce(data->>'message', '?') from events where name in ('client_error', 'server_error') and ts > @since and (name = 'server_error' or ${notMe()})
+          group by 1 order by count(*) desc limit 1) top
        from events where name in ('client_error', 'server_error') and ts > @since`, P),
   ]);
 
@@ -235,13 +274,17 @@ export async function adminPage(opts) {
     + kpi('Active users', act.active, act.active_prev) + kpi('Plays', ov.plays, ov.plays_prev);
 
   /* usage */
-  const usageTiles = tile('Daily active', num(act.dau), 'today') + tile('Weekly active', num(act.wau), 'last 7 days')
-    + tile('Monthly active', num(act.mau), 'last 30 days')
-    + tile('Stickiness', act.mau ? `${Math.round(100 * act.avg_dau / act.mau)}%` : '–', 'average daily ÷ monthly active');
+  // stickiness needs a week of full days: over fewer, average daily ÷ distinct active is close to 100% by construction
+  const STICKY_MIN = 7, fullDays = Math.max(0, act.full_days || 0);
+  const sticky = fullDays >= STICKY_MIN && act.window_users
+    ? tile('Stickiness', `${Math.round(100 * act.person_days / fullDays / act.window_users)}%`, `average daily ÷ monthly active · last ${pl(fullDays, 'full day')}`)
+    : tile('Stickiness', '–', `average daily ÷ monthly active · needs ${STICKY_MIN} full days, ${fullDays} so far`);
+  const usageTiles = tile('Daily active', num(act.dau), `yesterday · ${num(act.dau_today)} so far today`) + tile('Weekly active', num(act.wau), 'last 7 days')
+    + tile('Monthly active', num(act.mau), 'last 30 days') + sticky;
   const by = ctx.by, unitWord = by === 'week' ? 'week' : 'day';
-  const charts = `<div class="figs"><figure class="card fig"><figcaption>Active users per ${unitWord}</figcaption>${barChart(series.map(s => ({ k: s.k, v: s.active })), by, 'active user')}</figure>
-    <figure class="card fig"><figcaption>New users per ${unitWord}</figcaption>${barChart(series.map(s => ({ k: s.k, v: s.new_users })), by, 'new user')}</figure></div>`;
-  const usageRow = s => `<tr><td>${esc(dateLabel(s.k, by, true))}</td><td class="n">${num(s.visitors)}</td><td class="n">${num(s.new_users)}</td><td class="n">${num(s.active)}</td><td class="n">${num(s.plays)}</td><td class="n">${num(s.escapes)}</td></tr>`;
+  const charts = `<div class="figs"><figure class="card fig"><figcaption>Active users per ${unitWord}</figcaption>${barChart(series.map(s => ({ k: s.k, v: s.active, cur: s.cur })), by, 'active user')}</figure>
+    <figure class="card fig"><figcaption>New users per ${unitWord}</figcaption>${barChart(series.map(s => ({ k: s.k, v: s.new_users, cur: s.cur })), by, 'new user')}</figure></div>`;
+  const usageRow = s => `<tr><td>${esc(dateLabel(s.k, by, true))}${s.cur ? ' <span class="muted">so far</span>' : ''}</td><td class="n">${num(s.visitors)}</td><td class="n">${num(s.new_users)}</td><td class="n">${num(s.active)}</td><td class="n">${num(s.plays)}</td><td class="n">${num(s.escapes)}</td></tr>`;
   const latestFirst = series.slice().reverse();
   const usageHead = '<thead><tr><th></th><th class="n">Visitors</th><th class="n">New users</th><th class="n">Active users</th><th class="n">Plays</th><th class="n">Escapes</th></tr></thead>';
   const q = (o = {}) => `?${new URLSearchParams({ range: ctx.range, by: ctx.by, ...o })}`;
@@ -251,8 +294,9 @@ export async function adminPage(opts) {
 
   /* retention */
   const rtile = (label, a, n, need, def) => tile(label, n ? `${pct(a, n)}%` : '–', n ? `${num(a)} of ${pl(n, 'sign-up')} · ${def}` : `${def} · needs sign-ups ${need} old`);
-  const retTiles = rtile('D1', ret.d1, ret.d1n, 'a day', 'back the next day') + rtile('D7', ret.d7, ret.d7n, 'a week', 'back on day 7')
-    + rtile('D30', ret.d30, ret.d30n, '30 days', 'back on day 30') + rtile('M1', ret.m1, ret.m1n, '60 days', 'back in days 30–59');
+  // a sign-up counts once the day being measured has ended: D1 needs sign-ups 2 days old (their next day is over), and so on
+  const retTiles = rtile('D1', ret.d1, ret.d1n, '2 days', 'back the next day') + rtile('D7', ret.d7, ret.d7n, '8 days', 'back on day 7')
+    + rtile('D30', ret.d30, ret.d30n, '31 days', 'back on day 30') + rtile('M1', ret.m1, ret.m1n, '60 days', 'back in days 30–59');
   const weeks = [...new Set(cohorts.map(c => c.wk))];
   const cell = r => { if (!r || !r.elig) return '<td class="n c-na"></td>'; const v = pct(r.ret, r.elig); return `<td class="n c" style="--a:${(0.08 + 0.8 * v / 100).toFixed(2)}" title="${num(r.ret)} of ${num(r.elig)}">${v}%</td>`; };
   const cohortTable = weeks.length ? `<div class="scroll"><table class="t cohort"><thead><tr><th>Signed up, week of</th><th class="n">Users</th>${[1, 2, 3, 4, 5, 6].map(n => `<th class="n">Week ${n}</th>`).join('')}</tr></thead><tbody>
@@ -293,7 +337,8 @@ export async function adminPage(opts) {
   const fromLabel = new Date(ctx.since).toLocaleDateString('en-CA', { timeZone: cfg.timeZone });
   return layout(head, `<style>${ADMIN_CSS}</style><div class="wrap dash">
 <div class="dhead"><div><h1>Dashboard</h1><p class="muted sub">${esc(ctx.label)} · since ${esc(dateLabel(fromLabel, 'day'))} · India time</p></div>
-<nav class="seg" aria-label="Period">${Object.entries(RANGES).map(([key, r]) => `<a href="${q({ range: key, by: key === '7d' || key === '30d' ? 'day' : 'week' })}" class="${key === ctx.range ? 'on' : ''}">${r.short}</a>`).join('')}</nav></div>
+<div class="dctl"><nav class="seg" aria-label="Period">${Object.entries(RANGES).map(([key, r]) => `<a href="${q({ range: key, by: key === '7d' || key === '30d' ? 'day' : 'week' })}" class="${key === ctx.range ? 'on' : ''}">${r.short}</a>`).join('')}</nav>
+<nav class="seg" aria-label="Your own activity"><a href="${q({ me: '1' })}" class="${ctx.me ? 'on' : ''}">Including you</a><a href="${q({ me: '0' })}" class="${ctx.me ? '' : 'on'}">Without you</a></nav></div></div>
 
 <section><h2>Overview</h2><div class="tiles">${overview}</div></section>
 
@@ -315,9 +360,10 @@ ${await usersSection(ctx, q, act.wau)}
 
 <section><h2>Errors</h2>${errLine}</section>
 
-<footer class="dfoot"><a href="${q({ me: ctx.me ? '0' : '1' })}">${ctx.me ? 'Leave out my own activity' : 'Include my own activity'}</a>
-<span>Download: ${['plays', 'events', 'users', 'feedback', 'shares', 'sharing'].map(t => `<a href="/admin/export/${t}.csv${q({ me: ctx.me ? 1 : 0 })}">${t}</a>`).join(' · ')}</span>
-<span>Active user: a signed-in person who visited or played that day. Bots aren't counted.${ctx.me ? '' : ' Your own activity is left out.'}</span></footer>
+<footer class="dfoot"><span>Download: ${['plays', 'events', 'users', 'feedback', 'shares', 'sharing'].map(t => `<a href="/admin/export/${t}.csv${q({ me: ctx.me ? 1 : 0 })}">${t}</a>`).join(' · ')}</span>
+<span>Visitor: a browser that opened a page on the site (this dashboard doesn't count). One person on a phone and a laptop is two visitors.</span>
+<span>Active user: a signed-in person who visited or played that day. Bots aren't counted. Days are India time; today and this week are still running.</span>
+<span>${ctx.me ? 'Your own activity is included.' : 'Your own activity is left out:'} “Without you” covers your account and every browser you've signed in on. A device where you've never signed in still counts as a visitor.</span></footer>
 </div>`);
 }
 
@@ -364,11 +410,11 @@ const EXPORTS = {
           from plays p left join "user" u on u.id = p.user_id where p.started_at > @since and ${notMe('p.')} order by p.started_at`,
   events: `select e.id, e.ts, e.play_id, e.anon_id, e.user_id, e.room, e.name, e.step, e.data, e.device, e.country, e.app_version
            from events e where e.ts > @since and ${notMe('e.')} order by e.id`,
-  users: `select u.id, u.name, u.email, u."createdAt" created_at, pr.age_confirmed_at,
-            (select max(last_seen) from players where user_id = u.id) last_seen,
+  users: `with ${LAST} select u.id, u.name, u.email, u."createdAt" created_at, pr.age_confirmed_at,
+            greatest(u."createdAt", la.last) last_active,
             (select count(*) from plays where user_id = u.id) plays,
             (select count(*) from plays where user_id = u.id and outcome = 'escaped') escapes
-          from "user" u left join profiles pr on pr.user_id = u.id where not (u.id = any(@xu::text[])) order by u."createdAt"`,
+          from "user" u left join profiles pr on pr.user_id = u.id left join la on la.uid = u.id where not (u.id = any(@xu::text[])) order by u."createdAt"`,
   feedback: `select f.id, f.created_at, f.room, f.kind, f.face, f.rating, f.difficulty, f.text, f.context, f.device, f.user_id, u.email
              from feedback f left join "user" u on u.id = f.user_id where f.created_at > @since and ${notMe('f.')} order by f.id`,
   shares: `select code, kind, room, surface, user_id, seconds, hints, wrong, marks, created_at, clicks, landings, plays_started from shares
@@ -395,6 +441,8 @@ const ADMIN_CSS = `
 .dash h3{font:500 11px/16px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:24px 0 8px}
 .dash section{margin-top:48px}
 .dhead{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.dctl{display:flex;flex-direction:column;align-items:flex-end;gap:8px;max-width:100%}@media(max-width:640px){.dctl{align-items:flex-start}}
+.chart .col.cur path{opacity:.55}
 .h2row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.h2row h2{margin:0}
 .seg{display:inline-flex;border:1px solid var(--line2);border-radius:999px;padding:3px;gap:2px;max-width:100%;overflow-x:auto;scrollbar-width:none}
 .seg a{padding:5px 13px;border-radius:999px;color:var(--muted);font-size:14px;line-height:20px;white-space:nowrap}.seg a:hover{color:var(--ink)}.seg a.on{background:var(--ink);color:var(--bg)}
