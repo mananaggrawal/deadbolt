@@ -103,19 +103,26 @@ function climbSeni(up) {
       climbPath([b, t, t.clone(), b], 3.0, { x: 2.85, y: FY, z: 2.0, yaw: Math.PI, pitch: 0.2 }, { noHold: 'Not with your hands full.', yaw: Math.PI, pitch: 0.7, rungs: 6, look: k => { if (k > 0.4 && k < 0.6 && !V.climb.shoved) { V.climb.shoved = true; sThunk(new THREE.Vector3(2.85, CEIL, 1.7), 0.5, 140); after(0.15, () => sThunk(new THREE.Vector3(2.85, CEIL, 1.7), 0.4, 120)); } }, done: () => { flag('hatchTried'); sayI('You put your shoulder to the hatch. It lifts a finger\'s width and stops dead, with a clank of iron: it\'s bolted from above. From up there. Somebody bolted it from up there.', 7500); } });
       return;
     }
-    climbPath([new THREE.Vector3(2.85, FY, 2.6), new THREE.Vector3(2.85, CEIL - 1.3, 2.15), new THREE.Vector3(2.85, AF, 1.7), new THREE.Vector3(2.85, AF, 1.0)], 3.2, { x: 2.85, y: AF, z: 1.0, yaw: 0 }, { noHold: 'Not with your hands full. Put it down first (Q).', yaw: Math.PI, pitch: 0.9, rungs: 8, done: () => flag('atticSeen') });
+    climbPath([new THREE.Vector3(2.85, FY, 2.6), new THREE.Vector3(2.85, CEIL - 1.3, 2.15), new THREE.Vector3(2.85, AF, 1.7), new THREE.Vector3(2.85, AF, 1.0)], 3.2, { x: 2.85, y: AF, z: 1.0, yaw: 0 }, { noHold: `Not with your hands full. Put it down first (${putKey()}).`, yaw: Math.PI, pitch: 0.9, rungs: 8, done: () => flag('atticSeen') });
   } else {
-    climbPath([new THREE.Vector3(2.85, AF, 1.0), new THREE.Vector3(2.85, AF, 1.7), new THREE.Vector3(2.85, CEIL - 1.3, 2.15), new THREE.Vector3(2.85, FY, 2.6)], 3.2, { x: 2.85, y: FY, z: 2.0, yaw: 0 }, { noHold: 'Not with your hands full. Put it down first (Q).', yaw: 0, pitch: -0.9, rungs: 8 });
+    climbPath([new THREE.Vector3(2.85, AF, 1.0), new THREE.Vector3(2.85, AF, 1.7), new THREE.Vector3(2.85, CEIL - 1.3, 2.15), new THREE.Vector3(2.85, FY, 2.6)], 3.2, { x: 2.85, y: FY, z: 2.0, yaw: 0 }, { noHold: `Not with your hands full. Put it down first (${putKey()}).`, yaw: 0, pitch: -0.9, rungs: 8 });
   }
 }
 function climbGable(up) {
-  if (up) climbPath([new THREE.Vector3(3.0, 0, 4.3), new THREE.Vector3(3.0, 3.0, 3.42), new THREE.Vector3(3.0, AF, 3.0), new THREE.Vector3(3.0, AF, 2.2)], 4.2, { x: 3.0, y: AF, z: 2.2, yaw: 0 }, { noHold: 'You need both hands for the ladder. Put it down first (Q).', yaw: 0, pitch: 0.55, rungs: 13, crouchEye: 0.7, done: () => { if (!S.flags.atticSeen) { flag('atticSeen'); after(0.8, () => sayI('The attic: dry dust, cobwebs, the smell of old herbs. Old bast shoes hang in a row from a pole under the ridge, and there are small footprints in the dust, going toward them.', 8000)); } } });
-  else climbPath([new THREE.Vector3(3.0, AF, 2.3), new THREE.Vector3(3.0, AF, 3.0), new THREE.Vector3(3.0, 3.0, 3.42), new THREE.Vector3(3.0, 0, 4.35)], 4.0, { x: 3.0, y: 0, z: 4.45, yaw: Math.PI }, { noHold: 'You need both hands for the ladder. Put it down first (Q).', yaw: Math.PI, pitch: -0.5, rungs: 13 });
+  if (up) climbPath([new THREE.Vector3(3.0, 0, 4.3), new THREE.Vector3(3.0, 3.0, 3.42), new THREE.Vector3(3.0, AF, 3.0), new THREE.Vector3(3.0, AF, 2.2)], 4.2, { x: 3.0, y: AF, z: 2.2, yaw: 0 }, { noHold: `You need both hands for the ladder. Put it down first (${putKey()}).`, yaw: 0, pitch: 0.55, rungs: 13, crouchEye: 0.7, done: () => { if (!S.flags.atticSeen) { flag('atticSeen'); after(0.8, () => sayI('The attic: dry dust, cobwebs, the smell of old herbs. Old bast shoes hang in a row from a pole under the ridge, and there are small footprints in the dust, going toward them.', 8000)); } } });
+  else climbPath([new THREE.Vector3(3.0, AF, 2.3), new THREE.Vector3(3.0, AF, 3.0), new THREE.Vector3(3.0, 3.0, 3.42), new THREE.Vector3(3.0, 0, 4.35)], 4.0, { x: 3.0, y: 0, z: 4.45, yaw: Math.PI }, { noHold: `You need both hands for the ladder. Put it down first (${putKey()}).`, yaw: Math.PI, pitch: -0.5, rungs: 13 });
 }
 function climbCellar(down) {
-  if (down) climbPath([new THREE.Vector3(3.0, FY, -1.45), new THREE.Vector3(3.0, FY, -2.15), new THREE.Vector3(3.0, CY, -2.1), new THREE.Vector3(3.0, CY, -2.85)], 3.0, { x: 3.0, y: CY, z: -2.85, yaw: 0, crouch: true }, { noHold: 'Not with your hands full. Put it down first (Q).', yaw: 0, pitch: -0.6, rungs: 6, crouchEye: 0.55, done: () => { if (!S.flags.cellarSeen) { flag('cellarSeen'); cellarArrive(); } } });
-  else climbPath([new THREE.Vector3(3.0, CY, -2.7), new THREE.Vector3(3.0, CY, -2.1), new THREE.Vector3(3.0, FY, -2.15), new THREE.Vector3(3.0, FY, -1.4)], 3.0, { x: 3.0, y: FY, z: -1.35, yaw: Math.PI }, { noHold: 'Not with your hands full. You\'ll need both hands for the ladder.', yaw: Math.PI, pitch: 0.4, rungs: 6 });
+  if (down) { climbPath([new THREE.Vector3(3.0, FY, -1.45), new THREE.Vector3(3.0, FY, -2.15), new THREE.Vector3(3.0, CY, -2.1), new THREE.Vector3(3.0, CY, -2.85)], 3.0, { x: 3.0, y: CY, z: -2.85, yaw: 0, crouch: true }, { noHold: `Not with your hands full. Put it down first (${putKey()}).`, yaw: 0, pitch: -0.6, rungs: 6, crouchEye: 0.55, done: () => { if (!S.flags.cellarSeen) { flag('cellarSeen'); cellarArrive(); } } }); return; }
+  // the only thing you can be carrying down here is the oar, and it has to come up: you push it up
+  // through the hatch ahead of you, climb after it, and pick it up again at the top
+  if (V.climb || G.cutscene) return;
+  const held = HOLD.cur, hand = held && HOLD.defs[held].hand;
+  if (hand) hand.visible = false;
+  climbPath([new THREE.Vector3(3.0, CY, -2.7), new THREE.Vector3(3.0, CY, -2.1), new THREE.Vector3(3.0, FY, -2.15), new THREE.Vector3(3.0, FY, -1.4)], 3.0, { x: 3.0, y: FY, z: -1.35, yaw: Math.PI }, { yaw: Math.PI, pitch: 0.4, rungs: 6, done: () => { if (hand && HOLD.cur === held) { hand.visible = true; HOLD.defs[held].handT = 0; } } });
+  if (held) { sScrape(new THREE.Vector3(3.0, FY, -2.15), 0.5, 0.15); sayI(`You push ${held === 'oar2' ? 'the oar' : 'it'} up through the hatch onto the floor above, climb up after it and pick it up again.`, 5000); }
 }
+const putKey = () => G.touch ? 'the Put down button' : 'Q';
 
 /* ---------------- the torch, the lamp ---------------- */
 function torchOn() { return S.torch !== 0; }
@@ -239,8 +246,11 @@ function stoveTopActions() {
   if (!holding('basket') || S.flags.ritual) return null;
   return [A_('Set it on the stove and ask him', ritual)];
 }
+// once he's in the basket you can't put it down, so the boat has to be ready before you ask him
+const boatReady = () => S.boat === 'launched' && (S.oarsIn || 0) >= 2;
 function ritual() {
   if (S.stove === 'cold') { sayI('Her letter: light the stove first. He won\'t leave a cold house.', 4500); return; }
+  if (!boatReady()) { sayI('Not yet. Once he\'s in the basket you mustn\'t put him down till you\'re across the water, and Grandfather\'s boat isn\'t ready. Get her into the river first, with both oars in her.', 8000); return; }
   if (!basketReady()) {
     line('m2', MITYA, 'Dedushka, come with us to the new house.', { volume: 0.85 });
     S.wrong++; save(); G.lockout = G.time + 5;
@@ -840,6 +850,17 @@ function defaults() {
 }
 function applyState() {
   const f = S.flags;
+  // Games saved by the old build after the ritual but before the boat was ready can't be finished
+  // (you can't put him down, so you can't carry the logs or the oars). Wind them back to before the
+  // ritual: the basket packed on the bench, the house not yet alight.
+  if (f.ritual && !f.escaped && !boatReady()) {
+    f.ritual = false; f.ritualStarted = false; f.fire = false; f.boarded = false; S.houseFire = 0;
+    if (S.held === 'basket') S.held = null;
+    if (S.props) delete S.props.basket;
+    S.ev.rewound = 1;
+  }
+  // saved during the ride: back on the landing with him in your arms (before the hands are filled below)
+  if (f.boarded && !f.escaped) { f.boarded = false; S.held = 'basket'; }
   Object.assign(V, { climb: null, rit: null, ride: null, ask: null, glimpse: null, glimpseCool: 20, smoke: 0, smokeT: 0, smokeDark: 0, dimAll: 0, flick: 0, lampDip: 0, clockStop: 0, black: 0, dirT: 40, leftIzbaAt: undefined, catStare: 0 });
   O.climbSolid.on = false; G.frozen = false;
   // the house
@@ -880,12 +901,13 @@ function applyState() {
   O.burn.forEach((B, i) => { B.fallen = false; });
   hideDed();
   if (f.fire && !f.escaped) { S.houseFire = Math.max(S.houseFire || 0, 0.2); }
-  if (f.boarded && !f.escaped) { f.boarded = false; S.held = 'basket'; }
+  else if (!f.fire) { O.smokeLayer.visible = O.smokeSeni.visible = false; O.inFlames.forEach(sp => sp.visible = false); L.house.intensity = 0; fireUpdate(O.houseFireFx, 0.016, 0, 0.4); }
   if (f.ritual && !f.fire) after(1, startFinale);
   if (f.ritualStarted && !f.ritual) { f.ritualStarted = false; }
   renderInv(); renderer.shadowMap.needsUpdate = true; V.envDue = true; RAYLIST = null;
 }
 function resumed() {
+  if (S.ev.rewound === 1) { S.ev.rewound = 2; save(); after(1.5, () => sayI('Babushka\'s basket is on the bench, packed and ready. Not yet: once he\'s in it you mustn\'t put him down till you\'re across. Get Grandfather\'s boat into the river first, with both oars in her.', 9000)); }
   if (S.flags.fire && !S.flags.escaped && (inIzba() || inSeni())) { bodyPlace(8.0, 0, 1.45, Math.PI / 2, false); }
   if (inCellar()) { BODY.crouch = true; G.crouch = true; }
 }
