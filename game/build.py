@@ -52,6 +52,8 @@ ROOMS = [
     'tio.js',       # 7  El Tío
     dict(var='ROOM_DED', files=['ded_a.js', 'ded_b.js', 'ded_c.js', 'ded_d.js', 'ded_e.js'],
          css='ded.css', vo='vo_ded.json'),   # 8  Dedushka
+    dict(var='ROOM_SAT', files=['sat_a.js', 'sat_b.js', 'sat_c.js', 'sat_d.js', 'sat_e.js'],
+         css='sat.css', vo='vo_sat.json'),   # 9  Saturation
 ]
 
 TAIL = ['series.js', 'main.js']
