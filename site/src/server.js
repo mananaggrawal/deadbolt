@@ -191,7 +191,7 @@ app.get('/play/:id', async c => {
   if (!R.isReleased(m.id)) return c.redirect('/#rooms');
   // sign in on this room's door, then Google brings the player straight back here
   if (cfg.requireLogin && !(await session(c))) { const u = new URL(c.req.url); return c.redirect(`/m/${m.id}?signin=required&next=${encodeURIComponent(`/play/${m.id}${u.search}`)}`); }
-  const etag = `"p-${m.id}-${cfg.version}"`;
+  const etag = `"p-${m.id}-${cfg.version}-${R.released().length}"`;   // the screen is sized by every open room, so a newly opened one changes it
   c.header('ETag', etag); c.header('Cache-Control', 'no-cache');
   if (c.req.header('if-none-match') === etag) return c.body(null, 304);
   const head = headTags({ title: `${m.title} · ${cfg.siteName}`, description: m.tagline || m.hook, path: `/m/${m.id}`, image: `/og/m/${m.id}.jpg`, imageAlt: `${m.title}, a horror mystery room on ${cfg.siteName}`, page: 'game', room: m.id });
@@ -202,6 +202,7 @@ function playPage(m, head) {
   const words = {
     id: esc(m.id), n: String(m.n), num: `Mystery #${m.n}`, title: esc(m.title), tagline: esc(m.tagline || ''),
     meta: metaHtml(m), hook: esc(m.hook), loading: esc(m.loading || 'Loading…'), keys: keysHtml(m.keys),
+    ...sizers(),
   };
   return PLAY.replace('<!--MR_HEAD-->', head)
     .replace('<div id="app">', `<div id="app" data-theme="${esc(m.theme || '')}">`)
@@ -220,16 +221,32 @@ function metaHtml(m) {
 }
 // a room's controls as keycaps: the basics first (move, look, use, hints), then what this room adds, then pause
 const BASIC = ['Move', 'Look', 'Use', 'Hints'];
-function keysHtml(keys) {
+function keysList(keys) {
   const list = (Array.isArray(keys) && keys.length ? keys : [['Move', 'W A S D'], ['Look', 'Mouse'], ['Interact', 'E or click'], ['Hints', 'H']])
     .map(([label, k]) => ({ label: String(label).replace(/^Interact\b/, 'Use'), k: String(k) }));
   const isBasic = (x, b) => x.label === b || x.label.startsWith(b + ',');
-  const ordered = [...BASIC.map(b => list.find(x => isBasic(x, b))).filter(Boolean), ...list.filter(x => !BASIC.some(b => isBasic(x, b))), { label: 'Pause', k: 'Esc' }];
-  return ordered.map(({ label, k }) => {
+  return [...BASIC.map(b => list.find(x => isBasic(x, b))).filter(Boolean), ...list.filter(x => !BASIC.some(b => isBasic(x, b))), { label: 'Pause', k: 'Esc' }];
+}
+function keysHtml(keys) {
+  return keysList(keys).map(({ label, k }) => {
     const [main, alt] = k.split(' or ');
     const caps = main.split(' ').filter(Boolean).map(c => `<kbd>${esc(c)}</kbd>`).join('');
     return `<li><span class="rm-caps">${caps}${alt ? `<span class="rm-alt">or ${esc(alt)}</span>` : ''}</span><span class="rm-kl">${esc(label)}</span></li>`;
   }).join('');
+}
+
+// Every room's screen has the same shape, so moving between rooms nothing jumps: the place line, the story and the
+// controls card each take the space of the largest of them across the open rooms. Invisible copies stacked in the
+// same grid cell (.rm-stack) hold that space at any width; only the room's own text shows.
+function sizers() {
+  const open = R.released();
+  const hidden = (tag, cls, inner) => `<${tag} class="${cls} rm-sizer" aria-hidden="true">${inner}</${tag}>`;
+  const maxKeys = Math.max(0, ...open.map(r => keysList(r.keys).length));
+  return {
+    metaSizers: open.map(r => hidden('p', 'rm-meta', metaHtml(r))).join(''),
+    hookSizers: open.map(r => hidden('p', 'rm-hook', esc(r.hook))).join(''),
+    keysSizer: hidden('ul', 'rm-kg', '<li></li>'.repeat(maxKeys)),
+  };
 }
 
 /* ---------- share pages and preview cards ---------- */

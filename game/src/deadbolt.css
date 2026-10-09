@@ -66,11 +66,24 @@ kbd{font:500 11px/1.4 var(--db-mono);border:1px solid rgba(237,232,222,.38);bord
 .rm-status span::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;}
 .rm-status .ok{color:#8fbf8a;background:rgba(143,191,138,.1);}
 .rm-status .prog{color:var(--db-lamp);background:rgba(240,194,122,.1);}
-#app #title h1.big.rm-title{font-size:clamp(46px,5.6vw,84px);margin:28px 0 0;max-width:none;}
-.rm-meta{display:flex;flex-wrap:wrap;gap:6px 20px;margin:22px 0 0;color:var(--db-muted);font-size:14px;line-height:20px;}
+/* one shape for every room: the title is one line on a fixed baseline (too long for the column, it shrinks to fit;
+   see the script in deadbolt_title.html), and the place line, story and controls card are sized to the largest of
+   them across the open rooms (.rm-stack: invisible copies stacked in one grid cell, sent by the server) */
+#app #title h1.big.rm-title{font-size:clamp(46px,5.6vw,84px);margin:28px 0 0;max-width:none;box-sizing:border-box;height:1.04em;padding:0;display:flex;align-items:flex-end;white-space:nowrap;text-wrap:nowrap;line-height:1;}
+#app #title .rm-tt{display:block;flex:none;white-space:nowrap;line-height:1;}
+@supports (text-box: trim-both cap alphabetic){
+  #app #title h1.big.rm-title{padding-bottom:.2em;}
+  #app #title .rm-tt{text-box:trim-both cap alphabetic;}   /* the box runs from cap height to the baseline, so every font sits on the same line */
+}
+.rm-stack{display:grid;}
+.rm-stack > *{grid-area:1/1;align-self:start;min-width:0;}
+.rm-sizer{visibility:hidden;pointer-events:none;user-select:none;}
+.rm-meta-box{margin-top:22px;}
+.rm-meta{display:flex;flex-wrap:wrap;gap:6px 20px;margin:0;color:var(--db-muted);font-size:14px;line-height:20px;}
 .rm-meta span{display:inline-flex;align-items:center;gap:7px;}
 .rm-meta svg{width:14px;height:14px;flex:none;color:var(--db-faint);}
-.rm-hook{margin:24px 0 0;max-width:60ch;color:var(--db-ink2);font-size:17px;line-height:28px;text-wrap:pretty;}
+.rm-hook-box{margin-top:24px;}
+.rm-hook{margin:0;max-width:60ch;color:var(--db-ink2);font-size:17px;line-height:28px;text-wrap:pretty;}
 .rm-actions{display:flex;flex-wrap:wrap;gap:12px;margin:36px 0 0;}
 #title.rm .rm-actions .btn{min-height:44px;padding:10px 22px;font-size:15px;}
 #title.rm .rm-actions .btn.primary:not(:disabled)::after{content:"\2192";font-size:14px;margin-left:2px;}
@@ -91,9 +104,9 @@ kbd{font:500 11px/1.4 var(--db-mono);border:1px solid rgba(237,232,222,.38);bord
 /* how to play: one card of keys (or thumbs, on a phone) */
 .rm-how{margin-top:88px;}
 .rm-how-h{font:400 15px/24px var(--db-sans);color:var(--db-muted);letter-spacing:.005em;margin:0 0 16px;}
-.rm-keys,.rm-touch{list-style:none;margin:0;padding:24px 28px;display:grid;gap:18px 32px;border:1px solid var(--db-line);border-radius:4px;background:#121110;}
-.rm-keys{grid-template-columns:repeat(3,minmax(0,1fr));gap:0 48px;padding:0 28px;overflow:hidden;}
-.rm-keys li{display:flex;align-items:center;justify-content:space-between;gap:16px;min-width:0;min-height:54px;border-top:1px solid var(--db-line);margin-top:-1px;}
+.rm-kg,.rm-touch{list-style:none;margin:0;padding:24px 28px;display:grid;gap:18px 32px;border:1px solid var(--db-line);border-radius:4px;background:#121110;}
+.rm-kg{grid-template-columns:repeat(3,minmax(0,1fr));gap:0 48px;padding:0 28px;overflow:hidden;}
+.rm-kg li{display:flex;align-items:center;justify-content:space-between;gap:16px;min-width:0;min-height:54px;border-top:1px solid var(--db-line);margin-top:-1px;}
 .rm-caps{display:inline-flex;align-items:center;gap:4px;flex:none;order:2;}
 #title.rm .rm-caps kbd{display:inline-grid;place-items:center;min-width:26px;height:26px;padding:0 7px;box-sizing:border-box;border:1px solid var(--db-line2);border-bottom-width:2px;border-radius:5px;background:var(--db-bg3);color:var(--db-ink);font:500 12px/1 var(--db-mono);margin:0;}
 .rm-alt{font-size:12px;color:var(--db-muted);margin-left:4px;white-space:nowrap;}
@@ -103,7 +116,7 @@ kbd{font:500 11px/1.4 var(--db-mono);border:1px solid rgba(237,232,222,.38);bord
 .rm-touch b{font-weight:450;color:var(--db-ink);}
 .rm-touch svg{width:22px;height:22px;flex:none;color:var(--db-lamp);margin-top:-1px;}
 .rm-touch{display:none;}
-@media (pointer:coarse){ .rm-keys{display:none;} .rm-touch{display:grid;} }
+@media (pointer:coarse){ .rm-kg{display:none;} .rm-touch{display:grid;} }
 .rm-phone{margin:14px 0 0;font-size:13px;line-height:20px;color:var(--db-muted);}
 
 /* footer */
@@ -115,14 +128,14 @@ kbd{font:500 11px/1.4 var(--db-mono);border:1px solid rgba(237,232,222,.38);bord
 
 @media (max-width:1080px){
   .rm-hero{gap:40px;}
-  .rm-keys{gap:0 36px;}
+  .rm-kg{gap:0 36px;}
 }
 @media (max-width:900px){
   .rm-hero{grid-template-columns:1fr;gap:32px;}
   .rm-main{padding-top:24px;}
   #app #title h1.big.rm-title{margin-top:22px;}
   .rm-how{margin-top:64px;}
-  .rm-keys{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .rm-kg{grid-template-columns:repeat(2,minmax(0,1fr));}
 }
 @media (max-width:768px){
   .rm-wrap{padding-inline:16px;}
@@ -133,7 +146,7 @@ kbd{font:500 11px/1.4 var(--db-mono);border:1px solid rgba(237,232,222,.38);bord
   .rm-actions{margin-top:28px;gap:10px;}
   #title.rm .rm-actions .btn{min-height:48px;}
   .rm-touch{padding:18px;gap:16px 20px;}
-  .rm-keys{padding:0 18px;gap:0 28px;}
+  .rm-kg{padding:0 18px;gap:0 28px;}
   .rm-meta{gap:6px 14px;font-size:13px;}
   .rm-how{margin-top:56px;}
   .rm-foot{margin-top:40px;}
@@ -142,7 +155,7 @@ kbd{font:500 11px/1.4 var(--db-mono);border:1px solid rgba(237,232,222,.38);bord
   #title.rm .rm-actions .btn{flex:1 1 0;padding:10px 16px;}
   #title.rm .rm-actions .btn.primary{flex-basis:100%;}
   .rm-touch{grid-template-columns:1fr;}
-  .rm-keys{grid-template-columns:1fr;}
+  .rm-kg{grid-template-columns:1fr;}
 }
 @media (max-width:400px){
   .rm-logo span{display:none;}
@@ -154,8 +167,9 @@ kbd{font:500 11px/1.4 var(--db-mono);border:1px solid rgba(237,232,222,.38);bord
   .rm-hero{grid-template-columns:1fr;}
   .rm-pic{display:none;}
   #app #title h1.big.rm-title{font-size:min(9vw,15vh)!important;margin-top:14px;}
-  .rm-meta{margin-top:12px;font-size:13px;}
-  .rm-hook{margin-top:12px;font-size:14px;line-height:22px;max-width:none;}
+  .rm-meta-box,.rm-hook-box{margin-top:12px;}
+  .rm-meta{font-size:13px;}
+  .rm-hook{font-size:14px;line-height:22px;max-width:none;}
   .rm-actions{margin-top:18px;}
   #title.rm .rm-actions .btn{min-height:44px;}
   .rm-how{margin-top:40px;}

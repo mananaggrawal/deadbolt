@@ -14,9 +14,9 @@
         <div class="rm-copy">
           <p class="rm-kick"><span class="rm-kicker"><span class="bulb" aria-hidden="true"></span><span id="tNum">{{num}}</span></span><span class="rm-status" id="tStatus" hidden></span></p>
           <p class="osd" id="tOsd" hidden></p>
-          <h1 class="big rm-title" id="tTitle">{{title}}</h1>
-          <p class="rm-meta" id="tEyebrow">{{meta}}</p>
-          <p class="rm-hook" id="tHook">{{hook}}</p>
+          <h1 class="big rm-title" id="tTitle"><span class="rm-tt">{{title}}</span></h1>
+          <div class="rm-stack rm-meta-box"><p class="rm-meta" id="tEyebrow">{{meta}}</p>{{metaSizers}}</div>
+          <div class="rm-stack rm-hook-box"><p class="rm-hook" id="tHook">{{hook}}</p>{{hookSizers}}</div>
           <div class="rm-actions" id="tActions">
             <button id="bNew" class="btn primary" type="button" disabled>{{loading}}</button>
             <button id="bCont" class="btn" type="button" hidden>Continue</button>
@@ -31,7 +31,7 @@
 
       <section class="rm-how" aria-labelledby="tHowH">
         <h2 class="rm-how-h" id="tHowH">How to play</h2>
-        <ul class="rm-keys">{{keys}}</ul>
+        <div class="rm-stack rm-keys-box"><ul class="rm-keys rm-kg">{{keys}}</ul>{{keysSizer}}</div>
         <ul class="rm-touch">
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="10" rx="2"/><path d="M18 10v4"/><path d="M7.5 3.5 5 6l2.5 2.5M5 6h6"/></svg><span><b>Turn your phone sideways</b> when you go in.</span></li>
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.5" fill="currentColor" fill-opacity=".25"/></svg><span><b>Left thumb</b> to walk. Push to the edge to run.</span></li>
@@ -42,6 +42,14 @@
       </section>
     </main>
 
+    <script>/* every room's title sits on one line, on the same baseline: a title too long for the column shrinks to fit instead of wrapping */
+    (function () {
+      var h = document.getElementById('tTitle'), t = h && h.firstElementChild; if (!t) return;
+      function fit() { t.style.fontSize = ''; var w = h.clientWidth, n = t.getBoundingClientRect().width; if (w > 0 && n > w) t.style.fontSize = (parseFloat(getComputedStyle(t).fontSize) * w / n * 0.985) + 'px'; }
+      fit(); if (document.fonts) { document.fonts.ready.then(fit); if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', fit); }
+      if (window.ResizeObserver) new ResizeObserver(fit).observe(h); else addEventListener('resize', fit);
+    })();
+    </script>
     <footer class="rm-wrap"><div class="rm-foot">
       <span class="rm-hp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3.5" y="14" width="4" height="6" rx="1.5"/><rect x="16.5" y="14" width="4" height="6" rx="1.5"/></svg>Best with headphones.</span>
       <button type="button" class="rm-fb" data-mr-fb="room">Send feedback</button>
