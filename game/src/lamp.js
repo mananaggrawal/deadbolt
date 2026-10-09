@@ -17,7 +17,8 @@ const faceIn = a => Math.atan2(-Math.cos(a), -Math.sin(a));   // rotation.y so l
 const faceOut = a => Math.atan2(Math.cos(a), Math.sin(a));
 // where things are (angles measured from +x toward +z; +x is the land side)
 const A_ = { door: 90 * DEG, coat: 114 * DEG, tank: 150 * DEG, desk: 186 * DEG, locker: 223 * DEG, hatch: 270 * DEG, tube: 293 * DEG,
-  chest: 318 * DEG, box: 344 * DEG, stove: 36 * DEG, bench: 62 * DEG, flag: 202 * DEG, scope: 12 * DEG, morse: 7 * DEG, boat: 232 * DEG, baro: 168.75 * DEG };
+  chest: 318 * DEG, stove: 36 * DEG, bench: 62 * DEG, flag: 202 * DEG, scope: 12 * DEG, morse: 7 * DEG, boat: 232 * DEG, baro: 168.75 * DEG,
+  can: 101 * DEG, lip: 160 * DEG, hook: 22.5 * DEG };
 const SECTOR = 33.75 * DEG;            // the landward screen: the beam never shows between -SECTOR and +SECTOR
 const HATCH = { x: 0, z: -2.05 };
 const POS = {
@@ -83,18 +84,9 @@ function drawFlag(g, ch, W, H) {
   }
   g.restore();
 }
-const HOIST = ['T', 'U', 'R', 'N'];
-
-/* ---------------- Morse from the rocks ---------------- */
-const MORSE = { 0: '-----', 1: '.----', 2: '..---', 3: '...--', 4: '....-', 5: '.....', 6: '-....', 7: '--...', 8: '---..', 9: '----.',
-  A: '.-', B: '-...', C: '-.-.', D: '-..', E: '.', F: '..-.', G: '--.', H: '....', I: '..', J: '.---', K: '-.-', L: '.-..', M: '--', N: '-.', O: '---', P: '.--.', Q: '--.-', R: '.-.', S: '...', T: '-', U: '..-', V: '...-', W: '.--', X: '-..-', Y: '-.--', Z: '--..' };
-const BOX_CODE = '2704';
-const MORSE_T = (() => {
-  const u = 0.34, on = []; let t = 0;
-  for (const d of BOX_CODE) { const c = MORSE[d]; for (let i = 0; i < c.length; i++) { const len = c[i] === '.' ? u : 3 * u; on.push([t, t + len]); t += len + (i < c.length - 1 ? u : 0); } t += 5 * u; }
-  t += 9 * u; return { on, len: t };
-})();
-function morseOn(t) { const m = ((t % MORSE_T.len) + MORSE_T.len) % MORSE_T.len; for (const [a, b] of MORSE_T.on) if (m >= a && m < b) return true; return false; }
+const HOIST = ['N', 'C'];            // N over C: "I am in distress and need help"
+const HAULS = 6, CUP_TURNS = 3, HOOK_TRIES = 3;
+const FLAG_TOP = 4.9, FLAG_LOW = 1.0;
 
 /* ---------------- textures ---------------- */
 function makeTextures() {
@@ -133,7 +125,7 @@ function makeTextures() {
   T.baro = ctex(128, 128, (g, w, h) => { g.fillStyle = '#f0e8d2'; g.beginPath(); g.arc(64, 64, 60, 0, TAU); g.fill(); g.strokeStyle = '#6a4d1e'; g.lineWidth = 6; g.stroke(); g.fillStyle = '#2a2016'; g.font = `12px ${FELLSC}`; g.textAlign = 'center'; [['Stormy', 0.8], ['Rain', 1.1], ['Change', 1.5], ['Fair', 1.9], ['Dry', 2.2]].forEach(([t, a]) => { const aa = Math.PI * (a - 0.25); g.fillText(t, 64 + Math.cos(aa) * 40, 64 + Math.sin(aa) * 40 + 4); }); g.strokeStyle = '#1a1208'; g.lineWidth = 3; g.beginPath(); g.moveTo(64, 64); const na = Math.PI * 0.5; g.lineTo(64 + Math.cos(na) * 44, 64 + Math.sin(na) * 44); g.stroke(); });
   T.clock = ctex(128, 128, () => {});
   T.logbook = ctex(256, 192, (g, w, h) => { g.fillStyle = '#e8dfc6'; g.fillRect(0, 0, w, h); g.fillStyle = '#6d5a3a'; g.fillRect(w / 2 - 2, 0, 4, h); g.strokeStyle = 'rgba(80,60,40,0.35)'; for (let y = 24; y < h; y += 12) { g.beginPath(); g.moveTo(10, y); g.lineTo(w / 2 - 10, y); g.moveTo(w / 2 + 10, y); g.lineTo(w - 10, y); g.stroke(); } g.strokeStyle = 'rgba(30,40,70,0.7)'; g.lineWidth = 1.2; for (let y = 22; y < h - 10; y += 12) { if (Math.random() < 0.2) continue; g.beginPath(); let x = w / 2 + 12; g.moveTo(x, y); while (x < w - 16) { x += rand(4, 10); g.lineTo(x, y + rand(-2, 1)); } g.stroke(); } });
-  T.chart = ctex(256, 180, (g, w, h) => { g.fillStyle = '#ece3cd'; g.fillRect(0, 0, w, h); let i = 0; for (const ch of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') { const x = 10 + (i % 7) * 35, y = 10 + Math.floor(i / 7) * 42; g.save(); g.translate(x, y); drawFlag(g, ch, 28, 19); g.restore(); g.fillStyle = '#222'; g.font = `10px ${FELLSC}`; g.fillText(ch, x + 11, y + 31); i++; } });
+  T.canLabel = ctex(128, 128, (g, w, h) => { g.fillStyle = '#7d2620'; g.fillRect(0, 0, w, h); speckle(g, w, h, 1800, 0.25, '0,0,0', 2); g.fillStyle = '#e8d9b0'; g.fillRect(14, 40, 100, 48); g.fillStyle = '#3a1410'; g.font = `bold 15px ${FELLSC}`; g.textAlign = 'center'; g.fillText('PARAFFIN', 64, 62); g.font = `10px ${FELL}`; g.fillText('N.L.B. \u00b7 5 gal.', 64, 79); for (let i = 0; i < 6; i++) blot(g, rand(0, w), rand(0, h), rand(8, 22), 0.25, '20,10,5'); });
   HOIST.forEach(ch => { T['flag' + ch] = ctex(120, 80, (g, w, h) => { drawFlag(g, ch, w, h); speckle(g, w, h, 600, 0.12); }); });
 }
 
@@ -142,6 +134,7 @@ function makeMaterials() {
   M.floor = toon(0xffffff, T.floor); M.paint = toon(0xffffff, T.paint); M.tower = toon(0xffffff, T.tower); M.rock = toon(0xffffff, T.rock); M.wood = toon(0xffffff, T.wood);
   M.iron = toon(0x2d3431); M.ironRed = toon(0x5a2e26); M.black = toon(0x161716); M.brass = toon(0xb68b3b); M.dbrass = toon(0x7d5f2a); M.green = toon(0x2e4a3c);
   M.grate = toon(0xffffff, T.grate); M.white = toon(0xd9d4c7); M.cream = toon(0xe2d7bb); M.rope = toon(0x8c7a55); M.oil = toon(0x9a8634); M.rag = toon(0x3b403d);
+  M.can = toon(0xffffff, T.canLabel); M.canRed = toon(0xa0392b); M.stone = toon(0x8f8b80); M.paper = toon(0xece3cd);
   M.glass = new THREE.MeshBasicMaterial({ color: 0xa9c2cc, map: T.rain, transparent: true, opacity: 0.2, depthWrite: false, side: THREE.DoubleSide });
   M.lens = new THREE.MeshBasicMaterial({ color: 0x9fb8bd, map: T.prism, transparent: true, opacity: 0.45, depthWrite: false, side: THREE.DoubleSide });
   M.bull = new THREE.MeshBasicMaterial({ color: 0xa7c4c8, map: T.bull, transparent: true, opacity: 0.7, depthWrite: false, side: THREE.DoubleSide });
@@ -211,6 +204,9 @@ function buildRoom() {
   O.padlock = grp(0.44, 0.1, 0.06, O.hatch);
   box(0.09, 0.1, 0.035, M.dbrass, 0, 0, 0, O.padlock);
   const sh = mesh(new THREE.TorusGeometry(0.03, 0.007, 6, 12, Math.PI), M.iron, 0, 0.05, 0, O.padlock);
+  O.hatchNote = grp(-0.24, 0.115, 0.07, O.hatch); const hn = plane(0.22, 0.16, M.paper, 0, 0, 0, 0, O.hatchNote); hn.rotation.x = -1.25;
+  box(0.006, 0.06, 0.006, M.rope, 0, 0.05, -0.03, O.hatchNote);
+  O.hatchSpanner = grp(0.18, 0.105, 0.09, O.hatch); box(0.24, 0.024, 0.045, M.brass, 0, -0.035, 0, O.hatchSpanner); cyl(0.036, 0.036, 0.026, M.brass, 0.12, -0.035, 0, O.hatchSpanner, 10); box(0.006, 0.05, 0.006, M.rope, -0.08, 0, 0, O.hatchSpanner);
   // lower wall, glazing, mullions, screen, cornice, roof — a 16-sided lantern
   O.screen = [];
   const facetW = 2 * APO * Math.tan(11.25 * DEG) + 0.03;
@@ -321,7 +317,12 @@ function buildRoom() {
   for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) { const cols = [0xc42a2c, 0x1d4b97, 0xefbf2e, 0xf1ede2, 0x161616]; const f = cyl(0.06, 0.06, 0.3, toon(cols[(r * 4 + c) % 5]), -0.28 + c * 0.19, 0.25 + r * 0.25, 0.14, O.locker); f.rotation.x = Math.PI / 2; }
   box(0.8, 0.02, 0.01, M.black, 0, 0.36, 0.215, O.locker); box(0.8, 0.02, 0.01, M.black, 0, 0.61, 0.215, O.locker);
   O.lid = grp(0, 0.95, -0.2, O.locker); tbox(0.8, 0.04, 0.42, M.wood, 0, 0.02, 0.21, O.lid); O.lid.rotation.x = -1.75;
-  const ch = plane(0.7, 0.36, basic(0xffffff, { map: T.chart }), 0, -0.005, 0.21, 0, O.lid); ch.rotation.x = Math.PI / 2; ch.rotation.z = Math.PI;
+  // Duncan's hoist, bent together and rolled, with a luggage tag
+  O.flagBundle = grp(0.05, 0.99, 0.06, O.locker);
+  const fb1 = cyl(0.07, 0.07, 0.42, toon(0xf1ede2), -0.02, 0, 0, O.flagBundle, 12); fb1.rotation.z = Math.PI / 2;
+  const fb2 = cyl(0.072, 0.072, 0.1, toon(0x1d4b97), -0.12, 0, 0, O.flagBundle, 12); fb2.rotation.z = Math.PI / 2;
+  const fb3 = cyl(0.072, 0.072, 0.08, toon(0xc42a2c), 0.1, 0, 0, O.flagBundle, 12); fb3.rotation.z = Math.PI / 2;
+  box(0.01, 0.15, 0.15, M.rope, 0.02, 0, 0, O.flagBundle); const tag = plane(0.06, 0.09, M.paper, 0.12, 0.06, 0.07, 0, O.flagBundle); tag.rotation.x = -0.6;
 
   // speaking tube
   O.tube = grp(0, 0, 0); O.tube.position.copy(pol(2.84, A_.tube)); O.tube.rotation.y = faceIn(A_.tube);
@@ -334,19 +335,19 @@ function buildRoom() {
   tbox(0.95, 0.42, 0.5, M.wood, 0, 0.21, 0, O.chest); box(0.97, 0.03, 0.52, M.iron, 0, 0.12, 0, O.chest); box(0.97, 0.03, 0.52, M.iron, 0, 0.34, 0, O.chest);
   O.chestLid = grp(0, 0.43, -0.25, O.chest); tbox(0.97, 0.08, 0.52, M.wood, 0, 0.04, 0.25, O.chestLid); box(0.99, 0.02, 0.54, M.iron, 0, 0.08, 0.25, O.chestLid);
   [-0.5, 0.5].forEach(x => { const h = mesh(new THREE.TorusGeometry(0.06, 0.012, 6, 12), M.rope, x, 0.3, 0, O.chest); h.rotation.y = Math.PI / 2; });
-  O.chestLock = grp(0, 0.34, 0.262, O.chest); box(0.2, 0.09, 0.03, M.brass, 0, 0, 0, O.chestLock); for (let i = 0; i < 4; i++) cyl(0.017, 0.017, 0.035, M.dbrass, -0.06 + i * 0.04, 0, 0.018, O.chestLock).rotation.x = Math.PI / 2;
+  O.chestLock = grp(0, 0.34, 0.262, O.chest); box(0.06, 0.08, 0.02, M.iron, 0, 0, 0, O.chestLock);
   O.chestIn = grp(0, 0.3, 0, O.chest);
-  O.crankIn = grp(0.2, 0.02, 0, O.chestIn); box(0.03, 0.03, 0.32, M.iron, 0, 0, 0, O.crankIn); box(0.03, 0.03, 0.1, M.wood, 0, 0, 0.18, O.crankIn);
-  O.cardIn = plane(0.14, 0.09, M.cream, -0.2, 0.03, 0.05, 0, O.chestIn); O.cardIn.rotation.x = -Math.PI / 2;
+  O.letterIn = plane(0.16, 0.11, M.cream, -0.15, 0.03, 0.05, 0, O.chestIn); O.letterIn.rotation.x = -Math.PI / 2; O.letterIn.rotation.z = 0.3;
+  box(0.18, 0.05, 0.24, basic(0x1d1a17), 0.18, 0.02, 0, O.chestIn);
   O.chestIn.visible = false;
 
-  // the strongbox
-  O.box = grp(0, 0, 0); O.box.position.copy(pol(2.66, A_.box)); O.box.rotation.y = faceIn(A_.box);
-  box(0.55, 0.4, 0.4, M.wood, 0, 0.2, 0, O.box);
-  O.sbox = grp(0, 0.4, 0, O.box); box(0.46, 0.3, 0.34, M.iron, 0, 0.15, 0, O.sbox); O.sboxLid = grp(0, 0.3, -0.17, O.sbox); box(0.47, 0.04, 0.35, M.iron, 0, 0.02, 0.17, O.sboxLid);
-  box(0.3, 0.06, 0.01, basic(0x8a6a2a), 0, 0.22, 0.172, O.sbox);
-  for (let i = 0; i < 4; i++) cyl(0.028, 0.028, 0.03, M.brass, -0.105 + i * 0.07, 0.12, 0.18, O.sbox).rotation.x = Math.PI / 2;
-  O.spannerIn = box(0.16, 0.02, 0.03, M.brass, 0.08, 0.05, 0.02, O.sbox); O.spannerIn.visible = false;
+  // the paraffin can, lashed to the railing outside the balcony door
+  O.can = grp(0, 0, 0); O.can.position.copy(pol(4.08, A_.can)); O.can.rotation.y = faceIn(A_.can);
+  buildCan(O.can);
+  O.canRope = grp(0, 0, 0); O.canRope.position.copy(pol(4.22, A_.can)); O.canRope.rotation.y = faceIn(A_.can);
+  box(0.36, 0.012, 0.02, M.rope, 0, 0.22, 0.02, O.canRope); box(0.36, 0.012, 0.02, M.rope, 0, 0.05, 0.02, O.canRope);
+  O.canHeld = grp(-0.34, -0.52, -0.55, camera); buildCan(O.canHeld); O.canHeld.scale.setScalar(0.8); O.canHeld.rotation.set(0.1, 0.5, 0.06); O.canHeld.visible = false;
+  O.canHeld.traverse(o => { o.castShadow = false; o.userData.noRay = true; });
 
   // stove, kettle & mugs; bench with a Bible
   O.stove = grp(0, 0, 0); O.stove.position.copy(pol(2.65, A_.stove)); O.stove.rotation.y = faceIn(A_.stove);
@@ -371,14 +372,14 @@ function buildRoom() {
   buildLights();
   colliders.length = 0;
   const boxCol = (obj, hw, hd) => { const p = obj.getWorldPosition(new THREE.Vector3()); const a = obj.rotation.y; const c = Math.abs(Math.cos(a)), s = Math.abs(Math.sin(a)); const ex = hw * c + hd * s, ez = hw * s + hd * c; return addCol(obj.name || 'c', p.x - ex, p.x + ex, p.z - ez, p.z + ez); };
-  boxCol(O.desk, 0.5, 0.27); boxCol(O.locker, 0.42, 0.23); boxCol(O.chest, 0.5, 0.27); boxCol(O.box, 0.3, 0.22); boxCol(O.stove, 0.18, 0.18); boxCol(O.bench, 0.55, 0.2); boxCol(O.tank, 0.24, 0.24);
+  boxCol(O.desk, 0.5, 0.27); boxCol(O.locker, 0.42, 0.23); boxCol(O.chest, 0.5, 0.27); boxCol(O.stove, 0.18, 0.18); boxCol(O.bench, 0.55, 0.2); boxCol(O.tank, 0.24, 0.24);
   const fp = pol(4.12, A_.flag); addCol('flagstaff', fp.x - 0.08, fp.x + 0.08, fp.z - 0.08, fp.z + 0.08);
   O.colStool = boxCol(O.stool, 0.2, 0.2);
   // only walls, screen and furniture throw the lamp's shadow
   scene.traverse(o => { if (o.isMesh) o.castShadow = false; });
   [O.screen].flat().forEach(o => o.castShadow = true);
   scene.traverse(o => { if (o.isMesh && (o.material === M.paint || o.material === M.black) && o.position.lengthSq() > 4) o.castShadow = true; });
-  [O.desk, O.locker, O.chest, O.box, O.stove, O.bench, O.door, O.coat, O.tank].forEach(g => g.traverse(o => { if (o.isMesh) o.castShadow = true; }));
+  [O.desk, O.locker, O.chest, O.stove, O.bench, O.door, O.coat, O.tank].forEach(g => g.traverse(o => { if (o.isMesh) o.castShadow = true; }));
 }
 function buildLantern(g, held) {
   cyl(0.07, 0.08, 0.03, M.black, 0, 0.015, 0, g, 12); cyl(0.07, 0.07, 0.025, M.black, 0, 0.23, 0, g, 12);
@@ -390,13 +391,21 @@ function buildLantern(g, held) {
   if (held) g.traverse(o => { o.castShadow = false; o.userData.noRay = true; });
 }
 
+function buildCan(g) {
+  box(0.24, 0.34, 0.15, M.canRed, 0, 0.17, 0, g); plane(0.2, 0.2, M.can, 0, 0.18, 0.077, 0, g);
+  box(0.25, 0.015, 0.16, M.dbrass, 0, 0.345, 0, g);
+  cyl(0.022, 0.022, 0.05, M.dbrass, 0.08, 0.37, 0, g, 8); box(0.12, 0.018, 0.02, M.black, -0.03, 0.39, 0, g);
+  box(0.012, 0.04, 0.012, M.black, -0.085, 0.37, 0, g); box(0.012, 0.04, 0.012, M.black, 0.025, 0.37, 0, g);
+}
+
 function buildGallery() {
   // grating floor ring and outer edge
   const gf = mesh(new THREE.RingGeometry(R_OUT - 0.01, R_RAIL + 0.03, 64, 1), M.grate, 0, -0.005, 0); gf.rotation.x = -Math.PI / 2; gf.material.side = THREE.DoubleSide;
   const edge = mesh(new THREE.CylinderGeometry(R_RAIL + 0.03, R_RAIL + 0.03, 0.2, 48, 1, true), M.black, 0, -0.1, 0);
   // railing
-  for (let i = 0; i < 32; i++) { const p = pol(R_RAIL, i * 11.25 * DEG); box(0.035, 1.05, 0.035, M.black, p.x, 0.525, p.z); }
-  [1.05, 0.55].forEach(y => { const r = mesh(new THREE.TorusGeometry(R_RAIL, y > 1 ? 0.03 : 0.018, 6, 96), M.black, 0, y, 0); r.rotation.x = Math.PI / 2; });
+  // (the railing never blocks what you're aiming at: you reach over it and between the bars)
+  for (let i = 0; i < 32; i++) { const p = pol(R_RAIL, i * 11.25 * DEG); box(0.035, 1.05, 0.035, M.black, p.x, 0.525, p.z).userData.noRay = true; }
+  [1.05, 0.55].forEach(y => { const r = mesh(new THREE.TorusGeometry(R_RAIL, y > 1 ? 0.03 : 0.018, 6, 96), M.black, 0, y, 0); r.rotation.x = Math.PI / 2; r.userData.noRay = true; });
   // corbels under the gallery (seen from over the rail)
   for (let i = 0; i < 24; i++) { const p = pol(3.75, i * 15 * DEG, -0.55); const c = box(0.18, 0.6, 0.9, M.white, p.x, p.y, p.z); c.rotation.y = faceIn(i * 15 * DEG); }
   // flagstaff and the hoist
@@ -407,12 +416,27 @@ function buildGallery() {
   HOIST.forEach((ch, i) => {
     const geo = new THREE.PlaneGeometry(0.72, 0.48, 10, 4); geo.translate(0.36, 0, 0);
     const mat = toon(0xffffff, T['flag' + ch], { side: THREE.DoubleSide });
-    const f = new THREE.Mesh(geo, mat); f.position.set(fp.x + tang.x * 0.04, 4.9 - i * 0.6, fp.z + tang.z * 0.04);
+    const f = new THREE.Mesh(geo, mat); f.position.set(fp.x + tang.x * 0.04, FLAG_TOP - i * 0.6, fp.z + tang.z * 0.04);
     f.rotation.y = Math.atan2(tang.x, tang.z) - Math.PI / 2; scene.add(f); f.userData.base = geo.attributes.position.array.slice(); f.userData.ph = i * 0.7;
-    O.flags.push(f);
+    f.visible = false; O.flags.push(f);
   });
   const hal = cyl(0.004, 0.004, 5.2, M.rope, fp.x + tang.x * 0.04, 2.6, fp.z + tang.z * 0.04);
-  O.hoistHit = new THREE.Mesh(new THREE.BoxGeometry(0.9, 2.6, 0.9), HITMAT); O.hoistHit.position.set(fp.x + tang.x * 0.4, 3.9, fp.z + tang.z * 0.4); O.hoistHit.layers.set(2); scene.add(O.hoistHit);
+  // the cleat where the flag rope is made fast, at hand height on the pole
+  box(0.12, 0.025, 0.03, M.iron, fp.x + tang.x * 0.06, 1.05, fp.z + tang.z * 0.06).rotation.y = faceIn(A_.flag);
+  O.cleatHit = new THREE.Mesh(new THREE.BoxGeometry(0.55, 1.5, 0.55), HITMAT); O.cleatHit.position.set(fp.x, 0.85, fp.z); O.cleatHit.layers.set(2); scene.add(O.cleatHit);
+  // a narrow stone ledge outside the railing, above the drop; the crank went over onto it
+  const lip = mesh(new THREE.RingGeometry(R_RAIL + 0.02, R_RAIL + 0.42, 96, 1), M.stone, 0, -0.2, 0); lip.rotation.x = -Math.PI / 2; lip.material.side = THREE.DoubleSide;
+  const lipEdge = mesh(new THREE.CylinderGeometry(R_RAIL + 0.42, R_RAIL + 0.42, 0.14, 96, 1, true), M.stone, 0, -0.27, 0); lipEdge.castShadow = false;
+  O.lipCrank = grp(0, 0, 0); O.lipCrank.position.copy(pol(4.56, A_.lip, -0.19)); O.lipCrank.rotation.y = faceIn(A_.lip) + 0.6;
+  box(0.035, 0.035, 0.36, M.iron, 0, 0.018, 0, O.lipCrank); box(0.035, 0.035, 0.14, M.iron, 0.07, 0.018, 0.17, O.lipCrank).rotation.y = Math.PI / 2;
+  cyl(0.026, 0.026, 0.13, M.wood, 0.14, 0.03, 0.17, O.lipCrank, 8).rotation.x = Math.PI / 2;
+  // the boat hook, on its brackets on the outside wall, round on the land side
+  O.hookRack = grp(0, 0, 0); O.hookRack.position.copy(pol(3.38, A_.hook, 0.82)); O.hookRack.rotation.y = faceOut(A_.hook);
+  [-0.42, 0.42].forEach(x => { box(0.04, 0.1, 0.22, M.iron, x, -0.05, -0.07, O.hookRack); });
+  O.hookPole = grp(0, 0, 0.02, O.hookRack);
+  const hp = cyl(0.024, 0.024, 1.4, M.wood, 0, 0, 0, O.hookPole, 8); hp.rotation.z = Math.PI / 2;
+  cyl(0.028, 0.022, 0.1, M.iron, 0.73, 0, 0, O.hookPole, 8).rotation.z = Math.PI / 2;
+  const hk = mesh(new THREE.TorusGeometry(0.07, 0.014, 6, 10, Math.PI * 1.2), M.iron, 0.8, 0.06, 0, O.hookPole); hk.rotation.z = -0.5;
   // telescope on the land side
   O.scope = grp(0, 0, 0); O.scope.position.copy(pol(R_RAIL - 0.05, A_.scope, 1.08)); O.scope.rotation.y = faceOut(A_.scope);
   cyl(0.03, 0.04, 0.12, M.black, 0, 0.04, 0, O.scope);
@@ -542,8 +566,9 @@ function buildLights() {
 const ITEMS = {
   lantern: { name: 'Storm lantern', short: 'Lantern', desc: 'A hurricane lantern, burning low. The glass is sooted on one side, and the handle is still warm from someone else\'s hand.' },
   matches: { name: 'Box of matches', short: 'Matches', desc: 'Bryant &amp; May safety matches, damp at the corners. There are a few left.' },
-  crank: { name: 'Winding crank', short: 'Crank', desc: 'An iron crank with a square socket, the wooden handle worn pale. It fits the machine that turns the lens.' },
-  card: { name: 'Signalling card', short: 'Morse card', doc: 'morse' },
+  hook: { name: 'Boat hook', short: 'Boat hook', desc: 'A long ash pole with an iron hook on the end, for fending off and fishing things out of the water.' },
+  crank: { name: 'Winding crank', short: 'Crank', desc: 'An iron crank with a square socket, the wooden handle worn pale and wet from the ledge. It fits the machine that turns the lens.' },
+  flags: { name: 'Signal flags', short: 'Flags', desc: 'Two signal flags, already clipped together and rolled tight. Duncan\'s tag: <i>N over C. In distress. Run up for the boat.</i>' },
   spanner: { name: 'Burner spanner', short: 'Spanner', desc: 'A short brass spanner stamped N.L.B. Duncan\'s note says it opens the cup under the burner.' },
   key: { name: 'Hatch key', short: 'Hatch key', desc: 'A heavy iron key, still warm from the lamp.' },
 };
@@ -552,53 +577,33 @@ const HEARD = {
   tube1: { title: 'The speaking tube: "Ewan"', text: '"Hello? &hellip; Who\'s that up there? Tam? Is that you? &hellip; It\'s Ewan. I\'m at the foot of the stair. I\'ve hurt my leg on the steps, and the lantern\'s gone out. Open the hatch, man. It\'s that cold down here."' },
   tube2: { title: 'The speaking tube, after you lit the lamp', text: '"Why did you light her? &hellip; It hurts them, Tam. It hurts me. &hellip; Put her out. Just for a wee minute, so I can come up."' },
   tube3: { title: 'The speaking tube, once the lens was turning', text: '"You\'re not Tam. &hellip; Tam\'s down here with us. Where did you come from?"' },
-  tube4: { title: 'The speaking tube, after you opened the strongbox', text: '"Duncan says you\'ve found his note. He says it\'s all right now. Put her out, and come down. We\'ll wait for you at the bottom."' },
+  tube4: { title: 'The speaking tube, once the boat was in sight', text: '"Duncan says you\'ve found his note. He says it\'s all right now. Put her out, and come down. We\'ll wait for you at the bottom."' },
   duncan: { title: 'In the dark, from the tube', text: 'A different voice, older: "Quick, lad. They\'re on the balcony. Don\'t look at the glass."' },
   sea: { title: 'A woman\'s voice outside', text: '"Ewan. Ewan, come away down to the water." &hellip; "It\'s warm in the water. Come down."' },
   ewanEnd: { title: 'The last thing up the tube', text: '"Next year, then."' },
 };
 
-const MORSE_HTML = (() => {
-  const sym = c => c.replace(/\./g, '&middot;').replace(/-/g, '&ndash;');
-  const keys = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('');
-  return `<h3>Signals by Flashing Lamp</h3><p class="sub2">Northern Lighthouse Board &middot; a dot is a short flash, a dash a long one</p><div class="morse">${keys.map(k => `<div><b>${k}</b><span>${sym(MORSE[k])}</span></div>`).join('')}</div>`;
-})();
-
 const DOCS = {
-  log: { title: 'Keeper\'s log, Skerrow Rock', style: 'ledger', pages: [
-    `<div class="board"><h3>Northern Lighthouse Board</h3><i>Skerrow Rock</i><br>Character of the light: <b>Group Flashing (3) every 20 seconds</b>, white.<br>The light shall be exhibited from sunset to sunrise without interruption. The keeper on watch shall not leave the lamp room while the light is exhibited.</div>
-     <span class="pencil">Keep her lit. Keep her turning.<br>Nothing from the sea can stand where the light falls.<br>&mdash; D.M.</span>`,
-    `<span class="h">December 1911 &middot; Principal Keeper D. Moar</span>
-     <div class="ent"><b>Mon 18.</b> Wind SW, gale. Bar. 29.1 falling. Lit 3.34, out 8.58.<br>Ewan says he heard his brother on the stair again. Alick has been in the water two years this Christmas.</div>
-     <div class="ent"><b>Tue 19.</b> SW storm. Bar. 28.9. Lit 3.34, out 8.59.<br>When she is turning, a lantern shows on the rocks on the land side, where the beam never goes. It blinks the same four figures over and over. Ewan says it is Morse, and that it is my box number. I will not have it spoken of.</div>
-     <div class="ent"><b>Wed 20.</b> Storm. Bar. 28.8. Lit 3.33, out 9.00.<br>I have run up a hoist for the relief boat. It is the same word I keep on my chest, so whoever is left will know what it means.</div>`,
-    `<span class="h">Thursday 21 &middot; Asst. Keeper T. Lennie</span>
-     <div class="ent shaky"><span class="tm">2.40</span>Ewan answered the pipe. He went down the stair to the voice. He has not come back up.</div>
+  log: { title: 'Keeper\'s log, the last page', style: 'ledger', pages: [
+    `<span class="h">Thursday 21 December &middot; T. Lennie, Asst. Keeper</span>
+     <span class="pencil" style="display:block;margin:4px 0 12px">Keep her lit. Keep her turning. Nothing from the sea can stand where the light falls. &mdash; D.M.</span>
+     <div class="ent shaky"><span class="tm">2.40</span>Ewan answered the pipe and went down the stair to the voice. He has not come back.</div>
      <div class="ent shaky"><span class="tm">2.55</span>D. has padlocked the hatch and put the key inside the lamp, so none of us can go down while she burns.</div>
-     <div class="ent shaky"><span class="tm">3.10</span>Machine stopped. D. put the crank away in his chest and went out on the balcony after Ewan's lantern. The door keeps opening.</div>
-     <div class="ent shaky"><span class="tm">3.25</span>Pressure gone. She is out.</div>
-     <div class="ent shaky"><span class="tm">3.30</span>If you are reading this and I am not here: the matches are in Duncan's coat. Pump her to the red before you put a flame to her. Then get her turning. Do not answer the pipe.</div>`,
+     <div class="ent shaky"><span class="tm">3.10</span>Machine stopped. D. went out with the crank and the wind took it out of his hand. It is lying on the ledge outside the railing. He has not come back in.</div>
+     <div class="ent shaky"><span class="tm">3.25</span>Out of paraffin. She is out. The full can is lashed to the railing by the door.</div>
+     <div class="ent shaky"><span class="tm">3.30</span>If you find this: matches in Duncan's coat. Fill her, pump her to the red and light her. Get her turning. Run the flags up for the boat. Do not answer the pipe.</div>`,
   ], onRead: () => flag('readLog') },
-  chart: { title: 'Flag chart, inside the locker lid', style: 'card-print', pages: [
-    `<h3>International Code of Signals</h3><p class="sub2">One flag for each letter</p><div class="flagchart">${'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(c => `<div>${flagSVG(c)}${c}</div>`).join('')}</div>`,
-  ], onRead: () => flag('sawChart') },
-  hoist: { title: 'The flags on the flagpole', style: 'card-print', pages: [
-    `<p class="sub2">Four flags on the flagpole rope, cracking in the wind, lit by the lamp. From the top down:</p><div class="hoist">${HOIST.map(c => flagSVG(c)).join('')}</div>`,
-  ], onRead: () => flag('sawHoist') },
-  morse: { title: 'Signalling card', style: 'card-print', pages: [MORSE_HTML] },
   margaret: { title: 'A letter in the chest', style: 'letter', pages: [
     `<p style="text-align:right;margin:0 0 14px">Stornoway, 2nd December</p>
      <p style="margin:0 0 12px">My dear Duncan,</p>
-     <p style="margin:0 0 12px">The bairns ask every night when you'll be home. I tell them the boat comes for you on the twenty-second, weather allowing.</p>
-     <p style="margin:0 0 12px">Mrs Rigg was at the door again about Alick. She says he walks the shore road after dark and calls up at her window. I told her it is grief talking. She said the old folk never called Skerrow a light for ships. They said it was lit to keep the drowned in the water, and that on the longest night it wants a keeper.</p>
+     <p style="margin:0 0 12px">Mrs Rigg was at the door again about Alick. She says he walks the shore road after dark and calls up at her window. The old folk say Skerrow was never lit for ships. It was lit to keep the drowned in the water, and on the longest night it wants a keeper.</p>
      <p style="margin:0 0 12px">Keep it lit, love. Come home.</p>
      <p style="margin:0">Your Margaret</p>`,
   ] },
-  note: { title: 'Duncan\'s note, in the strongbox', style: 'note2', pages: [
-    `<p style="margin:0 0 14px">To whoever keeps the light after me.</p>
-     <p style="margin:0 0 14px">The hatch key is in the lamp, in the brass cup under the burner. This spanner opens the cup. She must be out to do it, or the brass will take the skin off your hand.</p>
-     <p style="margin:0 0 14px">Do not put her out until you see the boat. When you do, be quick, and do not look at the glass.</p>
-     <p style="margin:0 0 14px">Light her again before you go near the hatch. Never go down in the dark.</p>
+  note: { title: 'Duncan\'s note, tied to the hatch', style: 'note2', pages: [
+    `<p style="margin:0 0 14px">The key is in the lamp, in the brass cup under the burner. This spanner opens it. She must be out to do it.</p>
+     <p style="margin:0 0 14px">Not before you see the boat. Then be quick, and don't look at the glass.</p>
+     <p style="margin:0 0 14px">Light her again before you go near the hatch.</p>
      <p style="margin:0;text-align:right">D. Moar, P.K.</p>`,
   ], onRead: () => flag('readNote') },
   names: { title: 'Names scratched into the landward screen', style: 'names', pages: [
@@ -610,54 +615,39 @@ const DOCS = {
 const HINTS = [
   { id: 'start', title: 'Where do I start?', when: s => s.flags.readLog ? 'solved' : 'active', tiers: [
     'You need light before anything else. Something next to where you woke up is still burning.',
-    'Pick up the storm lantern, then walk around the room. The keepers kept a log on the desk.',
-    'Read the log right to the last page. The last keeper left instructions for whoever came next.',
-    'Take the lantern and read the log on the desk. The last page says: the matches are in Duncan\'s coat, pump the tank to the red, then light the lamp.' ] },
+    'Pick up the storm lantern, then look at the desk. The keepers kept a log.',
+    'Read the log. The last keeper wrote down exactly what has to be done.',
+    'Read the log on the desk: fill the lamp from the can outside, pump it, light it with the matches in the coat, fetch the crank off the ledge, get the lens turning, and run the flags up.' ] },
   { id: 'tube', title: 'The voice in the speaking tube', when: s => s.heard.includes('tube1') ? (s.flags.turning ? 'solved' : 'active') : 'hidden', tiers: [
     'It isn\'t a puzzle, and nothing it says will get you out.',
-    'The last line of the log: do not answer the pipe.',
-    'You can listen if you want to. It wants the light out. Keep working on the lamp.',
-    'Ignore it. Everything you need is in the lamp room and on the balcony.' ] },
+    'The log says: do not answer the pipe.',
+    'You can listen if you want to. It wants the light out. Keep working.',
+    'Ignore it. Everything you need is in the lamp room and out on the balcony.' ] },
   { id: 'light', title: 'The great lamp', when: s => s.flags.lit ? 'solved' : 'active', tiers: [
-    'The lamp burns paraffin under pressure. It needs pressure and a flame.',
-    'The last page of the log says where the matches are, and what to do before you strike one.',
-    'Duncan\'s oilskin hangs by the balcony door. The brass tank beside the lamp has a pump and a gauge.',
-    'Take the matches from the coat by the door. Pump the tank until the needle is in the red. Then use the lamp to light it.' ] },
-  { id: 'flags', title: 'The flags outside', when: s => !s.flags.lit ? 'hidden' : s.flags.chestOpen ? 'solved' : 'active', tiers: [
-    'Now that the lamp is lit, look out through the glass on the sea side: four coloured flags are flying on a flagpole on the balcony outside. The log\'s entry for Wednesday says why Duncan put them up.',
-    'Each signal flag stands for one letter, and the four together spell a word. Somewhere in the room is a chart of the flags.',
-    'The chart is pasted inside the open lid of the flag locker, the wooden cabinet full of rolled flags. Read the four flags from the top down.',
-    'The flags spell TURN. It\'s the word on Duncan\'s sea chest.' ] },
-  { id: 'chest', title: 'Duncan\'s sea chest', when: s => !s.flags.triedChest ? 'hidden' : s.flags.chestOpen ? 'solved' : 'active', tiers: [
-    'It takes a four-letter word.',
-    'The log\'s entry for Wednesday says the word is the same as something Duncan put up for the relief boat to see.',
-    'It\'s the hoist on the flagpole outside, read with the flag chart in the locker.',
-    'TURN.' ] },
-  { id: 'crank', title: 'Getting the lens to turn', when: s => !s.flags.chestOpen ? 'hidden' : s.flags.turning ? 'solved' : 'active', tiers: [
-    'The log says the machine stopped and Duncan put the crank away. You have it now.',
-    'The crank fits the square socket on the iron pedestal under the lens.',
-    'Fit it and wind the weight all the way up. Then take the brake off.',
-    'Use the crank on the pedestal and wind until it\'s tight, then release the brake lever beside it.' ] },
-  { id: 'morse', title: 'The lantern on the rocks', when: s => !s.flags.turning ? 'hidden' : s.flags.boxOpen ? 'solved' : 'active', tiers: [
-    'Now that the lens is turning, a light shows somewhere the beam never reaches. The log says whose it is.',
-    'Inside, the land side of the glass is screened off. Go out on the balcony on that side and look down at the rocks.',
-    'The lantern blinks long and short: Morse. The signalling card from the chest decodes it, and the telescope on that side of the balcony helps. It\'s four figures, repeated.',
-    'It spells 2 7 0 4.' ] },
-  { id: 'box', title: 'The strongbox', when: s => !s.flags.triedBox ? 'hidden' : s.flags.boxOpen ? 'solved' : 'active', tiers: [
-    'It\'s Duncan\'s box, and it takes four figures.',
-    'The log\'s entry for Tuesday says someone has been sending the box number.',
-    'It\'s the Morse from the lantern on the rocks on the land side, once the lens is turning.',
-    '2704.' ] },
-  { id: 'hatch', title: 'The hatch to the stair', when: s => !s.flags.triedHatch ? 'hidden' : s.flags.escaped ? 'solved' : 'active', tiers: [
-    'The padlock takes a key, and the log says where Duncan put it.',
-    '"Inside the lamp, so none of us can go down while she burns." Somebody else knows more.',
-    'Duncan kept a strongbox. Whatever he left for the next keeper will be in there.',
-    'The key is in the brass cup under the burner. Open the strongbox first: it has the spanner and Duncan\'s instructions.' ] },
-  { id: 'key', title: 'The hatch key', when: s => !s.flags.boxOpen ? 'hidden' : s.flags.escaped ? 'solved' : 'active', tiers: [
-    'Duncan\'s note says exactly where the key is, and what it will cost you.',
-    'The key is in the brass cup under the burner. You need the spanner, and the lamp has to be out. Wait until you can see the relief boat.',
-    'Put the lamp out, open the cup with the spanner and take the key. Then light the lamp again before you go near the hatch.',
-    'Use the lamp to put it out, use it again to open the cup, then light it again with the matches. Then use the key on the hatch.' ] },
+    'The lamp burns paraffin under pressure. It needs paraffin, pressure and a flame.',
+    'The tank beside the lamp is empty. There\'s a full can out on the balcony.',
+    'Go out through the balcony door: the can is tied to the railing right outside. Carry it in and pour it into the brass tank. The matches are in the coat by the door.',
+    'Pick up the can outside the door, carry it to the tank and pour it in. Pump the tank until the needle is in the red. Take the matches from the coat. Then light the lamp.' ] },
+  { id: 'crank', title: 'Getting the lens to turn', when: s => s.flags.turning ? 'solved' : (s.flags.readLog || s.flags.sawCrank || s.flags.triedPed) ? 'active' : 'hidden', tiers: [
+    'The machine under the lens needs its winding crank. The log says where it went.',
+    'It\'s lying on the narrow ledge outside the railing, out of arm\'s reach. You need something long with a hook on it.',
+    'Walk round the balcony to the land side, where the beam never shines. A boat hook hangs on the wall there. Then look over the railing on the sea side, near the paraffin tank.',
+    'Take the boat hook from the wall on the land side, fish the crank off the ledge, fit it to the pedestal under the lens, wind it until it\'s tight, then take the brake off.' ] },
+  { id: 'flags', title: 'Signalling the boat', when: s => s.flags.flagsUp ? 'solved' : (s.flags.readLog || s.inv.includes('flags')) ? 'active' : 'hidden', tiers: [
+    'The log says to run the flags up for the boat.',
+    'Duncan left a pair of signal flags ready, on top of the flag locker.',
+    'Take them out to the flagpole on the balcony, clip them to the rope and haul them up.',
+    'Take the flags from the top of the flag locker, go out to the flagpole, clip them on and haul six times until they\'re at the top.' ] },
+  { id: 'boat', title: 'Waiting for the boat', when: s => s.flags.boatSeen ? 'solved' : (s.flags.flagsUp || s.flags.turning) ? 'active' : 'hidden', tiers: [
+    'The relief boat will only come in if it can see you need it.',
+    'It needs the light turning and the flags flying.',
+    'If one of those isn\'t done yet, do it, then keep watch out to sea.',
+    'Get the lens turning and the flags at the top of the pole. A few seconds later the boat\'s lights appear to the south-west.' ] },
+  { id: 'key', title: 'The hatch key', when: s => s.flags.escaped ? 'solved' : (s.flags.readNote || s.flags.triedHatch || s.flags.boatSeen) ? 'active' : 'hidden', tiers: [
+    'Duncan tied a note and a spanner to the hatch bar.',
+    'The key is in the brass cup under the burner. The lamp has to be out, and you must wait until you can see the boat.',
+    'Once the boat is in sight: put the lamp out, unscrew the cup with the spanner, take the key, and light the lamp again before you go near the hatch. Be quick.',
+    'Take the spanner from the hatch. When the boat is in sight, use the lamp to put it out, unscrew the cup three turns, take the key, light the lamp again, then unlock the hatch.' ] },
 ];
 
 
@@ -670,7 +660,7 @@ const outside = () => Math.hypot(P.x, P.z) > R_OUT;
 const lit = () => S.flags.lit && !S.flags.dark;
 const behindPos = (d = 0.6) => new THREE.Vector3(P.x + Math.sin(G.yaw) * d, G.eye - 0.1, P.z + Math.cos(G.yaw) * d);
 function fmtClock(m) { m = ((m % 1440) + 1440) % 1440; const h = Math.floor(m / 60) % 12 || 12; return `${h}:${String(m % 60).padStart(2, '0')}`; }
-function progress() { const k = ['readLog', 'lit', 'chestOpen', 'turning', 'boxOpen', 'keyTaken']; return k.filter(f => S.flags[f]).length / k.length; }
+function progress() { const k = ['readLog', 'lit', 'crankBack', 'turning', 'flagsUp', 'keyTaken']; return k.filter(f => S.flags[f]).length / k.length; }
 const V = { flash: 0, g: 0, gutter: 0, gutterT: 0, lightningT: 12, boltK: 0, tickT: 0, whistleT: 0, darkT: 0, relitT: -1, scope: null, burnerK: 0, beamK: 0, feetT: 0 };
 
 /* ---------------- lantern ---------------- */
@@ -678,6 +668,7 @@ function takeLantern() { flag('lanternHeld'); give('lantern', true); O.lantern.v
 
 /* ---------------- the great lamp ---------------- */
 function pump() {
+  if (!S.flags.fuel) { sScrape(POS.tank, 0.3, 0.2); subtitle('', '<i>The pump wheezes and sucks air. The tank is bone dry. It needs paraffin before it can take any pressure.</i>', 4200); return; }
   if (S.pressure >= 6) { subtitle('', '<i>The needle is in the red. The tank won\'t take any more.</i>', 3000); return; }
   S.pressure++; save(); sScrape(POS.tank, 0.35, 0.28); sThunk(POS.tank, 0.25, 260);
   tween(0.35, k => { O.plunger.position.y = 0.8 - Math.sin(k * Math.PI) * 0.18; });
@@ -686,6 +677,7 @@ function pump() {
 const needleFor = p => 2.3 - Math.min(p, 6) / 6 * 4.1;
 function lightLamp(relight) {
   if (!has('matches')) { subtitle('', '<i>You need a flame. Your pockets are empty and soaked.</i>', 3600); return; }
+  if (!S.flags.fuel && !relight) { subtitle('', '<i>The burner is dry. There\'s no paraffin in the tank to feed it.</i>', 3600); return; }
   if (S.pressure < 5) { subtitle('', '<i>You strike a match and hold it to the mantle. A blue flicker, and nothing. There isn\'t enough pressure in the tank.</i>', 5200); sClick(null, 0.3, 3000); return; }
   sClick(null, 0.4, 3000); sThunk(POS.lens, 0.35, 120);
   if (relight) { endDark(); return; }
@@ -702,13 +694,16 @@ function putOut() {
 }
 function openCup() {
   if (!has('spanner')) { subtitle('', '<i>A brass cup under the burner, screwed tight. You\'d need a spanner.</i>', 3600); return; }
-  give('key'); flag('keyTaken'); sClick(POS.lens, 0.5, 1800); sThunk(POS.lens, 0.3, 300);
-  subtitle('', '<i>The cup unscrews. The key is inside, still warm. Now light her again.</i>', 4600);
+  S.cup = (S.cup || 0) + 1; save(); sClick(POS.lens, 0.45, 1500 + S.cup * 120); sScrape(POS.lens, 0.25, 0.2);
+  tween(0.3, k => { O.cup.rotation.y = (S.cup - 1 + k) * Math.PI / 2; });
+  if (S.cup < CUP_TURNS) { subtitle('', S.cup === 1 ? '<i>The spanner bites. The cup turns a quarter, gritty with soot.</i>' : '<i>Another turn. It\'s coming.</i>', 2400); return; }
+  give('key'); flag('keyTaken'); sThunk(POS.lens, 0.3, 300); O.cup.position.y = 0.06;
+  subtitle('', '<i>The cup drops into your hand. The key is inside, still warm. Now light her again.</i>', 4600);
 }
 function lampActions() {
   const a = [];
   if (S.flags.dark) {
-    if (!S.flags.keyTaken) a.push({ label: 'Open the brass cup', run: openCup });
+    if (!S.flags.keyTaken) a.push({ label: S.cup ? `Unscrew the cup (${S.cup}/${CUP_TURNS})` : 'Unscrew the brass cup', run: openCup });
     a.push({ label: 'Light the burner', run: () => lightLamp(true) });
   } else if (!S.flags.lit) a.push({ label: 'Light the burner', run: () => lightLamp(false) });
   else if (has('spanner') && !S.flags.keyTaken) a.push({ label: 'Put her out', run: putOut });
@@ -730,10 +725,11 @@ function releaseBrake() {
   flag('turning'); sThunk(POS.lens, 0.6, 90); sCreak(POS.lens, 1.6, 0.25, 60);
   tween(0.5, k => { O.brake.rotation.x = lerp(-0.5, 0.55, k); });
   subtitle('', '<i>The lens shudders, and begins to turn.</i>', 3600);
-  after(14, () => { if (!S.flags.sawRockFigs) { flag('sawRockFigs'); subtitle('', '<i>Down on the land side, where the beam never reaches, a small light has started to blink.</i>', 5200); } });
+  checkBoat();
+  after(14, () => { if (!S.flags.sawRockFigs) { flag('sawRockFigs'); subtitle('', '<i>Down on the land side, where the beam never reaches, someone is standing on the rocks with a lantern.</i>', 5200); } });
 }
 function pedActions() {
-  if (!S.flags.crankFitted) return has('crank') ? [{ label: 'Fit the crank', run: fitCrank }] : [look('The iron pedestal holds the clockwork that turns the lens. There\'s a square socket for a winding crank. The crank isn\'t here.')];
+  if (!S.flags.crankFitted) return has('crank') ? [{ label: 'Fit the crank', run: fitCrank }] : [{ label: 'Look', run: () => { flag('triedPed'); subtitle('', '<i>The iron pedestal holds the clockwork that turns the lens. There\'s a square socket for a winding crank, and no crank.</i>', 4600); } }];
   if (S.wound < 8) return [{ label: 'Wind it', run: wind }];
   return [look(S.flags.turning ? 'The clockwork ticks steadily. Down inside the tower, the weight is sinking.' : 'Wound tight. The brake is still holding it.')];
 }
@@ -764,30 +760,100 @@ function exitScope() {
   }
 }
 
-/* ---------------- locks & containers ---------------- */
-function chestLock() {
-  flag('triedChest');
-  openLock({ id: 'chest', title: 'Duncan\'s sea chest', sub: 'A brass letter lock with four wheels.', n: 4, letters: true, brass: true, answer: 'TURN', btn: 'Try the lid', pos: O.chest.position,
-    onOpen: () => { flag('chestOpen'); O.chestIn.visible = true; tween(0.9, k => { O.chestLid.rotation.x = -1.2 * k; }); sCreak(O.chest.position, 0.9, 0.3, 80); after(0.9, chestContents); } });
+/* ---------------- the chest (no lock now: a letter, a Bible, oilskins) ---------------- */
+function openChest() {
+  if (!S.flags.chestOpen) { flag('chestOpen'); O.chestIn.visible = true; tween(0.9, k => { O.chestLid.rotation.x = -1.2 * k; }); sCreak(O.chest.position, 0.9, 0.3, 80); after(0.9, chestContents); return; }
+  chestContents();
 }
 function chestContents() {
-  openContainer('Duncan\'s sea chest', 'Oilskins, a Bible, a photograph of a woman on a pier, and under them:', [
-    { name: 'Winding crank', desc: 'Iron, with a square socket. It fits the machine that turns the lens.', take: 'crank', onTake: () => { O.crankIn.visible = false; } },
-    { name: 'Signalling card', desc: 'A printed card of the Morse code, soft from handling.', take: 'card', onTake: () => { O.cardIn.visible = false; } },
+  openContainer('Duncan\'s sea chest', 'Oilskins, a Bible, a photograph of a woman on a pier, and a letter.', [
     { name: 'A letter', desc: 'From Margaret, in Stornoway. The envelope has been opened many times.', read: 'margaret' },
   ]);
 }
-function boxLock() {
-  flag('triedBox');
-  openLock({ id: 'box', title: 'The strongbox', sub: 'Northern Lighthouse Board, Principal Keeper. Four brass number wheels.', n: 4, letters: false, brass: true, answer: BOX_CODE, btn: 'Try the lid', pos: O.box.position,
-    onOpen: () => { flag('boxOpen'); O.spannerIn.visible = true; tween(0.8, k => { O.sboxLid.rotation.x = -1.3 * k; }); sCreak(O.box.position, 0.7, 0.3, 120); after(0.8, boxContents); } });
+
+/* ---------------- the paraffin can: carry it in and pour it into the tank ---------------- */
+const tankPos = () => O.tank.getWorldPosition(new THREE.Vector3());
+function nearTank() { const t = tankPos(); return !outside() && Math.hypot(P.x - t.x, P.z - t.z) < 1.3; }
+function pickCan() {
+  if (!S.can) { sCreak(O.can.position, 0.4, 0.2, 200); O.canRope.visible = false; }
+  S.can = 'held'; save(); G.carrying = { name: 'Paraffin can' }; O.can.visible = false; O.canHeld.visible = true;
+  sThunk(null, 0.3, 140); if (G.crouch) { G.crouch = false; G.eyeT = EYE; }
+  if (!S.flags.canLifted) { flag('canLifted'); subtitle('', '<i>Five gallons of paraffin. It drags at your arm. The tank is beside the lamp.</i>', 3800); }
 }
-function boxContents() {
-  openContainer('The strongbox', 'The keepers\' wages in a cloth bag, the Board\'s ledger, and on top:', [
-    { name: 'Duncan\'s note', desc: 'Folded once and addressed "to whoever keeps the light after me".', read: 'note' },
-    { name: 'Burner spanner', desc: 'Short and brass, stamped N.L.B.', take: 'spanner', onTake: () => { O.spannerIn.visible = false; after(7, boatArrives); } },
-  ]);
+function dropCarried() { if (S.can !== 'held') { G.carrying = false; return; } if (nearTank()) pourCan(); else setCanDown(); }
+function setCanDown() {
+  const x = P.x + Math.sin(G.yaw) * -0.45, z = P.z + Math.cos(G.yaw) * -0.45, c = new THREE.Vector3(x, 0, z); constrain(c, 0.2);
+  S.can = { x: c.x, z: c.z, r: G.yaw }; save(); placeCan(); G.carrying = false; O.canHeld.visible = false; sThunk(O.can.position, 0.35, 150);
 }
+function placeCan() {
+  const c = S.can;
+  if (!c) { O.can.position.copy(pol(4.08, A_.can)); O.can.rotation.set(0, faceIn(A_.can), 0); O.can.visible = true; O.canRope.visible = true; return; }
+  O.canRope.visible = false;
+  if (c === 'held') { O.can.visible = false; return; }
+  if (c === 'tank') { const p = pol(2.05, A_.tank + 0.16); O.can.position.copy(p); O.can.rotation.set(0, faceIn(A_.tank) + 0.5, 0); O.can.visible = true; return; }
+  O.can.position.set(c.x, 0, c.z); O.can.rotation.set(0, c.r, 0); O.can.visible = true;
+}
+function pourCan() {
+  G.cutscene = true; updatePrompt(true);
+  const r0 = O.canHeld.rotation.clone(), p0 = O.canHeld.position.clone();
+  tween(0.8, k => { O.canHeld.rotation.z = r0.z + k * 1.5; O.canHeld.position.x = p0.x + k * 0.22; O.canHeld.position.y = p0.y + k * 0.12; });
+  for (let i = 0; i < 9; i++) after(0.8 + i * 0.22, () => sThunk(POS.tank, 0.18, rand(160, 260)));
+  after(0.9, () => { if (A.ready) { const t = now(), n = noiseSrc(false), bp = filt('bandpass', 700, 1.5), g = A.ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.18, t + 0.2); g.gain.setValueAtTime(0.18, t + 1.6); g.gain.linearRampToValueAtTime(0.0001, t + 2.1); n.connect(bp); bp.connect(g); route(g, { pos: POS.tank, wet: 0.2 }); n.start(t); n.stop(t + 2.2); } });
+  after(3.0, () => {
+    tween(0.5, k => { O.canHeld.rotation.z = r0.z + (1 - k) * 1.5; O.canHeld.position.copy(p0); });
+    flag('fuel'); S.can = 'tank'; save(); G.carrying = false;
+    after(0.5, () => { O.canHeld.visible = false; O.canHeld.rotation.copy(r0); placeCan(); G.cutscene = false; updatePrompt(true); });
+    subtitle('', '<i>The paraffin glugs into the tank until it gurgles at the brim. Now it needs pressure.</i>', 4200);
+  });
+}
+
+/* ---------------- the boat hook and the crank on the ledge ---------------- */
+function takeHook() {
+  give('hook'); O.hookPole.visible = false; sScrape(O.hookRack.getWorldPosition(new THREE.Vector3()), 0.4, 0.3);
+  // something stood behind you while you were lifting it down
+  after(0.8, () => { sBreath(behindPos(0.5), 2, 0.45, true); G.fearT = Math.max(G.fearT, 0.6); addPrint(null, true); });
+}
+function hookCrank() {
+  S.hookTries = (S.hookTries || 0) + 1; save();
+  const c = O.lipCrank, a0 = A_.lip, cp = c.position.clone();
+  sScrape(cp, 0.35, 0.35);
+  if (S.hookTries === 1) {
+    tween(0.5, k => { c.position.copy(pol(4.56, a0 + 0.035 * k, -0.19)); c.rotation.y = faceIn(a0) + 0.6 + 0.4 * k; });
+    subtitle('', '<i>The hook skids off the iron. The crank scrapes along the ledge, a little nearer the edge.</i>', 3600); return;
+  }
+  if (S.hookTries === 2) {
+    tween(0.9, k => { const u = Math.sin(k * Math.PI); c.position.copy(pol(4.5 - u * 0.1, a0 + 0.035, -0.19 + u * 0.35)); });
+    after(0.9, () => sThunk(cp, 0.5, 260)); after(1.2, () => { sScrape(pol(4.3, a0, -2.5), 0.8, 0.25); G.fearT = Math.max(G.fearT, 0.7); });
+    subtitle('', '<i>You get the hook under the handle. It lifts, swings, and drops back onto the stone with a clang. Below the ledge, something scrapes on the tower wall.</i>', 5200); return;
+  }
+  tween(0.8, k => { c.position.copy(pol(4.56 - k * 0.5, a0 + 0.035, -0.19 + k * 1.1)); c.rotation.x = k * 1.2; }, () => { c.visible = false; });
+  give('crank'); flag('crankBack'); sThunk(null, 0.4, 200);
+  subtitle('', '<i>You drag it up between the bars. The winding crank, cold and dripping.</i>', 3600);
+}
+
+/* ---------------- the flags: clip them on, haul them up ---------------- */
+function takeFlags() { give('flags'); O.flagBundle.visible = false; sScrape(O.locker.getWorldPosition(new THREE.Vector3()), 0.25, 0.2); }
+function placeFlags() {
+  const k = S.flags.flagsUp ? 1 : (S.haul || 0) / HAULS;
+  O.flags.forEach((f, i) => { f.visible = !!S.flags.flagsClipped; f.position.y = FLAG_LOW + (FLAG_TOP - FLAG_LOW) * k - i * 0.6; });
+}
+function clipFlags() {
+  flag('flagsClipped'); S.inv = S.inv.filter(i => i !== 'flags'); S.haul = 0; save(); renderInv(); placeFlags();
+  sClick(O.cleatHit.position, 0.4, 1600); subtitle('', '<i>You clip the two flags to the rope. The wind tries to tear them out of your fingers.</i>', 3400);
+}
+function haul() {
+  if (S.flags.flagsUp) return;
+  S.haul = (S.haul || 0) + 1; save();
+  const y0 = O.flags[0].position.y; sSqueak(O.cleatHit.position, 0.18); sScrape(O.cleatHit.position, 0.35, 0.25);
+  const k1 = S.haul / HAULS; tween(0.5, k => { O.flags.forEach((f, i) => { f.position.y = lerp(y0 - i * 0.6, FLAG_LOW + (FLAG_TOP - FLAG_LOW) * k1 - i * 0.6, k); }); });
+  if (S.haul === 3) { G.shake = 0.8; lightning(); sThunk(null, 0.5, 70); subtitle('', '<i>A gust nearly takes the rope out of your hands. You hang on.</i>', 3200); }
+  if (S.haul >= HAULS) {
+    flag('flagsUp'); sFlutter(O.cleatHit.position, 2, 0.4);
+    subtitle('', '<i>The flags snap out at the top of the pole: N over C. Anyone at sea will know what it means.</i>', 4600);
+    checkBoat();
+  }
+}
+function checkBoat() { if (S.flags.flagsUp && S.flags.turning && !S.flags.boatSeen && !V.boatQueued) { V.boatQueued = true; after(8, boatArrives); } }
 function coatPockets() {
   openContainer('Duncan\'s oilskin coat', 'Stiff with salt and still dripping.', [
     { name: 'Box of matches', desc: 'Bryant &amp; May. Damp at the corners, but they\'ll strike.', take: 'matches' },
@@ -843,7 +909,7 @@ function endDark() {
   if (S.flags.keyTaken) after(5, () => { heard('ewanEnd'); say('The tube, very quietly', 'Next year, then.', { clip: 'l_ewanEnd', fx: 'tube', pos: POS.tube, volume: 0.7 }); });
 }
 function hatchActions() {
-  if (!has('key')) return [{ label: 'Try the hatch', run: () => { flag('triedHatch'); sThunk(POS.hatch, 0.4, 120); sClick(POS.hatch, 0.3, 1200); subtitle('', '<i>An iron bar across the hatch, padlocked down. The padlock takes a key, and you haven\'t got it.</i>', 4400); } }];
+  if (!has('key')) return [{ label: 'Try the hatch', run: () => { flag('triedHatch'); sThunk(POS.hatch, 0.4, 120); sClick(POS.hatch, 0.3, 1200); subtitle('', '<i>An iron bar across the hatch, padlocked down. The padlock takes a key, and you haven\'t got it. Someone has tied a note to the bar.</i>', 4400); } }];
   if (S.flags.dark) return [{ label: 'Unlock the hatch', run: () => subtitle('', '<i>Not in the dark. <b>Never go down in the dark.</b> Light her first.</i>', 3800) }];
   return [{ label: 'Unlock the hatch', run: endSequence }];
 }
@@ -906,7 +972,7 @@ const EVENTS = [
   { id: 'print', ok: () => S.prints.length < 8, run: () => { addPrint(); return true; } },
   { id: 'feet', ok: () => !outside() && S.door, run: footprints },
   { id: 'door', ok: () => !S.door && !outside(), run: () => { setDoor(true, true); subtitle('', '<i>The balcony door bangs open.</i>', 2600); return true; } },
-  { id: 'doorShut', ok: () => S.door && outside() && progress() > 0.3, run: () => { setDoor(false, true); return true; } },
+  { id: 'doorShut', ok: () => S.door && outside() && progress() > 0.3 && !G.carrying, run: () => { setDoor(false, true); return true; } },
   { id: 'climb', ok: () => true, run: () => { const a = Math.atan2(P.z, P.x) + Math.PI + rand(-0.8, 0.8); for (let i = 0; i < 7; i++) after(i * 0.75, () => sScrape(pol(3.7, a, -7 + i * 1.1), 0.5, 0.3)); after(5.6, () => sThunk(pol(3.8, a, 0.2), 0.7, 90)); return true; } },
   { id: 'hatch', ok: () => !outside(), run: () => { sThunk(POS.hatch, 1, 70); after(0.5, () => { sThunk(POS.hatch, 0.8, 75); sClick(POS.hatch, 0.5, 900); }); tween(0.6, k => { O.padlock.rotation.z = Math.sin(k * 30) * 0.3 * (1 - k); }); return true; } },
   { id: 'gutter', ok: () => lit(), run: () => { V.gutter = 1; V.gutterT = 2.2; return true; } },
@@ -938,19 +1004,29 @@ function registerInteractions() {
   inter('baro', O.baro, { name: 'Barometer', actions: () => [look('The needle is hard down past STORMY. Someone has tapped the glass so often it has cracked.')] }); hitbox('baro', O.baro, 0.04);
   inter('lantern', O.lantern, { name: 'Storm lantern', enabled: () => !S.flags.lanternHeld, actions: () => [{ label: 'Pick it up', run: takeLantern }] }); hitbox('lantern', O.lantern, 0.08);
   inter('coat', O.coat, { name: 'Oilskin coat', actions: () => [{ label: 'Search the pockets', run: coatPockets }] });
-  inter('tank', O.tank, { name: 'Paraffin tank', note: () => S.pressure >= 5 ? 'Gauge: in the red' : S.pressure > 0 ? 'Gauge: rising' : 'Gauge: nothing', actions: () => [{ label: S.pressure >= 5 ? 'Pump it (it\'s full)' : 'Pump it', run: pump }] });
-  const lampHit = new THREE.Mesh(new THREE.CylinderGeometry(0.86, 0.86, 1.75, 16), HITMAT); lampHit.position.set(0, 1.9, 0); lampHit.layers.set(2); scene.add(lampHit);
+  inter('tank', O.tank, { name: () => S.flags.fuel ? 'Paraffin tank' : 'Paraffin tank (empty)', note: () => !S.flags.fuel ? 'Dry' : S.pressure >= 5 ? 'Gauge: in the red' : S.pressure > 0 ? 'Gauge: rising' : 'Gauge: nothing', actions: () => [{ label: S.pressure >= 5 ? 'Pump it (it\'s full)' : 'Pump it', run: pump }] });
+  inter('can', O.can, { name: () => S.can === 'tank' ? 'Paraffin can (empty)' : 'Paraffin can', reach: 2.2, enabled: () => !G.carrying, actions: () => S.can === 'tank' ? [look('Empty now. It still stinks of paraffin.')] : [{ label: S.can ? 'Pick it up' : 'Untie it and pick it up', run: pickCan }] }); hitbox('can', O.can, 0.06);
+  const lampHit = new THREE.Mesh(new THREE.CylinderGeometry(0.86, 0.86, 1.55, 16), HITMAT); lampHit.position.set(0, 2.0, 0); lampHit.layers.set(2); scene.add(lampHit);
   inter('lamp', lampHit, { name: () => S.flags.dark ? 'The lamp (out)' : S.flags.lit ? 'The great lamp' : 'The great lamp (out)', reach: 2.2, actions: lampActions });
-  const pedHit = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 1.0, 16), HITMAT); pedHit.position.set(0, 0.5, 0); pedHit.layers.set(2); scene.add(pedHit);
+  [O.lens, O.burner].forEach(g => g.traverse(o => { o.userData.iid = 'lamp'; }));   // aiming at the brass or the bars is aiming at the lamp
+  const pedHit = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 1.2, 16), HITMAT); pedHit.position.set(0, 0.6, 0); pedHit.layers.set(2); scene.add(pedHit);
   inter('ped', pedHit, { name: 'Clockwork pedestal', actions: pedActions, note: () => S.flags.crankFitted && !S.flags.turning ? `Wound ${S.wound}/8` : '' });
+  O.ped.traverse(o => { o.userData.iid = 'ped'; });   // the pedestal itself and the fitted crank, not just the invisible cylinder
   inter('brake', O.brakeBase, { name: 'Brake lever', enabled: () => !S.flags.turning, actions: () => [{ label: 'Release the brake', run: releaseBrake }] }); hitbox('brake', O.brakeBase, 0.08);
   inter('door', O.doorLeaf, { name: 'Balcony door', actions: () => [{ label: S.door ? 'Close it' : 'Open it', run: () => setDoor(!S.door) }] });
-  inter('locker', O.locker, { name: 'Flag locker', actions: () => [{ label: 'Read the chart in the lid', run: () => openDoc('chart') }, look('Pigeonholes of rolled signal flags, damp and smelling of tar.')] });
-  inter('hoist', O.hoistHit, { name: 'Flags on the flagpole', reach: 4.6, actions: () => lit() || S.flags.sawHoist ? [{ label: 'Read the flags', run: () => openDoc('hoist') }] : [look('Something is flapping on the flagpole, but it\'s too dark to make out. You\'d need proper light.')] });
-  inter('chest', O.chest, { name: 'Duncan\'s sea chest', actions: () => S.flags.chestOpen ? [{ label: 'Look inside', run: chestContents }] : [{ label: 'Try the lock', run: chestLock }] });
-  inter('box', O.box, { name: 'Strongbox', actions: () => S.flags.boxOpen ? [{ label: 'Look inside', run: boxContents }] : [{ label: 'Try the dials', run: boxLock }] });
+  inter('locker', O.locker, { name: 'Flag locker', actions: () => [look('Pigeonholes of rolled signal flags, damp and smelling of tar.')] });
+  inter('flagBundle', O.flagBundle, { name: 'Signal flags, rolled', enabled: () => !has('flags') && !S.flags.flagsClipped, actions: () => [{ label: 'Take them', run: takeFlags }] }); hitbox('flagBundle', O.flagBundle, 0.06);
+  inter('cleat', O.cleatHit, { name: 'Flagpole rope', note: () => S.flags.flagsClipped && !S.flags.flagsUp ? `Hauled ${S.haul || 0}/${HAULS}` : '',
+    actions: () => S.flags.flagsUp ? [look('Your flags are cracking at the top of the pole.')] : S.flags.flagsClipped ? [{ label: 'Haul them up', run: haul }] : has('flags') ? [{ label: 'Clip the flags on', run: clipFlags }] : [look('The flagpole rope, slapping against the pole. Nothing is flying.')] });
+  inter('chest', O.chest, { name: 'Duncan\'s sea chest', actions: () => [{ label: S.flags.chestOpen ? 'Look inside' : 'Open it', run: openChest }] });
+  inter('hookRack', O.hookPole, { name: 'Boat hook', enabled: () => !has('hook'), actions: () => [{ label: 'Lift it down', run: takeHook }] }); hitbox('hookRack', O.hookPole, 0.08);
+  inter('lip', O.lipCrank, { name: 'The winding crank, on the ledge', reach: 2.7, enabled: () => !S.flags.crankBack,
+    actions: () => { flag('sawCrank'); return has('hook') ? [{ label: 'Fish for it with the boat hook', run: hookCrank }] : [look('The winding crank is lying on the narrow ledge outside the railing, right above the drop, a long way past your fingertips. You\'d need something long, with a hook on the end.')]; } });
+  hitbox('lip', O.lipCrank, 0.14);
   inter('tube', O.tube, { name: 'Speaking tube', note: () => S.tubeReady ? 'Someone is whistling up it' : '', actions: () => [{ label: S.tubeReady ? 'Open the cap and listen' : 'Listen', run: listenTube }] });
   inter('hatch', O.hatch, { name: 'Hatch to the stair', actions: hatchActions });
+  inter('hnote', O.hatchNote, { name: 'A note, tied to the hatch bar', actions: () => [{ label: 'Read it', run: () => openDoc('note') }] }); hitbox('hnote', O.hatchNote, 0.05);
+  inter('hspanner', O.hatchSpanner, { name: 'A brass spanner, tied to the bar', enabled: () => !has('spanner') && !S.flags.keyTaken, actions: () => [{ label: 'Take it', run: () => { give('spanner'); O.hatchSpanner.visible = false; sClick(POS.hatch, 0.3, 1800); } }] }); hitbox('hspanner', O.hatchSpanner, 0.05);
   O.screen.forEach(s => inter('screen' + O.screen.indexOf(s), s, { name: 'Landward screen', actions: () => [{ label: 'Read the names', run: () => openDoc('names') }, look('Iron shutters painted black on the land side of the glass. The beam never shines this way.')] }));
   inter('scope', O.scope, { name: 'Telescope', actions: () => [{ label: 'Look through it', run: enterScope }] }); hitbox('scope', O.scope, 0.1);
   inter('stove', O.stove, { name: 'Paraffin stove', actions: () => [look('The kettle is still warm. Three mugs are waiting on the sill.')] });
@@ -974,15 +1050,21 @@ function constrain(p, r) {
 /* ---------------- state ---------------- */
 function defaults() {
   return { flags: {}, inv: [], docs: [], heard: [], hints: 0, hintTiers: {}, wrong: 0, locks: {}, elapsed: 0, player: null,
-    pressure: 0, wound: 0, door: true, tube: 0, tubeReady: false, prints: [], clock: 221, clockAcc: 0, lens: LENS_REST };
+    pressure: 0, wound: 0, door: true, tube: 0, tubeReady: false, prints: [], clock: 221, clockAcc: 0, lens: LENS_REST,
+    can: null, haul: 0, cup: 0, hookTries: 0 };
 }
 function applyState() {
   const held = !!S.flags.lanternHeld; O.lantern.visible = !held; O.held.visible = held;
   O.doorLeaf.rotation.y = S.door ? 1.55 : 0;
   O.needle.rotation.z = needleFor(S.pressure); O.plunger.position.y = 0.8;
   O.crank.visible = !!S.flags.crankFitted;
-  O.chestIn.visible = !!S.flags.chestOpen; O.chestLid.rotation.x = S.flags.chestOpen ? -1.2 : 0; O.crankIn.visible = !has('crank'); O.cardIn.visible = !has('card');
-  O.sboxLid.rotation.x = S.flags.boxOpen ? -1.3 : 0; O.spannerIn.visible = !!S.flags.boxOpen && !has('spanner');
+  O.chestIn.visible = !!S.flags.chestOpen; O.chestLid.rotation.x = S.flags.chestOpen ? -1.2 : 0;
+  if (S.can === 'held') { const c = new THREE.Vector3(P.x, 0, P.z); S.can = { x: c.x, z: c.z, r: G.yaw }; }   // never wake up carrying it
+  G.carrying = false; O.canHeld.visible = false; placeCan();
+  O.hookPole.visible = !has('hook'); O.lipCrank.visible = !S.flags.crankBack;
+  O.flagBundle.visible = !has('flags') && !S.flags.flagsClipped; placeFlags();
+  O.hatchSpanner.visible = !has('spanner') && !S.flags.keyTaken; O.cup.rotation.y = (S.cup || 0) * Math.PI / 2; O.cup.position.y = S.flags.keyTaken ? 0.06 : 0.1;
+  V.boatQueued = false; if (S.flags.flagsUp && S.flags.turning && !S.flags.boatSeen) checkBoat();
   O.brake.rotation.x = S.flags.turning ? 0.55 : -0.5;
   O.lens.rotation.y = S.lens;
   O.boat.visible = !!S.flags.boatSeen;
@@ -1070,9 +1152,9 @@ function roomUpdate(dt) {
   const lo = S.flags.lanternOut ? 0 : 1;
   L.lantern.intensity = 2.4 * lf * lo; O.held.userData.flame.material.opacity = lo; O.lantern.userData.flame.material.opacity = lo;
   O.held.rotation.z = Math.sin(V.g * 2) * 0.03; O.held.position.y = -0.36 + (G.moving ? Math.sin(G.bob) * 0.012 : 0);
-  // Ewan's lantern blinks on the land-side rocks while the lens is turning
-  const mOn = S.flags.turning && !G.ending && morseOn(t);
-  O.morse.visible = mOn; L.morse.intensity = mOn ? 6 : 0; O.ewan.visible = mOn;
+  // Ewan stands on the land-side rocks with his lantern while the lens is turning
+  const mOn = S.flags.turning && !G.ending;
+  O.morse.visible = mOn; L.morse.intensity = mOn ? 4.5 + Math.sin(t * 9) * 0.6 + Math.sin(t * 23) * 0.4 : 0; O.ewan.visible = mOn;
   // the drowned on the rocks: never where the beam falls, and all at the glass when the lamp is out
   O.rockFigs.forEach(f => { let hide = S.flags.dark || G.ending; if (!hide && beamOn > 0.1) for (const o of offs) { if (Math.abs(wrapA(f.userData.a - wrapA(-(S.lens + o * DEG)))) < 0.1) hide = true; } f.visible = !hide; });
   // a figure seen on the gallery goes once you look away
@@ -1082,7 +1164,7 @@ function roomUpdate(dt) {
   // the tube whistles when it has something to say
   // the next voice in the tube waits for its moment: after waking, after the lamp is lit, once it turns, once the box is open
   V.tubeCool = Math.max(0, (V.tubeCool || 0) - dt);
-  if (!S.tubeReady && V.tubeCool <= 0 && S.tube < TUBE.length && !S.flags.dark && !G.ending) { const f = S.flags, cond = [f.woke && G.play > 50, f.lit, f.turning, f.boxOpen][S.tube]; if (cond) { S.tubeReady = true; V.whistleT = 4; } }
+  if (!S.tubeReady && V.tubeCool <= 0 && S.tube < TUBE.length && !S.flags.dark && !G.ending) { const f = S.flags, cond = [f.woke && G.play > 50, f.lit, f.turning, f.boatSeen][S.tube]; if (cond) { S.tubeReady = true; V.whistleT = 4; } }
   if (S.tubeReady && !G.cutscene) { V.whistleT -= dt; if (V.whistleT <= 0) { whistle(); V.whistleT = rand(22, 34); } }
   // the dark: they come to the glass, and one of them comes in
   if (S.flags.dark) {
@@ -1092,7 +1174,7 @@ function roomUpdate(dt) {
     if (O.intruder.visible) {
       V.intrT = (V.intrT || 0) - dt;
       if (V.intrT <= 0) { V.intrT = 3.2; const ip = O.intruder.position, dx = P.x - ip.x, dz = P.z - ip.z, dd = Math.hypot(dx, dz);
-        if (dd < 1.1) { sStinger(1); sBreath(behindPos(0.3), 1, 0.7, true); G.red = 0.6; G.shake = 0.6; O.intruder.visible = false; V.darkT = 4; }
+        if (dd < 1.1) { sStinger(1); sBreath(behindPos(0.3), 1, 0.7, true); G.red = 0.6; G.shake = 0.6; O.intruder.visible = false; V.darkT = 4; S.wrong++; save(); subtitle('', '<i>A cold, wet hand closes on the back of your neck, and lets go. Light her, quickly.</i>', 3600); }
         else { const step = Math.min(0.7, dd - 0.9); ip.x += dx / dd * step; ip.z += dz / dd * step; const c = new THREE.Vector3(ip.x, 0, ip.z); constrain(c, 0.25); ip.x = c.x; ip.z = c.z; O.intruder.rotation.y = Math.atan2(dx, dz); sStep(0.14); } }
     }
   }
@@ -1177,16 +1259,24 @@ function titleFx(cv, g, t) {
 
 /* ---------------- the room module ---------------- */
 return {
-  id: 'lamp', title: 'The Lamp Room', saveKey: 'lethe.roomlamp.v1',
-  DOCS, ITEMS, HEARD, HINTS, openDoc, inspectItem, penalty, constrain, titleFx,
-  markSkip: ['start', 'tube'], markMerge: { chest: 'flags', box: 'morse', hatch: 'key' },
+  id: 'lamp', title: 'The Lamp Room', saveKey: 'lethe.roomlamp.v2',
+  DOCS, ITEMS, HEARD, HINTS, openDoc, inspectItem, penalty, constrain, titleFx, dropCarried,
+  markSkip: ['start', 'tube', 'boat'], markMerge: {},
   backText: 'Back on watch.',
   keys: [['Move', 'W A S D'], ['Look', 'Mouse'], ['Interact', 'E or click'], ['Other action', 'R or right-click'], ['Run', 'Shift'], ['Crouch', 'C'], ['Notebook', 'Tab'], ['Hints', 'H']],
-  toggleCrouch() { if (G.cutscene || G.scope) return; G.crouch = !G.crouch; G.eyeT = G.crouch ? 0.8 : EYE; },
+  toggleCrouch() { if (G.cutscene || G.scope || G.carrying) return; G.crouch = !G.crouch; G.eyeT = G.crouch ? 0.8 : EYE; },
   stepDown() { if (G.scope) exitScope(); },
   actOverride(i) { if (G.scope) { exitScope(); return true; } return false; },
-  promptOverride() { return G.scope ? '<span class="nm">Telescope</span><span class="act"><kbd>E</kbd>Stop looking</span>' : ''; },
-  touchOverride() { return G.scope ? [{ label: 'Stop looking', run: exitScope }] : null; },
+  promptOverride() {
+    if (G.scope) return '<span class="nm">Telescope</span><span class="act"><kbd>E</kbd>Stop looking</span>';
+    if (G.carrying && S.can === 'held' && nearTank()) return '<span class="nm">Paraffin can</span><span class="act"><kbd>E</kbd>Pour it into the tank</span>';
+    return '';
+  },
+  touchOverride() {
+    if (G.scope) return [{ label: 'Stop looking', run: exitScope }];
+    if (G.carrying && S.can === 'held') return [{ label: nearTank() ? 'Pour it into the tank' : 'Set it down', run: dropCarried }];
+    return null;
+  },
   onPanelClose() {},
   update: roomUpdate,
   preRender() {},
@@ -1202,7 +1292,7 @@ return {
     after(3.9, () => { G.cutscene = false; $('#fx').className = ''; flag('woke'); updatePrompt(true); toast(ctrlHint(), 7000); });
     after(6.5, () => { lightning(true); });
   },
-  debug: { O, L, V, T, M, lightLamp, startDark, endDark, boatArrives, enterScope, exitScope, morseOn, MORSE_T, endFrame, penalty, highWater, addPrint, footprints, galleryFigure },
+  debug: { O, L, V, T, M, lightLamp, startDark, endDark, boatArrives, enterScope, exitScope, endFrame, penalty, highWater, addPrint, footprints, galleryFigure, pickCan, pourCan, nearTank, hookCrank, haul, clipFlags, openCup, putOut },
 };
 
 })();
