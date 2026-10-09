@@ -46,7 +46,7 @@ The game calls `window.MR` through the small "host bridge" in `game/src/series.j
 
 Without `window.MR` (a `build.py prod` single file), the game behaves exactly as before. While a room is open, `mr.js` polls the game's state every 1.5 s. It reports squares done, hints and wrong guesses.
 
-Results stay in the browser's localStorage, where the game reads them. When a player is signed in, `mr.js` merges them with the account on every page load, and the earliest escape from each room wins. So a second device shows the same escapes and squares.
+Results stay in the browser's localStorage, where the game reads them. When a player is signed in, `mr.js` merges them with the account on every page load, and the earliest escape from each room wins. So a second device shows the same escapes.
 
 ## Sharing
 

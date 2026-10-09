@@ -11,7 +11,7 @@ import { roomById, released } from './rooms.js';
 import { art as ART, fonts as FONT_B64 } from './generated/assets.js';
 
 const FONTS = [400, 500, 600].map(w => ({ name: 'Geist', data: Buffer.from(FONT_B64[w], 'base64'), weight: w, style: 'normal' }));
-const C = { bg: '#0b0a09', ink: '#ede8de', ink2: '#d6cfc2', muted: '#a39b8e', faint: '#534e47', lamp: '#f0c27a', sq: ['#4d8a4a', '#c9a13b', '#a83a30'] };
+const C = { bg: '#0b0a09', ink: '#ede8de', ink2: '#d6cfc2', muted: '#a39b8e', faint: '#534e47', lamp: '#f0c27a' };
 
 const art = id => (ART[id] ? `data:image/jpeg;base64,${ART[id]}` : null);
 
@@ -74,7 +74,7 @@ export function roomCard(id) {
 export function resultCard(share) {
   const m = roomById(share.room); if (!m) return null;
   const line = `Got out of ${m.title}`;
-  // the picture under a shared result link: someone got out of this room (no time, squares or hints)
+  // the picture under a shared result link: someone got out of this room (no time or hints)
   return card(m.id,
     lockup(),
     h('div', { flexDirection: 'column', alignItems: 'center', textAlign: 'center' },

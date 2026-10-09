@@ -1,7 +1,7 @@
 /* Deadbolt: the website's browser client, loaded on every page.
    - an anonymous id per browser, and Google sign-in through the site's own server
    - results synced to the player's account (localStorage stays the game's source)
-   - play tracking: starts, squares done, hints, wrong guesses, escapes, shares
+   - play tracking: starts, puzzles done, hints, wrong guesses, escapes, shares
    - sharing: one panel for the site, a room or a result, with a tracked link per person and app
    - where a visitor came from: the share link (and app) a browser first arrived through
    - a way out of in-app browsers (Instagram, Facebook...), where Google sign-in is blocked
@@ -354,7 +354,7 @@
     track('signin_prompt', { where: reason || CFG.page, inapp: IN_APP || undefined });
     const nx = safeNext(next) || safeNext(new URLSearchParams(location.search).get('next'));
     const required = reason === 'required' || CFG.requireLogin, title = required ? 'Sign in to play' : 'Sign in';
-    const lead = required ? 'One step with Google and you’re in. Your escapes and squares are kept on every device you use.' : 'Keep your escapes and squares on every device. You can still play without an account.';
+    const lead = required ? 'One step with Google and you’re in. Your escapes are kept on every device you use.' : 'Keep your escapes on every device. You can still play without an account.';
     if (IN_APP) {
       modal(`<h2>${title}</h2><p>${esc(lead)}</p>
         <p>Google doesn't allow signing in inside ${esc(IN_APP)}'s browser. Open this page in ${BROWSER} and sign in there.</p>
@@ -568,7 +568,7 @@
     const site = CFG.siteName || 'Deadbolt', origin = location.origin;
     let text, short, subject, heading, lead = '';
     if (o.kind === 'result') {
-      // just that you got out, and a link to the same room: no time, squares or hints
+      // just that you got out, and a link to the same room: no time or hints
       text = `I got out of ${o.title || 'a room'} on ${site}. Can you?`;
       short = text; subject = text;
       heading = 'Share your result'; lead = 'Tell your friends you got out, with a link to try the same room. Nothing that gives the puzzles away.';
@@ -613,7 +613,7 @@
       const paint = () => {
         el.querySelector('#mrLu').textContent = m.base().replace(/^https?:\/\//, '');
         CHANNELS.forEach(c => { const a = el.querySelector(`[data-ch="${c.id}"]`); if (a) a.href = c.href(m); });
-        // a result's own card (time and squares) once its link exists; swap only when it has loaded
+        // a result's own card (the room, and that you got out) once its link exists; swap only when it has loaded
         const ci = el.querySelector('#mrCi'), want = m.image();
         if (ci && !ci.src.endsWith(want)) { const pre = new Image(); pre.onload = () => { if (openModal === el) ci.src = want; }; pre.src = want; }
         if (canPic && want !== picUrl && (o.kind !== 'result' || m.code)) {

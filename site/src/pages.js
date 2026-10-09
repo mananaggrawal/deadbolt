@@ -49,7 +49,7 @@ ${noindex ? '<meta name="robots" content="noindex">' : ''}
 
 const CSS = `
 :root{--bg:#0b0a09;--bg2:#121110;--card:#161412;--line:#24211e;--line2:#312d29;--ink:#ede8de;--ink2:#c8c1b4;--muted:#8d867b;--faint:#534e47;--lamp:#f0c27a;
---sq0:#4d8a4a;--sq1:#c9a13b;--sq2:#a83a30;--sans:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"Geist Mono",ui-monospace,Menlo,monospace;color-scheme:dark}
+--sans:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"Geist Mono",ui-monospace,Menlo,monospace;color-scheme:dark}
 *{box-sizing:border-box}html{background:var(--bg)}body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/24px var(--sans);-webkit-font-smoothing:antialiased}
 a{color:inherit}p{margin:0 0 14px}h1,h2,h3{font-weight:400;margin:0;text-wrap:balance}
 .wrap{max-width:1080px;margin:0 auto;padding:0 40px}.wide .wrap{max-width:1320px}@media(max-width:768px){.wrap{padding:0 16px}}
@@ -60,7 +60,6 @@ a{color:inherit}p{margin:0 0 14px}h1,h2,h3{font-weight:400;margin:0;text-wrap:ba
 .btn:hover{background:#fff5e2}.btn-ghost{background:transparent;color:var(--ink)}.btn-ghost:hover{background:#1a1816}.btn-sm{min-height:32px;padding:4px 14px;font-size:14px}
 .eyebrow{font:500 12px/16px var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--lamp)}
 .muted{color:var(--muted)}
-.sqs{display:flex;gap:6px;flex-wrap:wrap}.sqs i{width:26px;height:26px;border-radius:3px;display:inline-block}.l0{background:var(--sq0)}.l1{background:var(--sq1)}.l2{background:var(--sq2)}
 .legal{max-width:720px;padding:24px 0 96px}.legal h1{font-size:40px;line-height:48px;letter-spacing:-.6px;margin:24px 0 8px}.legal h2{font-size:22px;line-height:30px;margin:40px 0 10px}
 .legal p,.legal li{color:var(--ink2)}.legal ul{padding-left:20px;margin:0 0 14px}.legal li{margin:0 0 6px}
 footer{border-top:1px solid var(--line);padding:32px 0 48px;color:var(--muted);font-size:14px}footer .wrap{display:flex;gap:24px;flex-wrap:wrap;justify-content:space-between}footer a{color:var(--muted);text-decoration:none;margin-right:18px}footer a:hover{color:var(--ink)}`;
@@ -81,7 +80,7 @@ ${footer ? '' : '<!--'}<footer><div class="wrap"><span><a href="/#rooms">All the
 /* ---------- /r/<code>: someone's result ---------- */
 export function resultPage(share) {
   const m = roomById(share.room);
-  // what a friend sees from a shared result: that someone got out of this room, and the way in (no time, squares or hints)
+  // what a friend sees from a shared result: that someone got out of this room, and the way in (no time or hints)
   const title = `Got out of ${m.title}`;
   const desc = `Mystery #${m.n} · ${m.place}, ${m.era}. ${m.tagline || ''}`;
   const head = headTags({ title: `${title} · ${cfg.siteName}`, description: desc, path: `/r/${share.code}`, image: `/og/r/${share.code}.jpg`, imageAlt: `${title} on ${cfg.siteName}`, page: 'result', room: m.id, noindex: true });
@@ -119,7 +118,7 @@ export function privacyPage() {
 <ul>
 <li>You sign in with Google to play. Google tells us your name, email address and profile picture. We don't get access to your Gmail, Drive, contacts or anything else, and we don't keep Google's access tokens.</li>
 <li>While you play we record what happens in each room: when you start, which puzzles you finish, hints you take, wrong guesses, your time, and whether you escaped. This is linked to your account.</li>
-<li>We keep your first escape from each room (time, squares, hints and wrong guesses) so it appears on every device you sign in on, plus your share links and how many people opened them, and the date you confirmed you're 18 or older.</li>
+<li>We keep your first escape from each room (time, hints, wrong guesses and which puzzles you needed hints for) so it appears on every device you sign in on, plus your share links and how many people opened them, and the date you confirmed you're 18 or older.</li>
 <li>We record your type of device (phone or computer, and its browser) and your country. We don't store your IP address.</li>
 <li>Your browser gets a random ID so we can count visits before you sign in. Once you sign in on that browser, it's linked to your account.</li>
 <li>We count page visits and which site a visitor came from ourselves. There are no third-party trackers or advertising cookies.</li>

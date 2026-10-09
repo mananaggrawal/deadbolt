@@ -105,12 +105,12 @@ const HOST = {
   emit(name, data) { const mr = HOST.mr(); if (mr && mr.emit) try { mr.emit(name, data); } catch (e) {} },
   go(id) { const mr = HOST.mr(); if (!mr || !mr.go) return false; try { mr.go(id); return true; } catch (e) { return false; } },
 };
-// the ids of a room's result squares, in order (the same filtering as puzzleMarks)
+// the ids of a room's puzzles, in order (the same filtering as puzzleMarks)
 function markIds(room) {
   const skip = new Set(room.markSkip || []), merge = room.markMerge || {};
   return (room.HINTS || []).filter(h => !skip.has(h.id) && !(h.id in merge)).map(h => h.id);
 }
-// what the host polls to report progress: which squares are done, hints and wrong guesses so far
+// what the host polls to report progress: which puzzles are done, hints and wrong guesses so far
 function hostState() {
   if (typeof ROOM === 'undefined' || !ROOM || typeof S === 'undefined' || !S) return null;
   const merge = ROOM.markMerge || {}, ids = markIds(ROOM), solved = [];
@@ -128,7 +128,7 @@ const statusOf = m => {
 function msUntilDay(dateStr) { const [y, mo, d] = dateStr.split('-').map(Number); return new Date(y, mo - 1, d) - new Date(); }
 function fmtHMS(ms) { const s = Math.max(0, Math.floor(ms / 1000)); return `${String(Math.floor(s / 3600)).padStart(2, '0')}:${String(Math.floor(s / 60) % 60).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; }
 
-// one square per puzzle: 0 solved alone, 1 took hints, 2 took the answer
+// one mark per puzzle for the play log (never shown to players): 0 solved alone, 1 took hints, 2 took the answer
 function puzzleMarks(room, tiers) {
   const skip = new Set(room.markSkip || []), merge = room.markMerge || {};
   return room.HINTS.filter(h => !skip.has(h.id) && !(h.id in merge)).map(h => {
@@ -137,7 +137,7 @@ function puzzleMarks(room, tiers) {
     return { title: h.title, lvl: t === 0 ? 0 : t >= h.tiers.length ? 2 : 1 };
   });
 }
-// what you send a friend: just that you got out (no time, squares or hints)
+// what you send a friend: just that you got out (no time or hints)
 function shareText(m) {
   return `I got out of ${m.title} on ${SERIES.name}. Can you?`;
 }
@@ -180,7 +180,6 @@ function showResult(m, replay) {
   $('#endTv').className = 'end-tv ' + (m.frame || 'tv'); $('#endCap').textContent = m.endCaption || '';
   $('#epi').textContent = m.epilogue;
   $('#stTime').textContent = fmtTime(r.time); $('#stHints').textContent = r.hints; $('#stWrong').textContent = r.wrong; $('#stWrong').nextElementSibling.textContent = m.wrongLabel || 'Wrong guesses';
-  $('#endSquares').innerHTML = marks.map(x => `<i class="sq l${x.lvl}" title="${esc(x.title)}: ${['solved without hints', 'solved with hints', 'took the answer'][x.lvl]}"></i>`).join('');
   $('#endReplay').hidden = !replay;
   if (replay) $('#endReplay').innerHTML = `A replay. Your first escape, in <b>${fmtTime(first.time)}</b>, is the result that counts and the one you share.`;
   $('#endNext').innerHTML = nextLine() + archiveLine(m);
@@ -230,7 +229,7 @@ function renderHome() {
   const card = m => {
     const { r, prog } = statusOf(m), latest = m === rel[0], isNew = m.date === today && latest;
     const badge = isNew ? '<span class="badge new">New today</span>' : latest ? '<span class="badge">Latest</span>' : '';
-    const st = r ? `<span class="st ok">Escaped in ${fmtTime(r.time)}</span><span class="minisq">${(r.marks || []).map(x => `<i class="sq l${x.lvl}"></i>`).join('')}</span>`
+    const st = r ? `<span class="st ok">Escaped in ${fmtTime(r.time)}</span>`
       : prog ? '<span class="st">In progress</span>' : '<span class="st">Not played</span>';
     const act = r ? 'Play again' : prog ? 'Continue' : 'Play';
     return `<button class="mcard" data-id="${m.id}" data-theme="${m.theme}"><span class="art"><canvas data-fx="${m.id}" width="480" height="270"></canvas>${badge}</span>

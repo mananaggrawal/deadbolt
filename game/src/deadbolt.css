@@ -227,7 +227,6 @@ body:not(.starting) #title:not([hidden]) ~ #rotate,#end:not([hidden]) ~ #rotate{
 .stats{gap:36px;}
 .stats b{font:400 34px/40px var(--db-mono);color:var(--db-ink);font-variant-numeric:tabular-nums;}
 .stats span{font:500 11px/16px var(--db-mono);letter-spacing:.14em;color:var(--db-muted);}
-.marks .fine{font-size:13px;}
 .fine{font-size:13px;line-height:20px;color:var(--db-muted);}
 .next{border:1px solid var(--db-line);border-radius:8px;background:rgba(22,20,18,.7);font-size:14px;line-height:22px;color:var(--db-muted);padding:16px 18px;}
 .next b{font:450 17px/24px var(--db-sans);color:var(--db-ink);}

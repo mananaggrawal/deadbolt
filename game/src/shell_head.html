@@ -210,10 +210,6 @@ h1.big{font:400 clamp(58px,13vw,156px)/.88 var(--type);margin:.12em 0 .18em;lett
 .end-h{font-size:clamp(46px,6.2vw,84px)!important;white-space:nowrap;margin:.3em 0 .3em!important;}
 .end-info .epi{font-size:16px;margin:0 0 26px;color:var(--paper-dim);}
 .end-info .stats{margin:0 0 22px;}
-.marks{margin:0 0 24px;}
-#endSquares{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px;}
-.sq{width:24px;height:24px;border-radius:3px;display:inline-block;}
-.sq.l0{background:#4d8a4a;}.sq.l1{background:#c9a13b;}.sq.l2{background:#a83a30;}
 #shareMsg{min-height:18px;margin:10px 0 0;}
 .share-text{width:100%;box-sizing:border-box;font:12px/1.5 var(--ui);background:#101113;color:var(--paper);border:1px solid var(--line);padding:10px;margin:8px 0 0;resize:none;}
 #endNext{margin-top:22px;}
@@ -403,8 +399,6 @@ button.mcard:hover,button.mcard:focus-visible{border-color:var(--lamp);transform
 .mcard .st{font-size:12px;color:var(--mute);}
 .mcard .st.ok{color:#9fc59a;}
 .mcard .stw{display:flex;flex-direction:column;gap:6px;}
-.minisq{display:flex;gap:3px;}
-.minisq .sq{width:9px;height:9px;border-radius:1px;}
 .mcard .go{font:500 12px var(--ui);letter-spacing:.1em;text-transform:uppercase;color:var(--lamp);white-space:nowrap;}
 .mcard.soon{cursor:default;opacity:.55;}
 .mcard.soon .q{display:grid;place-items:center;height:100%;font:400 64px var(--type);color:#3a3a3a;}
@@ -879,7 +873,6 @@ button.mcard:hover,button.mcard:focus-visible{border-color:var(--lamp);transform
           <div><b id="stHints">0</b><span>Hints</span></div>
           <div><b id="stWrong">0</b><span>Wrong guesses</span></div>
         </div>
-        <div class="marks"><div id="endSquares"></div><p class="fine">One square per puzzle: green solved alone, amber with hints, red took the answer.</p></div>
         <p class="fine end-replay" id="endReplay" hidden></p>
         <div class="t-actions"><button id="bShare" class="btn primary">Copy result</button><button id="bLobby" class="btn">All mysteries</button></div>
         <div class="plinks end-links" id="endLinks"><button id="bAgain" class="linkbtn">Play again</button></div>
