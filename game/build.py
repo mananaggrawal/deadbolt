@@ -45,15 +45,14 @@ ENGINE = ['pre_core.js', 'core.js', 'audio.js', 'ui.js', 'touch.js', 'body.js', 
 # On the website, also add its door to ROOMS in site/public/landing.html.
 ROOMS = [
     'lamp.js',      # 2  The Lamp Room
-    'cold.js',      # 3  Cold Storage
-    'sitting.js',   # 4  The Last Sitting
-    'night.js',     # 5  Night Mail
-    'lift.js',      # 6  Doors Closing
-    'orloj.js',     # 7  The Blind Hour
-    'tik.js',       # 8  Tik-Tik
-    'tio.js',       # 9  El Tío
+    'sitting.js',   # 3  The Last Sitting
+    'night.js',     # 4  Night Mail
+    'lift.js',      # 5  Doors Closing
+    'orloj.js',     # 6  The Blind Hour
+    'tik.js',       # 7  Tik-Tik
+    'tio.js',       # 8  El Tío
     dict(var='ROOM_DED', files=['ded_a.js', 'ded_b.js', 'ded_c.js', 'ded_d.js', 'ded_e.js'],
-         css='ded.css', vo='vo_ded.json'),   # 10 Dedushka
+         css='ded.css', vo='vo_ded.json'),   # 9  Dedushka
 ]
 
 TAIL = ['series.js', 'main.js']

@@ -158,7 +158,7 @@ function landingHtml(room, { canon = null } = {}) {
     ? headTags({ title: `${room.title} · ${cfg.siteName}`, description: room.tagline || room.hook, path: `/m/${room.id}`, image: `/og/m/${room.id}.jpg`, imageAlt: `${room.title}, a horror mystery room on ${cfg.siteName}`, page: 'site', room: room.id })
     : headTags({ title: `${cfg.siteName} · Horror mystery rooms`, description: 'Horror mystery rooms. Every room has a way out. Not everything in it wants you to find it.', path: '/' });
   // the doors' words come from the game's own room list, so the corridor and the room never disagree
-  const words = Object.fromEntries(R.allRooms().map(m => [m.id, { title: m.title, place: m.place, era: m.era, mins: m.mins, hook: m.hook, tagline: m.tagline, start: m.start }]));
+  const words = Object.fromEntries(R.allRooms().map(m => [m.id, { n: m.n, title: m.title, place: m.place, era: m.era, mins: m.mins, hook: m.hook, tagline: m.tagline, start: m.start }]));
   const vars = { MR_RELEASED: rel, MR_ROOMS: words, MR_PREFETCH: PREFETCH() };
   if (room) vars.MR_OPEN = room.id;
   if (canon) vars.MR_CANON = canon;
@@ -167,6 +167,7 @@ function landingHtml(room, { canon = null } = {}) {
 }
 app.get('/', c => { c.header('Cache-Control', 'no-cache'); return c.html(landingHtml(null)); });
 app.get('/m/:id', c => {
+  if (R.retiredTitle(c.req.param('id'))) return c.redirect('/#rooms');
   const m = R.roomById(c.req.param('id'));
   if (!m || !R.isReleased(m.id)) return c.html(notFoundPage(), 404);
   c.header('Cache-Control', 'no-cache');
@@ -184,6 +185,7 @@ app.get('/i/:code', async c => {
 /* ---------- the game (/play/<id>) ---------- */
 app.get('/play', c => c.redirect('/#rooms'));
 app.get('/play/:id', async c => {
+  if (R.retiredTitle(c.req.param('id'))) return c.redirect('/#rooms');
   const m = R.roomById(c.req.param('id'));
   if (!m) return c.html(notFoundPage(), 404);
   if (!R.isReleased(m.id)) return c.redirect('/#rooms');

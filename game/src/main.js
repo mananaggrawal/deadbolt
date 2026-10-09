@@ -1,7 +1,7 @@
 /* =====================================================================
    MAIN — loop, movement, boot, title
    ===================================================================== */
-const ROOMS = { '406': ROOM406, lamp: ROOM_LAMP, cold: ROOM_COLD, sitting: ROOM_SITTING, night: ROOM_NIGHT, lift: ROOM_LIFT, orloj: ROOM_ORLOJ, tik: ROOM_TIK, tio: ROOM_TIO, ded: ROOM_DED };
+const ROOMS = { '406': ROOM406, lamp: ROOM_LAMP, sitting: ROOM_SITTING, night: ROOM_NIGHT, lift: ROOM_LIFT, orloj: ROOM_ORLOJ, tik: ROOM_TIK, tio: ROOM_TIO, ded: ROOM_DED };
 let BUILT = null;   // the mystery whose room this page has built (one per page load)
 ROOM = ROOM406;
 

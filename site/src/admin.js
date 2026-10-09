@@ -8,7 +8,7 @@
 //   M1           % of sign-ups active at any point in days 30–59 after signing up
 import { cfg } from './config.js';
 import { rows, one } from './db.js';
-import { allRooms, fmtTime } from './rooms.js';
+import { allRooms, fmtTime, retiredTitle } from './rooms.js';
 import { esc, headTags, layout } from './pages.js';
 
 /* ---------- options from the query string ---------- */
@@ -104,7 +104,7 @@ const FACE_PATH = { bad: 'M8.5 16.4c.9-1.15 2.1-1.75 3.5-1.75s2.6.6 3.5 1.75', o
 const FACE_WORD = { bad: 'Bad', okay: 'Okay', good: 'Good' };
 const faceIcon = f => FACE_PATH[f] ? `<svg class="fi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.25"/><circle cx="9" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/><path d="${FACE_PATH[f]}"/></svg>` : '';
 const faceTag = f => FACE_PATH[f] ? `<span class="face face-${f}">${faceIcon(f)}${FACE_WORD[f]}</span>` : '';
-const roomTitle = id => (allRooms().find(m => m.id === id) || {}).title || id || '';
+const roomTitle = id => (allRooms().find(m => m.id === id) || {}).title || (retiredTitle(id) ? `${retiredTitle(id)} (removed)` : id) || '';
 
 /* ---------- a bar chart: server-drawn SVG, one series, a hover title on every bar ---------- */
 function barChart(points, by, noun) {

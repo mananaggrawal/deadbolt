@@ -24,7 +24,6 @@ SECTIONS = [
     ('body.js',    r'^/\* =+$', 'BODY '),
     ('room406.js', r'^/\* =+$', 'ROOM 406 '),
     ('lamp.js',    r'^const ROOM_LAMP = \(\(\) => \{$', None),
-    ('cold.js',    r'^const ROOM_COLD = \(\(\) => \{$', None),
     ('sitting.js', r'^const ROOM_SITTING = \(\(\) => \{$', None),
     ('night.js',   r'^const ROOM_NIGHT = \(\(\) => \{$', None),
     ('lift.js',    r'^const ROOM_LIFT = \(\(\) => \{$', None),

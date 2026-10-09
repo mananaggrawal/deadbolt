@@ -410,37 +410,6 @@ button.mcard:hover,button.mcard:focus-visible{border-color:var(--lamp);transform
 .plinks{display:flex;gap:22px;flex-wrap:wrap;}
 @media (max-height:520px){ .h-inner{padding-top:18px;} .h-title{font-size:min(9vw,15vh);} .h-head{margin-bottom:16px;} .mgrid{grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;} .mcard .tg{display:none;} .mcard .t{font-size:22px;} .mcard .art{aspect-ratio:21/9;} .mcard .body{padding:10px 14px 12px;gap:4px;} .h-kick{font-size:10.5px;margin-bottom:6px;} .homelink{margin-bottom:10px;} }
 
-/* ---------- Cold Storage theme ---------- */
-#app[data-theme="cold"] #static{opacity:1;image-rendering:auto;}
-#app[data-theme="cold"] #title{background:#070808;}
-#app[data-theme="cold"] #title .t-inner{background:linear-gradient(90deg,rgba(4,6,6,.88) 0,rgba(4,6,6,.6) 50%,transparent 100%);max-width:none;}
-#app[data-theme="cold"] #title .t-inner > *{max-width:760px;}
-#app[data-theme="cold"] h1.big{font-family:"Oswald","Arial Narrow",sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.02em;line-height:.92;text-shadow:0 0 30px rgba(180,230,240,.12),3px 0 rgba(200,30,20,.35);}
-#app[data-theme="cold"] .osd{display:inline-flex;align-self:flex-start;font:600 17px "Oswald",sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#fff;background:#8e1c16;padding:3px 12px 4px;border-radius:2px;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 -2px 0 rgba(0,0,0,.25);}
-#app[data-theme="cold"] .osd .temp{font-variant-numeric:tabular-nums;margin-right:.1em;}
-#app[data-theme="cold"] .end-h{font-family:"Oswald",sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.02em;}
-.mcard[data-theme="cold"] .t{font-family:"Oswald",sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.02em;font-size:28px;}
-.clip{background:#efeadc;border-top:18px solid #6b4a2a;}
-.clip .page{font:15px/1.5 "Oswald",sans-serif;color:#1d1d1d;letter-spacing:.01em;}
-.clip h3{font:600 17px "Oswald",sans-serif;letter-spacing:.06em;text-transform:uppercase;margin:0 0 2px;}
-.clip .sub3{font-size:13px;color:#6a5f4c;margin:0 0 12px;}
-.intake{width:100%;border-collapse:collapse;font-size:14px;}
-.intake th{text-align:left;font-weight:600;border-bottom:2px solid #333;padding:4px 6px;text-transform:uppercase;font-size:12px;letter-spacing:.08em;color:#3a3228;}
-.intake td{border-bottom:1px solid rgba(0,0,0,.2);padding:6px;vertical-align:top;font-family:"Kalam",cursive;font-size:16px;color:#1b2a4a;}
-.intake td:first-child{font-family:"Oswald",sans-serif;font-weight:600;color:#1d1d1d;}
-.clip .pen{font:18px/1.45 "Kalam",cursive;color:#1b2a4a;}
-.clip .pen p{margin:0 0 12px;}
-.clip .pen .sig{text-align:right;}
-.marker{background:#f3eed0;}
-.marker .page{font:24px/1.3 "Permanent Marker",cursive;color:#1a1a1a;transform:rotate(-1deg);}
-.marker .page p{margin:0 0 14px;}
-.marker .page .big{color:#8e1c16;font-size:28px;}
-.fz{width:44px;height:16px;border-radius:8px;display:inline-block;border:1px solid #555;}
-.fz.good{background:linear-gradient(#f2eee2,#cfc8b5);}
-.fz.blown{background:linear-gradient(#3a302a,#141110);}
-.fz.none{background:transparent;border-style:dashed;}
-@media (max-height:520px){ .intake td{font-size:14px;padding:3px 5px;} .clip .pen{font-size:16px;} .marker .page{font-size:19px;} }
-
 /* ---------- mystery 4: the last sitting ---------- */
 #app[data-theme="sitting"] #static{opacity:1;image-rendering:auto;}
 #app[data-theme="sitting"] #title{background:#080404;}
