@@ -48,11 +48,10 @@ ROOMS = [
     'sitting.js',   # 3  The Last Sitting
     'night.js',     # 4  Night Mail
     'lift.js',      # 5  Doors Closing
-    'orloj.js',     # 6  The Blind Hour
-    'tik.js',       # 7  Tik-Tik
-    'tio.js',       # 8  El Tío
+    'tik.js',       # 6  Tik-Tik
+    'tio.js',       # 7  El Tío
     dict(var='ROOM_DED', files=['ded_a.js', 'ded_b.js', 'ded_c.js', 'ded_d.js', 'ded_e.js'],
-         css='ded.css', vo='vo_ded.json'),   # 9  Dedushka
+         css='ded.css', vo='vo_ded.json'),   # 8  Dedushka
 ]
 
 TAIL = ['series.js', 'main.js']

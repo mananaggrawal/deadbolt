@@ -27,7 +27,6 @@ SECTIONS = [
     ('sitting.js', r'^const ROOM_SITTING = \(\(\) => \{$', None),
     ('night.js',   r'^const ROOM_NIGHT = \(\(\) => \{$', None),
     ('lift.js',    r'^const ROOM_LIFT = \(\(\) => \{$', None),
-    ('orloj.js',   r'^const ROOM_ORLOJ = \(\(\) => \{$', None),
     ('tik.js',     r'^const ROOM_TIK = \(\(\) => \{$', None),
     ('tio.js',     r'^/\* =+$', 'MYSTERY #9 '),          # #9's banner sits outside its closure
     ('series.js',  r'^/\* =+$', 'SERIES '),

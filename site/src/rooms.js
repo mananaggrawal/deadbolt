@@ -7,7 +7,7 @@ export const appFile = () => rooms.app;
 export const allRooms = () => rooms.mysteries;
 export const roomById = id => allRooms().find(m => m.id === id) || null;
 // rooms taken off the site: their old links open the corridor, and the dashboard still names their past plays
-const RETIRED = { cold: 'Cold Storage' };
+const RETIRED = { cold: 'Cold Storage', orloj: 'The Blind Hour' };
 export const retiredTitle = id => (Object.hasOwn(RETIRED, id) ? RETIRED[id] : null);
 
 // today's date where the site lives (rooms open on their date there)
