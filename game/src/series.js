@@ -20,7 +20,7 @@ const MYSTERIES = [
     start: 'Take the watch', loading: 'Trimming the wick…', endTitle: 'Relieved', endCaption: 'Skerrow Rock, from the relief boat', frame: 'photo',
     endAlt: 'Skerrow Rock lighthouse at first light, seen from the sea. The lamp is lit, and three figures in oilskins stand in the lamp room.',
     epilogue: 'You go down a hundred and forty steps in the dark with the key still in your fist, and nothing touches you. The relief boat takes you off the landing at first light. As it pulls away you look back. The light is still turning, and up in the lamp room three men in oilskins are standing at the glass, watching you go. Nobody on the boat will say who is keeping it now.' },
-  { n: 3, id: 'sitting', title: 'The Last Sitting', date: '2026-09-28', place: '9 Pellam Street, Bloomsbury', era: '3 March 1893', mins: '25–40 min', theme: 'sitting',
+  { n: 3, id: 'sitting', title: 'The Last Sitting', date: '2026-09-28', place: '9 Pellam Street, Bloomsbury', era: '3 March 1893', mins: '20–30 min', theme: 'sitting',
     osd: '<span class="cc">Madame Ada Kell</span><span class="cc2">Clairvoyante &middot; sittings Fridays at nine</span>',
     tagline: 'A medium\'s parlour in 1893. Every ghost in it is a trick, and you have to work out how each one is done. All but one.',
     hook: 'London, 1893. You investigate fake mediums for the Society for Psychical Research. After tonight\'s sitting you hid in Madame Kell\'s parlour to catch her out. She has locked you in, turned down the gas, and left you a note.',
