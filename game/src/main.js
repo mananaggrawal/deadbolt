@@ -1,7 +1,7 @@
 /* =====================================================================
    MAIN — loop, movement, boot, title
    ===================================================================== */
-const ROOMS = { '406': ROOM406, lamp: ROOM_LAMP, sitting: ROOM_SITTING, night: ROOM_NIGHT, lift: ROOM_LIFT, orloj: ROOM_ORLOJ, tik: ROOM_TIK, tio: ROOM_TIO, ded: ROOM_DED };
+const ROOMS = { '406': ROOM406, lamp: ROOM_LAMP, sitting: ROOM_SITTING, night: ROOM_NIGHT, lift: ROOM_LIFT, tik: ROOM_TIK, tio: ROOM_TIO, ded: ROOM_DED };
 let BUILT = null;   // the mystery whose room this page has built (one per page load)
 ROOM = ROOM406;
 
@@ -143,7 +143,7 @@ function enterMystery(id) {
 }
 async function buildMystery(m) {
   BUILT = { id: m.id, ready: false };
-  try { await Promise.race([Promise.all(['40px "Reenie Beanie"', '24px VT323', '20px "Special Elite"', '14px "IBM Plex Mono"', '20px "IM Fell English"', '20px "Caveat"', '20px "Oswald"', '20px "Permanent Marker"', '20px "Kalam"', '20px "Playfair Display"', 'italic 20px "Cormorant Garamond"', '20px "Cormorant Garamond"', '20px "Pinyon Script"', '20px Teko', '600 20px Teko', '20px "Tiro Devanagari Hindi"', '20px "Noto Sans KR"', '700 20px "Noto Sans KR"', '900 20px "Noto Sans KR"', '20px "Nanum Pen Script"', '20px "Nanum Myeongjo"', '20px "UnifrakturMaguntia"', '20px Cinzel', '600 20px Cinzel', '20px "Rubik Dirt"', '20px "Saira Stencil One"', '20px "Ruslan Display"', '20px "Marck Script"', '20px "Russo One"'].map(f => document.fonts.load(f))), wait(3500)]); } catch (e) {}
+  try { await Promise.race([Promise.all(['40px "Reenie Beanie"', '24px VT323', '20px "Special Elite"', '14px "IBM Plex Mono"', '20px "IM Fell English"', '20px "Caveat"', '20px "Oswald"', '20px "Permanent Marker"', '20px "Kalam"', '20px "Playfair Display"', 'italic 20px "Cormorant Garamond"', '20px "Cormorant Garamond"', '20px "Pinyon Script"', '20px Teko', '600 20px Teko', '20px "Tiro Devanagari Hindi"', '20px "Noto Sans KR"', '700 20px "Noto Sans KR"', '900 20px "Noto Sans KR"', '20px "Nanum Pen Script"', '20px "Nanum Myeongjo"', '20px "Rubik Dirt"', '20px "Saira Stencil One"', '20px "Ruslan Display"', '20px "Marck Script"', '20px "Russo One"'].map(f => document.fonts.load(f))), wait(3500)]); } catch (e) {}
   ROOM.build();
   S = ROOM.defaults(); ROOM.applyState();
   renderer.shadowMap.needsUpdate = true;
