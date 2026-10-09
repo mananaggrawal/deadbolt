@@ -469,9 +469,11 @@ function buildFrontEnd() {
   O.boxLid = grp(0, 0.37, -0.21, O.box); bev(0.74, 0.06, 0.44, M.steel, 0, 0.03, 0.21, O.boxLid, 0.012);
   for (const sx of [-1, 1]) { tube([[sx * 0.34, 0.23, -0.1], [sx * 0.4, 0.26, 0], [sx * 0.34, 0.23, 0.1]], 0.008, M.iron, O.box, 10, 6); }
   for (const x of [-0.3, 0.3]) bev(0.04, 0.4, 0.44, M.iron, x, 0.2, 0, O.box, 0.004);
-  O.boxLock = grp(0, 0.28, 0.222, O.box); bev(0.22, 0.12, 0.012, M.brass, 0, 0, 0, O.boxLock, 0.004);
+  // a hasp and a heavy padlock (the guard's own key ring opens it)
+  O.boxLock = grp(0, 0.3, 0.222, O.box); bev(0.06, 0.1, 0.012, M.iron, 0, 0.02, 0, O.boxLock, 0.003);
+  O.padlock = grp(0, -0.04, 0.03, O.boxLock); bev(0.07, 0.06, 0.03, M.brass, 0, -0.02, 0, O.padlock, 0.006); mesh(new THREE.TorusGeometry(0.022, 0.006, 6, 14, Math.PI), M.iron, 0, 0.012, 0, O.padlock);
+  O.padlock.scale.setScalar(1.6); O.boxLock.scale.setScalar(1.3);   // big enough to read as a padlock from standing height in that dark corner
   O.boxArms = [];
-  for (let k = 0; k < 3; k++) { const px = -0.07 + k * 0.07; cyl(0.004, 0.004, 0.09, M.iron, px, -0.005, 0.008, O.boxLock, 6); const arm = grp(px, 0.03, 0.012, O.boxLock); bev(0.045, 0.012, 0.004, std({ color: 0xa8201a, roughness: 0.5 }), -0.022, 0, 0, arm, 0.001); O.boxArms.push(arm); }
   // inside the box: the slip key on a tag, a hand lamp, flags
   O.boxIn = grp(0, 0.05, 0, O.box);
   O.slipKey = grp(-0.1, 0.02, 0.05, O.boxIn); cyl(0.006, 0.006, 0.08, M.brass, 0, 0, 0, O.slipKey, 8).rotation.z = Math.PI / 2; bev(0.02, 0.05, 0.008, M.brass, -0.05, 0, 0, O.slipKey, 0.002); cyl(0.018, 0.018, 0.004, M.brass, 0.05, 0, 0, O.slipKey, 14).rotation.x = Math.PI / 2;
@@ -1086,19 +1088,19 @@ const HEARD = {
 
 /* ---------------- the register: everyone the saloon has carried since ---------------- */
 const REG = [
-  { d: '16.7.1926', who: 'A. R. Mehta, Asst. Engineer (Bridges), G.I.P. Rly.', j: 'Up Night Mail, Karjat – Lonavala', r: 'To inspect relining of No. 17 Tunnel.', cls: 'ink',
-    after: '2.40 a.m. We have been through No. 17 twice. D\'Souza, the slip guard, is standing on the line behind us. He was left at the halt. He is not running. He is only standing there, and he is not getting any smaller.', acls: 'ink shaky' },
-  { d: '9.8.1948', who: 'Lt. P. Varghese, 1st Madras Regt., on duty', j: 'Up Night Mail', cls: 'pencil',
-    r: 'Every time we come out of the tunnel he is nearer. He only moves in the tunnel. In the tunnel the back window goes black, like a looking-glass, and it does not show this carriage. It shows this carriage as it is <u>now</u>. Look at it properly. It is not lying.' },
-  { d: '21.7.1963', who: 'Mr &amp; Mrs S. Kulkarni', j: 'Up Night Mail (our wedding present from Papa!)', cls: 'biro',
-    r: 'He knocks and asks for the brake. He says it is his carriage. DO NOT TOUCH THE BRAKE WHEEL. Sudhir touched it. — Mrs K.' },
-  { d: '2.8.1979', who: 'Vikram R., IIT Bombay, 2nd yr', j: 'Up Night Mail (ticketless, sorry)', cls: 'felt',
-    r: 'the lever by the front door won\'t budge while the engine\'s hauling. it only gives when the couplings go slack & the buffers bump. only flat bit is the halt. you FEEL the jolt. 96 secs a lap, i timed it. still need the key for it' },
-  { d: '14.7.2004', who: 'Ilse B., Hamburg', j: 'Karjat – Lonavala, heritage saloon', cls: 'round',
-    r: 'I got his box open. I drew how on the washroom mirror with my finger, where he never looks. You need steam to see it. I am going for the door now. If you are reading this I did not get out.' },
+  { d: '16.7.1926', who: 'A. R. Mehta, Asst. Engineer, G.I.P. Rly.', cls: 'ink',
+    r: 'D\'Souza, the slip guard, was left at the halt. He is standing on the line behind us, and he is not getting any smaller.' },
+  { d: '9.8.1948', who: 'Lt. P. Varghese', cls: 'pencil',
+    r: 'In the tunnel the back window goes black, like a looking-glass. It shows this carriage as it is <u>now</u>. It is not lying.' },
+  { d: '21.7.1963', who: 'Mrs S. Kulkarni', cls: 'biro',
+    r: 'He knocks and asks for the brake. DO NOT TOUCH THE BRAKE WHEEL.' },
+  { d: '2.8.1979', who: 'Vikram R.', cls: 'felt',
+    r: 'the lever by the front door only gives when the train goes slack, at the little halt after the tunnel. you FEEL the jolt. needs his slip key' },
+  { d: '14.7.2004', who: 'Ilse B., Hamburg', cls: 'round',
+    r: 'His keys are on the tail lamp. One of them opens his box. I am going for the door now.' },
 ];
 function regEntry(e) {
-  return `<div class="nreg-e"><div class="nreg-h"><span class="d ${e.cls}">${e.d}</span><span class="w ${e.cls}">${e.who}</span></div><div class="nreg-j ${e.cls}">${e.j}</div><p class="${e.cls}">${e.r}</p>${e.after ? `<p class="${e.acls}">${e.after}</p>` : ''}</div>`;
+  return `<div class="nreg-e"><div class="nreg-h"><span class="d ${e.cls}">${e.d}</span><span class="w ${e.cls}">${e.who}</span></div><p class="${e.cls}">${e.r}</p></div>`;
 }
 const REG_HEAD = '<div class="nreg-top"><b>INSPECTION SALOON No. 9</b><span>Register of Journeys</span><i>Officers travelling will enter their names, the journey, and any remarks.</i></div>';
 
@@ -1108,13 +1110,11 @@ const DOCS = {
     `<div class="nb-top"><b>HERITAGE SALOON · ONE-NIGHT CHARTER</b><span>PNR 492-7713806 · CONFIRMED</span></div>
      <div class="nb-row"><span>Passengers</span><b>1 (one)</b></div><div class="nb-row"><span>Saloon</span><b>Inspection Saloon (1911), teak, one berth</b></div>
      <div class="nb-row"><span>Attached to</span><b>17 Up Night Mail, last vehicle</b></div><div class="nb-row"><span>Journey</span><b>Karjat 23:55 → Lonavala 04:10, via Kasheli Ghat</b></div><div class="nb-row"><span>Date</span><b>${TONIGHT}</b></div>
-     <p class="nb-fine">Your attendant travels in the adjoining coach and will lock the gangway door on the ghat section, as per rules. Kindly do not open the balcony door while the train is in motion. Tea will be served at Lonavala.</p>`] },
+     <p class="nb-fine">Your attendant travels in the next coach. Tea at Lonavala.</p>`] },
   anote: { title: 'Note taped to the gangway door', style: 'npencil', pages: [
     `<p>Sir —</p><p>Gangway door locked for the ghat, as per rules. I am in the next coach. If you need anything, knock.</p><p>Tea at Lonavala.</p><p class="sig">— Ramesh (attendant)</p><p class="ps">P.S. Please do not touch the brass lever by this door. It is very old. They say it is not connected to anything.</p>`] },
   register: { title: 'The saloon register (on the desk)', style: 'nreg', pages: () => [
-    REG_HEAD + regEntry(REG[0]),
-    regEntry(REG[1]) + regEntry(REG[2]),
-    regEntry(REG[3]) + regEntry(REG[4]) + `<div class="nreg-e last"><div class="nreg-h"><span class="d ink">${TONIGHT}</span><span class="w ink"></span></div><p class="nreg-blank">&nbsp;</p><p class="nreg-note">Tonight\'s date is already written in, in the same neat ink as the first entry. The rest of the line is waiting for a name.</p></div>`,
+    REG_HEAD + REG.map(regEntry).join('') + `<div class="nreg-e last"><div class="nreg-h"><span class="d ink">${TONIGHT}</span><span class="w ink"></span></div><p class="nreg-blank">&nbsp;</p><p class="nreg-note">Tonight\'s date is already written in, in the same neat ink as the first entry. The rest of the line is waiting for a name.</p></div>`,
   ], onRead: () => { flag('readRegister'); } },
   inquiry: { title: 'Folded report (in the desk drawer)', style: 'ntype', pages: [
     `<h3>Report of the Inquiry into the Runaway of Inspection Saloon No. 9</h3><p class="sub3">near Kasheli Ghat, G.I.P. Railway, night of 16th July 1926 · extract</p>
@@ -1127,19 +1127,18 @@ const DOCS = {
   profile: { title: 'Gradient profile of the ghat (framed)', style: 'nprof', pages: () => [profileSVG()] },
   plate: { title: 'Enamel plate on the slip gear', style: 'nplate', pages: [
     `<h3>SLIP GEAR · SALOON No. 9</h3><div class="np-pos"><span>LOCKED</span><span class="on">ARMED</span><span>SLIP</span></div>
-     <p>The gangway door <b>cannot be opened</b> while the gear is ARMED.</p><p>Insert the slip key to free the lever.</p>
-     <p>The lever will only move when the couplings are <b>slack</b>: on level track, or with the train easing.</p>
+     <p>The gangway door <b>will not open</b> while the gear is ARMED.</p><p>Slip key frees the lever. It moves only when the couplings are <b>slack</b>.</p>
      <p class="warn2">Never move to SLIP unless the slip guard is at the handbrake.</p>`] },
   photo: { title: 'Framed photograph over the sofa', style: 'photo', pages: () => [`<div class="plate print"><img src="${T.photoURL || ''}" alt="A faded photograph of three railwaymen on a little platform: a stationmaster, a pointsman, and a guard in white holding a hand lamp."></div><h3>Kasheli Ghat, monsoon 1926</h3><p class="sub3">Pencilled on the mount</p><p>"Stationmaster G. Pawar, pointsman Dhondu, and J. D\'Souza, slip guard, with his lamp."</p>`] },
-  mirror: { title: 'Drawn in the steam on the washroom mirror', style: 'photo', pages: () => [`<div class="plate fogged"><img src="${T.mirrorURL || ''}" alt="Three little railway signals drawn with a fingertip in the steam: the left arm raised, the middle arm lowered, the right arm raised, and underneath, BOX."></div><p>Three little railway signals, drawn with a fingertip. Under them, an arrow and the word BOX.</p>`] },
+  mirror: { title: 'Drawn in the steam on the washroom mirror', style: 'photo', pages: () => [`<div class="plate fogged"><img src="${T.mirrorURL || ''}" alt="Written with a fingertip in the steam: NOT THE WHEEL, and under it, HE IS IN THE GLASS."></div><p>Written with a fingertip, where he never looks: NOT THE WHEEL. And under it, smaller: HE IS IN THE GLASS.</p>`] },
 };
 
 /* ---------------- hints ---------------- */
 const HINTS = [
-  { id: 'start', title: 'Where do I start?', when: s => s.flags.readRegister && s.flags.sawKeys ? 'solved' : 'active', tiers: [
+  { id: 'start', title: 'Where do I start?', when: s => s.flags.readRegister || s.flags.sawKeys ? 'solved' : 'active', tiers: [
     'The door to the rest of the train, at the front, is locked. Everything you need is in this carriage.',
     'There\'s a register open on the desk at the back, by the windows. And look out of the back window.',
-    'A ring of keys is hanging on the tail lamp outside the back window. The register tells you what the others learned the hard way.',
+    'A ring of keys is hanging on the tail lamp outside the back window.',
     'Read the register on the desk, look at the keys on the tail lamp, and keep an eye on the back window when the train goes through the tunnel.' ] },
   { id: 'glass', title: 'The back window, in the tunnel', when: s => !(s.flags.tunnelSeen || s.flags.readRegister) ? 'hidden' : s.flags.winKey ? 'solved' : 'active', tiers: [
     'In the tunnel, the back window goes black and works like a mirror.',
@@ -1151,16 +1150,11 @@ const HINTS = [
     'That window lowers, but it\'s locked, and the keys are further than your arm can reach.',
     'The small brass key from the desk unlocks the window. Then you need something with a hook on it.',
     'Unlock the left-hand back window with the small brass key, lower it, and hook the key ring with the umbrella from the stand by the gangway door, at the front.' ] },
-  { id: 'mirror', title: 'The washroom mirror', when: s => !(s.flags.readIlse || s.flags.boxSeen) ? 'hidden' : s.flags.mirrorSeen ? 'solved' : 'active', tiers: [
-    'Ilse, in the register, drew something on the washroom mirror. You need steam to see it.',
-    'The washroom has a geyser on the wall. It heats the water for the hot tap.',
-    'Switch on the geyser (by the mirror), wait until it\'s hot, then run the hot tap and watch the mirror.',
-    'Geyser switch on, wait for the red light to go out, run the red tap. The steam shows three little signal arms drawn on the mirror.' ] },
-  { id: 'box', title: 'The guard\'s box', when: s => !s.flags.boxSeen ? 'hidden' : s.flags.boxOpen ? 'solved' : 'active', tiers: [
-    'The lock on the guard\'s box has three little red signal arms. Each can be raised, level or lowered.',
-    'Somebody drew three signal arms somewhere in this carriage.',
-    'The drawing on the steamed-up washroom mirror shows how to set them.',
-    'Left arm raised, middle arm lowered, right arm raised.' ] },
+  { id: 'box', title: 'The guard\'s box', when: s => !(s.flags.boxSeen || s.flags.keys) ? 'hidden' : s.flags.boxOpen ? 'solved' : 'active', tiers: [
+    'The green steel trunk by the gangway door is the slip guard\'s box. It\'s padlocked.',
+    'His own keys would open it. They\'re on the tail lamp.',
+    'Get the key ring off the tail lamp, then try the box again.',
+    'With the key ring from the tail lamp, unlock the guard\'s box and take the slip key.' ] },
   { id: 'lever', title: 'The slip lever', when: s => !(s.flags.triedDoor || s.flags.readPlate || s.flags.boxOpen) ? 'hidden' : s.slip === 'locked' ? 'solved' : 'active', tiers: [
     'The gangway door can\'t open while the slip gear beside it is ARMED. The lever needs a key.',
     'The slip key is in the guard\'s box. Even with it, the lever only moves when the couplings go slack.',
@@ -1264,9 +1258,10 @@ function paintPhoto() {
 function paintFogMask() {
   const c = T.fogMask.userData.canvas, g = c.getContext('2d'), w = c.width, h = c.height;
   g.fillStyle = '#000'; g.fillRect(0, 0, w, h); g.strokeStyle = '#fff'; g.fillStyle = '#fff'; g.lineWidth = 9; g.lineCap = 'round'; g.lineJoin = 'round';
-  BOX_CODE.forEach((p, i) => { const x = 78 + i * 70, yb = 205, yt = 80; g.beginPath(); g.moveTo(x, yb); g.lineTo(x, yt); g.stroke(); const a = ARM_ANG[p]; g.beginPath(); g.moveTo(x, yt + 12); g.lineTo(x - Math.cos(a) * 48, yt + 12 - Math.sin(a) * 48); g.stroke(); g.beginPath(); g.moveTo(x - 16, yb); g.lineTo(x + 16, yb); g.stroke(); });
-  g.lineWidth = 7; g.beginPath(); g.moveTo(52, 250); g.lineTo(140, 250); g.moveTo(125, 238); g.lineTo(140, 250); g.lineTo(125, 262); g.stroke();
-  g.font = '700 40px Kalam'; g.fillText('BOX', 158, 264);
+  // the canvas is only 256 wide: maxWidth keeps every line inside the glass whatever the font measures
+  const mw = w - 84;
+  g.textAlign = 'center'; g.font = '700 50px Kalam'; g.fillText('NOT THE', w / 2, 100, mw); g.fillText('WHEEL', w / 2, 160, mw);
+  g.font = '700 30px Kalam'; g.fillText('HE IS IN', w / 2, 232, mw); g.fillText('THE GLASS', w / 2, 268, mw);
   // blur a touch, like a real fingertip
   const b = document.createElement('canvas'); b.width = w; b.height = h; const bg = b.getContext('2d'); bg.filter = 'blur(2.5px)'; bg.drawImage(c, 0, 0); g.clearRect(0, 0, w, h); g.drawImage(b, 0, 0);
   T.fogMask.needsUpdate = true;
@@ -1309,8 +1304,8 @@ function lapState(lt) {
   const halt = s + 20 > S_H0 && s - 20 < S_H1;
   return { s, inTun, rearIn, halt, slack: lt >= LOOP.slack0 && lt <= LOOP.slack1 };
 }
-function progCount() { const f = S.flags; return [f.winKey, f.keys, f.mirrorSeen, f.boxOpen, f.slipFitted, S.slip === 'locked'].filter(Boolean).length; }
-const DIST = [62, 50, 40, 31, 23, 16, 10];
+function progCount() { const f = S.flags; return [f.winKey, f.keys, f.boxOpen, f.slipFitted, S.slip === 'locked'].filter(Boolean).length; }
+const DIST = [62, 48, 36, 25, 16, 10];   // by puzzles done (five now), down to his last few steps when the lever goes to LOCKED
 const distTarget = () => DIST[Math.min(DIST.length - 1, progCount())];
 const onBalcony = () => !!(S.flags.keys && S.slip === 'locked');
 
@@ -1410,7 +1405,7 @@ function applyState() {
   // desk
   O.mdrawer.position.set(S.drawer === 'open' ? -0.3 : 0, DESK.h - 0.1, 0); O.mdrawer.rotation.set(0, 0, 0);
   if (S.drawer === 'out') { O.mdrawer.position.set(-0.62, 0.05, -0.62); O.mdrawer.rotation.set(0, 0.35, 0); }
-  O.slot.visible = S.drawer === 'out'; O.report.visible = !f.readReport;
+  O.slot.visible = S.drawer === 'out'; O.report.visible = false;
   O.sdrawer.position.x = O.sdrawer.userData.base + (f.trayOut ? -0.42 : 0); O.sdrawer.visible = S.drawer === 'out'; O.winKey.visible = !f.winKey;
   // window, keys, umbrella
   O.drop.position.y = O.dropTop - (S.win === 'open' ? 0.5 : 0); O.strap.visible = S.win !== 'open';
@@ -1421,7 +1416,7 @@ function applyState() {
   O.wcPivot.rotation.y = S.wcOpen ? -1.45 : 0; O.colWc.on = !S.wcOpen;
   O.gToggle.position.y = S.geyser ? 0.03 : -0.01; O.stream.visible = S.hot || S.cold;
   // box and slip gear
-  S.arms.forEach((p, i) => O.boxArms[i].rotation.z = -ARM_ANG[p]);
+  O.padlock.visible = !f.boxOpen;
   O.boxLid.rotation.x = f.boxOpen ? -1.7 : 0; O.boxIn.visible = !!f.boxOpen; O.slipKey.visible = !took('slipKey') && !f.slipFitted;
   O.slipKeyIn.visible = !!f.slipFitted; O.slipLever.rotation.z = S.slip === 'locked' ? 0.55 : 0;
   O.ibolt.position.y = CDOOR.h + (S.slip === 'locked' ? 0.14 : 0.05);
@@ -1636,7 +1631,7 @@ function toggleTap(hot) {
 function mirrorActions() {
   const a = [];
   if (V.fog > 0.55) a.push({ label: 'Look closely at the steam', run: () => { flag('mirrorSeen'); openDoc('mirror'); } });
-  else if (S.flags.mirrorSeen) a.push({ label: 'Remember the drawing', run: () => openDoc('mirror') });
+  else if (S.flags.mirrorSeen) a.push({ label: 'Remember the writing', run: () => openDoc('mirror') });
   a.push(look(V.fog > 0.55 ? 'The glass has steamed right over. In the grey, some lines stay clear where a finger once drew.' : 'Your own face in the glass, grey with tiredness. Behind you, the washroom door.'));
   return a;
 }
@@ -1644,28 +1639,12 @@ function mirrorActions() {
 /* ---------------- the guard's box ---------------- */
 function openBoxLock() {
   flag('boxSeen');
-  const svgArm = (p, i) => { const a = ARM_ANG[p] * 180 / Math.PI; return `<g transform="translate(${88 + i * 94},0)" data-arm="${i}" style="cursor:pointer"><rect x="-6" y="40" width="12" height="120" fill="#2a2a2a"/><rect x="-26" y="158" width="52" height="10" fill="#2a2a2a"/><g transform="translate(0,70) rotate(${a})"><rect x="-70" y="-9" width="70" height="18" rx="2" fill="#a8201a" stroke="#1a1a1a" stroke-width="2"/><rect x="-60" y="-3" width="10" height="6" fill="#f2ecd8"/></g><circle cx="0" cy="70" r="7" fill="#c9a060" stroke="#1a1a1a" stroke-width="2"/><rect x="-80" y="0" width="100" height="185" fill="transparent"/></g>`; };
-  const draw = (msg = '', bad = false) => {
-    UI.show('box', `<button class="x">Close &middot; Esc</button><h2>The guard's box</h2><p class="sub">A brass lock plate with three little railway signals. Each red arm can be raised, level, or lowered.</p>
-      <svg viewBox="0 0 320 190" class="arms" style="width:100%;max-width:360px;display:block;margin:0 auto 10px;background:#d8c9a0;border-radius:4px">${S.arms.map(svgArm).join('')}</svg>
-      <div id="lmsg" class="lockmsg ${bad ? 'bad' : ''}">${msg}</div>
-      <div class="row" style="justify-content:center;margin-top:8px"><button class="btn primary" id="boxTry">Try the lid</button></div>
-      <p class="muted" style="font-size:11px;margin:10px 0 0;text-align:center">${G.touch ? 'Tap an arm to move it' : 'Click an arm to move it, or press 1, 2, 3 &middot; <kbd>Enter</kbd> to try'}</p>`,
-      { cls: 'ui-card pz', onKey: e => { const n = { Digit1: 0, Digit2: 1, Digit3: 2, Numpad1: 0, Numpad2: 1, Numpad3: 2 }[e.code]; if (n !== undefined) cycle(n); else if (e.code === 'Enter') tryIt(); } });
-    $('#card').querySelectorAll('[data-arm]').forEach(g => g.addEventListener('click', () => cycle(+g.dataset.arm)));
-    $('#boxTry').onclick = tryIt;
-  };
-  const order = ['level', 'up', 'down'];
-  const cycle = i => { S.arms[i] = order[(order.indexOf(S.arms[i]) + 1) % 3]; O.boxArms[i].rotation.z = -ARM_ANG[S.arms[i]]; sClick(POS.box, 0.3, 2600); save(); draw(); };
-  const tryIt = () => {
-    if (G.time < (G.lockout || 0)) { draw('Your hands are shaking too much. Give it a few seconds.', true); return; }
-    if (S.arms.every((p, i) => p === BOX_CODE[i])) { sThunk(POS.box, 0.8, 220); sClick(POS.box, 0.6, 1800); UI.close(); openBox(); }
-    else { S.wrong++; save(); sThunk(POS.box, 0.5, 120); draw('The lid won\'t lift.', true); setTimeout(() => { if (UI.kind === 'box') { UI.close(true); ROOM.penalty(); } }, 700); }
-  };
-  draw();
+  if (!S.flags.keys) { sThunk(POS.box, 0.4, 140); sayI('Locked. A heavy padlock through the hasp. The guard\'s own key would open it.', 4200); return; }
+  sClick(POS.box, 0.6, 1500); sThunk(POS.box, 0.6, 220);
+  after(0.4, () => { sayI('One of the keys on his ring fits the padlock. It turns, stiff with rust.', 3600); openBox(); });
 }
 function openBox() {
-  flag('boxOpen'); O.boxIn.visible = true; sCreak(POS.box, 1.0, 0.25, 120);
+  flag('boxOpen'); O.boxIn.visible = true; sCreak(POS.box, 1.0, 0.25, 120); tween(0.3, k => { O.padlock.position.y = -0.04 - 0.3 * k; }, () => { O.padlock.visible = false; });
   tween(1.0, k => O.boxLid.rotation.x = -1.7 * k, () => renderer.shadowMap.needsUpdate = true);
   after(1.1, () => sayI('The lid comes up. Inside: a guard\'s hand lamp, two rolled flags, and a heavy brass key on a tag.', 5000));
 }
@@ -1738,9 +1717,11 @@ function director(dt) {
 /* ---------------- interactions ---------------- */
 function registerInteractions() {
   // desk and register
-  inter('desk', O.desk, { name: 'Writing desk', actions: () => [look('A teak writing desk with a green leather top and brass handles. The officers who used this saloon did their paperwork here, facing the window.')] });
+  // with the drawer out, the slot is a narrow dark gap under the desk top and hard to point at from standing,
+  // so the desk itself offers the reach (and the key, once the tray is out)
+  inter('desk', O.desk, { name: 'Writing desk', actions: () => [S.drawer === 'out' && !S.flags.trayOut ? { label: 'Reach into the slot', run: reachSlot } : null, S.flags.trayOut && !S.flags.winKey ? { label: 'Take the small brass key', run: takeWinKey } : null, look('A teak writing desk with a green leather top and brass handles. The officers who used this saloon did their paperwork here, facing the window.')] });
   inter('register', O.register, { name: 'Register', actions: () => [{ label: 'Read it', run: () => openDoc('register') }] }); hitbox('register', O.register, 0.03);
-  inter('mdrawer', O.mdrawer, { name: 'Middle drawer', enabled: () => S.drawer !== 'out', actions: () => S.drawer === 'shut' ? [{ label: 'Open it', run: openDrawer }] : [O.report.visible ? { label: 'Take out the report', run: readReport } : null, { label: 'Take the drawer right out', run: drawerOut }, { label: 'Shut it', run: shutDrawer }] }); hitbox('mdrawer', O.mdrawer, 0.03);
+  inter('mdrawer', O.mdrawer, { name: 'Middle drawer', enabled: () => S.drawer !== 'out', actions: () => S.drawer === 'shut' ? [{ label: 'Open it', run: openDrawer }] : [{ label: 'Take the drawer right out', run: drawerOut }, { label: 'Shut it', run: shutDrawer }] }); hitbox('mdrawer', O.mdrawer, 0.03);
   inter('slot', O.slot, { name: 'Slot where the drawer was', enabled: () => S.drawer === 'out', actions: () => [{ label: 'Reach inside', run: reachSlot }] }); hitbox('slot', O.slot, 0.03);
   inter('tray', O.sdrawer, { name: 'Hidden drawer', enabled: () => S.flags.trayOut && !S.flags.winKey, actions: () => [{ label: 'Take the small brass key', run: takeWinKey }] }); hitbox('tray', O.sdrawer, 0.04);
   inter('dlamp', O.dlamp, { name: 'Desk lamp', actions: () => [look('A brass reading lamp with a cream shade, bolted to the desk against the swaying.')] });
@@ -1772,7 +1753,7 @@ function registerInteractions() {
   inter('cdoor', O.cdoor, { name: 'Gangway door', actions: doorActions });
   inter('anote', O.anote, { name: 'Note taped to the door', actions: () => [{ label: 'Read it', run: () => openDoc('anote') }] }); hitbox('anote', O.anote, 0.03);
   inter('slip', O.slip, { name: () => `Slip gear (${S.slip === 'locked' ? 'LOCKED' : 'ARMED'})`, actions: slipActions });
-  inter('box', O.box, { name: 'Guard\'s box', actions: () => S.flags.boxOpen ? [!took('slipKey') && !S.flags.slipFitted ? { label: 'Take the slip key', run: takeSlipKey } : null, look('The hand lamp has a green glass on one side and a red on the other. The flags are soft with damp.')] : [{ label: 'Try the lock', run: openBoxLock }, look('A green steel trunk, stencilled GUARD · SLIP · S.9, and a name: J. D\'SOUZA. The lock plate has three little red signal arms on it.')] });
+  inter('box', O.box, { name: 'Guard\'s box', actions: () => S.flags.boxOpen ? [!took('slipKey') && !S.flags.slipFitted ? { label: 'Take the slip key', run: takeSlipKey } : null, look('The hand lamp has a green glass on one side and a red on the other. The flags are soft with damp.')] : [{ label: S.flags.keys ? 'Unlock it with the key ring' : 'Try the lock', run: openBoxLock }, look('A green steel trunk, stencilled GUARD · SLIP · S.9, and a name: J. D\'SOUZA. A heavy padlock through the hasp.')] });
   inter('bells', O.bells, { name: 'Bell board', actions: () => [look(S.ev.balconyBell ? 'The attendant\'s bell board. The BALCONY flag has dropped. Somebody rang from out on the balcony.' : 'The attendant\'s bell board, with a flag for each bell push in the saloon: LOUNGE, OFFICE, BATH, BALCONY.')] });
   inter('ustand', O.ustand, { name: 'Umbrella stand', actions: () => [!took('umbrella') && !S.flags.umbLost ? { label: 'Take the umbrella', run: () => { give('umbrella'); O.umb.visible = false; } } : look('An empty umbrella stand.')] });
   inter('umb', O.umb, { name: 'Umbrella', enabled: () => !took('umbrella') && !S.flags.umbLost, actions: () => [{ label: 'Take it', run: () => { give('umbrella'); O.umb.visible = false; } }] }); hitbox('umb', O.umb, 0.1); hitbox('ustand', O.ustand, 0.06);
@@ -1859,7 +1840,7 @@ function roomUpdate(dt) {
   O.fog.material.uniforms.fog.value = smooth(V.fog);
   steamUpdate(dt, steaming);
   if (V.fog > 0.6 && !S.ev.fogSaid && Math.hypot(P.x - 0.7, P.z + 3.2) < 1.3) { S.ev.fogSaid = true; save(); sayI('The mirror steams over. And in the grey, lines appear where a fingertip once drew on the glass.', 5200); }
-  if (V.fog > 0.6 && !S.flags.mirrorSeen && inView(O.wcMirror, 0.6) && Math.hypot(P.x - 0.7, P.z + 3.2) < 1.3) { V.mirT = (V.mirT || 0) + dt; if (V.mirT > 1.2) { flag('mirrorSeen'); sayI('Three little railway signals, drawn with a finger: the left arm raised, the middle one lowered, the right one raised. Underneath, an arrow, and BOX.', 7000); } }
+  if (V.fog > 0.6 && !S.flags.mirrorSeen && inView(O.wcMirror, 0.6) && Math.hypot(P.x - 0.7, P.z + 3.2) < 1.3) { V.mirT = (V.mirT || 0) + dt; if (V.mirT > 1.2) { flag('mirrorSeen'); sayI('Written in the steam with a fingertip: NOT THE WHEEL. And under it, smaller: HE IS IN THE GLASS.', 6400); } }
   // and then a hand presses into the steam, from the other side
   if (S.flags.mirrorSeen && V.fog > 0.7 && !S.ev.hand && inView(O.wcMirror, 0.7)) { S.ev.hand = true; save(); after(3.5, () => { V.handGo = true; sSqueak(POS.wcMirror, 0.1); after(0.2, () => sSqueak(POS.wcMirror, 0.07)); G.fearT = 0.5; sayI('A hand presses flat into the steam. Not your hand. From the other side of the glass.', 5000); }); }
   if (V.handGo) V.hand = Math.min(1, V.hand + dt * 1.2);
@@ -2034,7 +2015,7 @@ function buildRoom() {
 
 /* ---------------- the room module ---------------- */
 return {
-  id: 'night', title: 'Night Mail', saveKey: 'lethe.roomnight.v1',
+  id: 'night', title: 'Night Mail', saveKey: 'lethe.roomnight.v2',
   DOCS, ITEMS, HEARD, HINTS, openDoc, inspectItem, titleFx,
   penalty() { G.lockout = G.time + 5; V.dipT = 1.6; after(0.5, () => roofSteps(4, 1, -1)); sayI('The lights stutter. On the roof, right over your head, footsteps.', 3600); },
   markSkip: ['start'], markMerge: {},
@@ -2054,8 +2035,8 @@ return {
   },
   build() {
     buildRoom(); paintThings(); registerInteractions();
-    DOCS.register.bind = card => { const t = card.querySelector('.pager span'); if (t && /^3/.test(t.textContent)) flag('readIlse'); };
-    [O.mdrawer, O.sdrawer, O.slot, O.drop, O.strap, O.rdoorPivot, O.cdoorPivot, O.brakeWheel, O.slipLever, O.slipKeyIn, O.boxLid, O.boxIn, O.boxArms[0].parent, O.umb, O.ring, O.tail, O.gang, O.nextDoor, O.wcPivot, O.gToggle, O.stream, O.waterSurf, O.fog, O.world, O.ibolt, O.report, O.winKey, O.hHour, O.hMin, O.register, O.chairs[0], O.chairs[1]].forEach(o => { if (o) o.userData.keep = true; });
+    DOCS.register.bind = () => flag('readIlse');
+    [O.mdrawer, O.sdrawer, O.slot, O.drop, O.strap, O.rdoorPivot, O.cdoorPivot, O.brakeWheel, O.slipLever, O.slipKeyIn, O.boxLid, O.boxIn, O.boxLock, O.umb, O.ring, O.tail, O.gang, O.nextDoor, O.wcPivot, O.gToggle, O.stream, O.waterSurf, O.fog, O.world, O.ibolt, O.report, O.winKey, O.hHour, O.hMin, O.register, O.chairs[0], O.chairs[1]].forEach(o => { if (o) o.userData.keep = true; });
     O.fans.forEach(f => f.rot.userData.keep = true);
     O.hHour.rotation.z = -(2 + 40 / 60) / 12 * TAU; O.hMin.rotation.z = -40 / 60 * TAU;
     
