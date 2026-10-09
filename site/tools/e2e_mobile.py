@@ -211,7 +211,7 @@ with sync_playwright() as p:
     pg.evaluate("Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' }); Object.defineProperty(document, 'hidden', { configurable: true, get: () => true }); document.dispatchEvent(new Event('visibilitychange'))")
     pg.wait_for_timeout(400)
     check(pg.locator('#card h2', has_text='Paused').count() == 1, 'leaving the app pauses the room')
-    saved = pg.evaluate("Object.keys(localStorage).some(k => /^lethe\\.room.*\\.v1$/.test(k))")
+    saved = pg.evaluate("Object.keys(localStorage).some(k => /^lethe\\.room.*\\.v\\d+$/.test(k))")   # rooms bump their save version when a rework changes the state
     check(saved, 'leaving the app saves progress straight away')
     pg.evaluate("Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' }); Object.defineProperty(document, 'hidden', { configurable: true, get: () => false }); document.dispatchEvent(new Event('visibilitychange'))")
     check(pg.locator('#pShare').count() == 1, 'the pause menu offers "Send this room to a friend"')
