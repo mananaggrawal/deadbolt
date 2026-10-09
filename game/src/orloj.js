@@ -1,6 +1,9 @@
 const ROOM_ORLOJ = (() => {
 /* =====================================================================
-   MYSTERY #7 — "THE BLIND HOUR"  ·  inside the Prague astronomical clock, 8 January 2018
+   MYSTERY #6 — "THE BLIND HOUR"  ·  inside the Prague astronomical clock, 8 January 2018
+   Reworked 9 Oct 2026 to be hands-on: one plain rule (he is blind and hunts by sound; while a bell
+   rings he stands still and counts), a bell sign on screen while it is safe to be loud, a body
+   (jump, drag the restorers' crate), and physical steps instead of documents and dial maths.
    part A: layout, noise, the clock's lettering (Schwabacher numerals, zodiac signs),
    textures and materials (realistic: limestone, old oak, wrought iron, worn brass, gilding)
    The mechanism room: x -3..3, z -2.6 (the dial wall, facing the square) .. 2.4, floor y 0.
@@ -16,6 +19,9 @@ const SIDEWIN = { x: 2.25, y0: 1.15, y1: 2.15, w: 0.5 };                       /
 const FR = { x0: -1.5, x1: 1.1, z0: -0.25, z1: 0.75, y0: 0.25, y1: 2.05 };     // the clock's iron frame (on a stone plinth)
 const LADDER = { x: -1.9, z0: -0.02, z1: -0.62 };
 const EYE_LOFT = LOFT.y + 1.42;
+const CRATE = { x: 2.3, z: -0.3, w: 0.66, d: 0.5, h: 0.52 };                  // the restorers' crate 3: the crank and the pendulum, nailed shut
+const SH = { x0: -2.82, x1: -2.12, z0: 1.5, z1: 2.22 };                        // the weight shaft in the back left corner
+const WEIGHT_Y = [-4.2, -0.95];                                               // the strike weight: run right down, and fully wound
 const POS = {
   dial: new THREE.Vector3(-0.85, 1.42, FR.z1 + 0.04), knob: new THREE.Vector3(-0.4, 1.18, FR.z1 + 0.05), count: new THREE.Vector3(0.62, 1.4, FR.z1 + 0.04),
   wind: new THREE.Vector3(0.28, 0.82, FR.z1 + 0.05), fly: new THREE.Vector3(0.8, 2.22, 0.3), clutch: new THREE.Vector3(0.12, 2.12, 0.25),
@@ -23,7 +29,7 @@ const POS = {
   cupboard: new THREE.Vector3(-2.95, 1.4, 0.75), lectern: new THREE.Vector3(2.35, 1.1, -1.4), bench: new THREE.Vector3(1.3, 1.0, 2.05), cal: new THREE.Vector3(1.3, 1.78, RM.z1 - 0.01),
   door: new THREE.Vector3(2.98, 1.1, 1.05), death: new THREE.Vector3(-1.75, 1.65, RM.z0 + 0.06), shaft: new THREE.Vector3(-2.45, -1.5, 1.85), dialBack: new THREE.Vector3(-0.2, 1.3, RM.z0 + 0.04),
   housDoor: new THREE.Vector3(HOUS.x, LOFT.y + 0.42, HOUS.z + HOUS.r), crank: new THREE.Vector3(HOUS.x + 0.66, LOFT.y + 0.5, HOUS.z + 0.25), loftMid: new THREE.Vector3(0, LOFT.y + 0.6, -1.4),
-  tyn: new THREE.Vector3(-34, 18, -48), square: new THREE.Vector3(0, -8, -30), light: new THREE.Vector3(2.0, 1.75, 1.25), workbench: new THREE.Vector3(1.3, 0.95, 2.1),
+  tyn: new THREE.Vector3(-34, 18, -48), square: new THREE.Vector3(0, -8, -30), light: new THREE.Vector3(-2.3, 1.75, 0.95), workbench: new THREE.Vector3(1.3, 0.95, 2.1),
 };
 
 /* ---------------- noise ---------------- */
@@ -275,7 +281,6 @@ function buildShell() {
   O.shell = grp(0, 0, 0);
   const g = O.shell;
   // floor, with the weight shaft cut out of the back left corner
-  const SH = { x0: -2.82, x1: -2.12, z0: 1.5, z1: 2.22 };
   const fg = holedGeo(RM.x0, RM.x1, -RM.z1, -RM.z0, [[SH.x0, SH.x1, -SH.z1, -SH.z0]], 0.06); uvScale(fg, 0.5, 0.5); fg.rotateX(-Math.PI / 2);
   const floor = new THREE.Mesh(fg, M.oak); floor.position.y = -0.06; floor.receiveShadow = true; g.add(floor);
   // the dial wall (front) and the back wall: gables under the vault
@@ -322,7 +327,7 @@ function buildShell() {
   O.apwFrames = APW.xs.map(x => { const f = grp(x, 0, RM.z0 - 0.02, g); bev(APW.w + 0.08, 0.06, 0.06, M.wood, 0, APW.y0 - 0.03, 0, f, 0.008); for (const sx of [-1, 1]) bev(0.05, APW.y1 - APW.y0, 0.06, M.wood, sx * (APW.w / 2 + 0.02), (APW.y0 + APW.y1) / 2, 0, f, 0.006); return f; });
   // cobwebs in the corners
   for (const [x, y, z, ry, s] of [[RM.x0 + 0.02, RM.spring - 0.2, RM.z1 - 0.02, Math.PI / 2, 0.8], [RM.x1 - 0.02, RM.spring - 0.1, RM.z0 + 0.02, -Math.PI / 2, 0.6], [RM.x1 - 0.02, 2.1, RM.z1 - 0.02, Math.PI, 0.5], [-1.6, LOFT.y - 0.12, -0.62, 0, 0.5]]) { const w = plane(s, s, M.web, x, y, z, ry, g); w.rotation.z = Math.PI; w.userData.noRay = true; w.castShadow = false; }
-  buildLoft(); buildShaft(SH); buildFurniture();
+  buildLoft(); buildShaft(SH); buildFurniture(); buildCrate();
 }
 
 /* ---------------- the loft and the ladder ---------------- */
@@ -469,6 +474,13 @@ function buildShaft(SH) {
     const w = grp(wx, y, z, g); cyl(0.11, 0.11, 0.6, M.iron, 0, 0, 0, w, 16); cyl(0.02, 0.02, 0.1, M.iron, 0, 0.34, 0, w, 6);
     const cab = cyl(0.007, 0.007, 1, M.cable, 0, 0, 0, w, 6); cab.userData.cable = true; w.userData.cab = cab; O.weights.push(w);
   }
+  // the apostles' pin, lying on top of the strike weight where it fell, a little brass glint far down in the dark
+  O.pinW = grp(0.05, 0.315, 0.02, O.weights[1]); O.pinW.userData.keep = true;
+  { const p = cyl(0.007, 0.007, 0.11, M.brassBright, 0, 0, 0, O.pinW, 8); p.rotation.z = Math.PI / 2; p.rotation.y = 0.6; }
+  O.pinGlint = new THREE.Sprite(new THREE.SpriteMaterial({ map: T.glow, color: 0xffe0a0, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.85 }));
+  O.pinGlint.scale.setScalar(0.16); O.pinGlint.position.set(0, 0.02, 0); layer1(O.pinGlint); O.pinW.add(O.pinGlint);
+  // what you aim at when you look down the shaft: its mouth
+  O.shaftHit = box(SH.x1 - SH.x0, 0.5, SH.z1 - SH.z0, HITMAT, (SH.x0 + SH.x1) / 2, -0.2, (SH.z0 + SH.z1) / 2, scene); O.shaftHit.layers.set(2);
   // the cables run from the barrels in the frame up and over to the pulleys
   tube([[0.32, 0.86, FR.z0 + 0.4], [0.32, 2.9, 0.4], [-1.0, 2.95, 1.2], [wx + 0.08, 2.98, 2.02]], 0.007, M.cable, g, 30, 5);
   tube([[-0.25, 0.86, FR.z0 + 0.5], [-0.25, 2.88, 0.5], [-1.2, 2.93, 1.1], [wx + 0.08, 2.98, 1.68]], 0.007, M.cable, g, 30, 5);
@@ -485,18 +497,16 @@ function buildFurniture() {
   for (const y of [-0.36, 0.36]) bev(0.036, 0.05, 0.62, M.ironBlack, 0.003, y, 0.31, O.cupDoor, 0.004);
   for (const yz of [[-0.4, 0.04], [0.4, 0.04], [-0.4, 0.58], [0.4, 0.58]]) { const r = new THREE.Mesh(new THREE.SphereGeometry(0.012, 8, 6), M.ironBlack); r.position.set(0.02, yz[0], yz[1]); O.cupDoor.add(r); }
   O.cupLock = grp(0.024, 0.02, 0.31, O.cupDoor); O.cupLock.rotation.y = Math.PI / 2;
-  O.cupFace = new THREE.Mesh(new THREE.CircleGeometry(0.15, 48), std({ map: T.cupTex, metalness: 0.8, roughness: 0.38, envMapIntensity: 1 })); O.cupLock.add(O.cupFace);
-  const bez = new THREE.Mesh(new THREE.TorusGeometry(0.152, 0.008, 8, 48), M.brass); O.cupLock.add(bez);
-  O.cupKnob = cyl(0.025, 0.028, 0.03, M.brass, 0, 0, 0.018, O.cupLock, 16); O.cupKnob.rotation.x = Math.PI / 2;
+  // a plain old lock plate with a keyhole, and an iron handle (the keepers never locked it)
+  bev(0.1, 0.16, 0.012, M.iron, 0, 0, 0.004, O.cupLock, 0.004); cyl(0.008, 0.008, 0.016, M.black, 0, -0.03, 0.01, O.cupLock, 8).rotation.x = Math.PI / 2;
+  O.cupKnob = cyl(0.022, 0.024, 0.03, M.brass, 0, 0.04, 0.02, O.cupLock, 16); O.cupKnob.rotation.x = Math.PI / 2;
   const hd = grp(0.03, -0.18, 0.5, O.cupDoor); tube([[0, 0, -0.05], [0.04, 0, -0.04], [0.04, 0, 0.04], [0, 0, 0.05]], 0.007, M.ironBlack, hd, 10, 6);
-  // inside: shelves, the crank, the brass box, an oil can, old rags (shown when it opens)
+  // inside: shelves, an oil can, old rags, the keepers' lantern (shown when it opens)
   O.cupIn = grp(0, 1.38, 0, O.cup);
   bev(0.02, 0.9, 0.6, M.black, -0.05, 0, 0, O.cupIn, 0.004);
   bev(0.18, 0.02, 0.6, M.wood, 0.04, -0.12, 0, O.cupIn, 0.004);
-  O.crankItem = grp(0.06, 0.05, -0.12, O.cupIn);
-  { const c = O.crankItem; cyl(0.016, 0.016, 0.06, M.iron, 0, 0, 0, c, 6); bev(0.03, 0.03, 0.26, M.iron, 0, 0.03, 0.12, c, 0.004); const hnd = cyl(0.014, 0.014, 0.1, M.wood, 0, 0.1, 0.24, c, 8); hnd.rotation.x = 0; c.rotation.z = 0.05; }
-  O.boxItem = grp(0.05, -0.06, 0.15, O.cupIn);
-  { const b = O.boxItem; bev(0.11, 0.08, 0.16, M.brass, 0, 0, 0, b, 0.008); bev(0.112, 0.012, 0.162, M.brassBright, 0, 0.035, 0, b, 0.003); for (const z of [-0.035, 0.035]) { const r = cyl(0.022, 0.022, 0.012, M.brassBright, 0.058, 0.0, z, b, 16); r.rotation.z = Math.PI / 2; } }
+  { const r = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 8), M.cloth); r.scale.set(0.9, 0.5, 1.3); r.position.set(0.06, -0.08, 0.12); O.cupIn.add(r); }
+  { const ln = grp(0.06, -0.11, -0.12, O.cupIn); bev(0.09, 0.012, 0.09, M.ironBlack, 0, 0.006, 0, ln, 0.003); cyl(0.035, 0.035, 0.11, M.glassOld, 0, 0.07, 0, ln, 10); bev(0.09, 0.012, 0.09, M.ironBlack, 0, 0.13, 0, ln, 0.003); const h = new THREE.Mesh(new THREE.TorusGeometry(0.03, 0.004, 6, 12, Math.PI), M.ironBlack); h.position.y = 0.14; ln.add(h); }
   const oil = grp(0.06, -0.31, -0.2, O.cupIn); lathe([[0.001, 0], [0.04, 0], [0.04, 0.06], [0.012, 0.09], [0.004, 0.16]], M.brass, 0, 0, 0, oil, 14);
   O.cupIn.visible = false;
   hb('cup', O.cup, 0.02);
@@ -520,7 +530,11 @@ function buildFurniture() {
   const th = grp(0.2, 0.89, -0.2, O.bench); cyl(0.04, 0.04, 0.28, std({ color: 0x3a4a5a, metalness: 0.6, roughness: 0.35 }), 0, 0.14, 0, th, 14); cyl(0.042, 0.042, 0.05, M.plastic, 0, 0.3, 0, th, 14);
   O.clip = grp(-0.1, 0.895, -0.08, O.bench); O.clip.rotation.y = -0.15;
   bev(0.24, 0.008, 0.33, std({ color: 0x8a6a40, roughness: 0.7 }), 0, 0.004, 0, O.clip, 0.003); plane(0.21, 0.28, std({ map: T.sheetTex, roughness: 0.9 }), 0, 0.009, 0.02, 0, O.clip).rotation.x = -Math.PI / 2; bev(0.1, 0.012, 0.03, M.steel, 0, 0.012, -0.15, O.clip, 0.003);
-  hb('clip', O.clip, 0.03); hb('laptop', O.laptop, 0.02); hb('toolbox', O.toolbox, 0.02);
+  // a crowbar lying along the front edge of the bench, red paint worn off the claw
+  O.crowbar = grp(0.22, 0.905, -0.25, O.bench); O.crowbar.rotation.y = 0.12;
+  { const red = std({ color: 0x8a1a14, metalness: 0.4, roughness: 0.5 }); tube([[-0.3, 0, 0], [0.22, 0, 0], [0.27, 0.0, 0.0], [0.31, 0.025, 0], [0.33, 0.06, 0]], 0.011, red, O.crowbar, 20, 6);
+    const tip = bev(0.04, 0.008, 0.024, M.steel, -0.31, 0, 0, O.crowbar, 0.002); tip.rotation.z = 0.1; }
+  hb('clip', O.clip, 0.03); hb('laptop', O.laptop, 0.02); hb('toolbox', O.toolbox, 0.02); hb('crowbar', O.crowbar, 0.05);
   // the calendar plate: a big photographic print the restorers taped up
   O.cal = grp(POS.cal.x, POS.cal.y, POS.cal.z);
   O.calPrint = plane(0.82, 0.82, std({ map: T.calTex, roughness: 0.6 }), 0, 0, 0, Math.PI, O.cal);
@@ -530,11 +544,11 @@ function buildFurniture() {
   O.lamp = grp(POS.light.x, 0, POS.light.z);
   for (let i = 0; i < 3; i++) { const a = i / 3 * TAU + 0.4; const l = cyl(0.01, 0.01, 1.72, M.steel, Math.cos(a) * 0.18, 0.84, Math.sin(a) * 0.18, O.lamp, 6); l.rotation.set(Math.sin(a) * 0.2, 0, -Math.cos(a) * 0.2); }
   cyl(0.012, 0.012, 0.4, M.steel, 0, 1.5, 0, O.lamp, 6);
-  O.lampHead = grp(0, 1.75, 0, O.lamp); O.lamp.updateMatrixWorld(true); O.lampHead.lookAt(-0.3, 1.25, 0.8);
+  O.lampHead = grp(0, 1.75, 0, O.lamp); O.lamp.updateMatrixWorld(true); O.lampHead.lookAt(-0.2, 1.15, 0.55);
   bev(0.28, 0.2, 0.06, std({ color: 0x1a1c1e, metalness: 0.5, roughness: 0.5 }), 0, 0, 0, O.lampHead, 0.01);
   O.lampLens = plane(0.24, 0.16, M.ledPanel, 0, 0, 0.031, 0, O.lampHead); O.lampLens.userData.noRay = true;
-  tube([[0, 1.6, 0], [0.1, 0.6, 0.1], [0.3, 0.02, 0.4], [0.9, 0.02, 0.9]], 0.006, M.black, O.lamp, 16, 5);
-  bev(0.2, 0.12, 0.12, M.yellow, 0.95, 0.06, 0.95, O.lamp, 0.01);
+  tube([[0, 1.6, 0], [-0.1, 0.6, 0.05], [-0.25, 0.02, 0.2], [-0.4, 0.02, 0.32]], 0.006, M.black, O.lamp, 16, 5);
+  bev(0.2, 0.12, 0.12, M.yellow, -0.5, 0.06, 0.36, O.lamp, 0.01);
   hb('lamp', O.lamp, 0.04);
   // the dial's back, on the dial wall: a great wooden disc with iron straps, the arbors coming through its middle
   O.dialBack = grp(POS.dialBack.x, POS.dialBack.y, RM.z0 + 0.04);
@@ -655,10 +669,36 @@ function buildSettingDial(parent) {
   cyl(0.012, 0.012, 0.05, M.steel, 0, 0, 0, O.knob, 6).rotation.x = Math.PI / 2;
   O.knobArm = grp(0, 0, 0.03, O.knob); bev(0.014, 0.08, 0.008, M.brass, 0, 0.035, 0, O.knobArm, 0.002); const kh = cyl(0.008, 0.008, 0.035, M.wood, 0, 0.07, 0.018, O.knobArm, 8); kh.rotation.x = Math.PI / 2;
   hb('knob', O.knob, 0.03);
-  // the restorers' label under the dial
-  O.card = grp(POS.dial.x, POS.dial.y - 0.44, POS.dial.z + 0.012, parent);
-  plane(0.16, 0.1, std({ map: T.cardTex, roughness: 0.8 }), 0, 0, 0.002, 0, O.card); tube([[-0.07, 0.05, 0], [0, 0.11, -0.005], [0.07, 0.05, 0]], 0.0012, M.paper, O.card, 6, 3);
-  hb('card', O.card, 0.03);
+}
+/* ---------------- the restorers' crate ---------------- */
+// crate 3, nailed shut: the pendulum and the winding crank packed in straw. Once it's open and empty you can drag it and stand on it.
+function buildCrate() {
+  const { w, d, h } = CRATE;
+  O.crate = grp(CRATE.x, 0, CRATE.z); O.crate.userData.keep = true;
+  // new pale pine with a few grain lines, the way the restorers' crates come
+  if (!T.pine) T.pine = tex(pix(256, 256, (x, y) => { const g = Math.sin((x + fbm(x / 40, y / 90, 3) * 60) * 0.32) * 0.5 + 0.5, n = fbm(x / 9, y / 70, 3); const k = 0.82 + g * 0.1 - n * 0.12; return [Math.round(214 * k), Math.round(176 * k), Math.round(118 * k)]; }));
+  const pine = std({ map: T.pine, roughness: 0.8 }), batten = std({ map: T.pine, color: 0xcfb894, roughness: 0.82 });
+  // four sides of three boards each, with gaps, and corner battens
+  for (let i = 0; i < 3; i++) { const y = 0.04 + i * (h - 0.06) / 3 + (h - 0.06) / 6;
+    for (const s of [-1, 1]) { bev(w, (h - 0.06) / 3 - 0.012, 0.018, pine, 0, y, s * (d / 2 - 0.009), O.crate, 0.003); bev(0.018, (h - 0.06) / 3 - 0.012, d - 0.036, pine, s * (w / 2 - 0.009), y, 0, O.crate, 0.003); } }
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) bev(0.04, h - 0.02, 0.04, batten, sx * (w / 2 - 0.02), (h - 0.02) / 2 + 0.01, sz * (d / 2 - 0.02), O.crate, 0.004);
+  bev(w - 0.02, 0.02, d - 0.02, batten, 0, 0.015, 0, O.crate, 0.003);
+  // stencils: a big 3, ORLOJ 2018 and what's inside, on the two sides you see from the room
+  const st = tex(canv(256, 160, (g, W, H) => { g.clearRect(0, 0, W, H); g.fillStyle = 'rgba(12,10,9,0.92)'; g.font = '700 92px ' + MONO; g.textAlign = 'left'; g.fillText('3', 18, 96); g.font = '700 22px ' + MONO; g.fillText('ORLOJ 2018', 92, 44); g.fillText('KYVADLO', 92, 78); g.fillText('+ KLIKA', 92, 104); g.font = '600 15px ' + MONO; g.fillText('PENDULUM + CRANK', 18, 140); }));
+  const sm = std({ map: st, transparent: true, roughness: 0.9, depthWrite: false });
+  plane(0.42, 0.26, sm, -w / 2 - 0.003, h * 0.52, 0, -Math.PI / 2, O.crate).userData.noRay = true;
+  plane(0.42, 0.26, sm, 0, h * 0.52, d / 2 + 0.003, 0, O.crate).userData.noRay = true;
+  // inside: straw, the pendulum rod and bob lying corner to corner, the crank on top
+  { const straw = std({ color: 0xb89a52, roughness: 1 }); bev(w - 0.05, 0.05, d - 0.05, straw, 0, h - 0.16, 0, O.crate, 0.02); }
+  { const pd = grp(0, h - 0.12, 0, O.crate); pd.rotation.y = 0.6; cyl(0.01, 0.01, 0.72, M.steel, 0, 0, 0, pd, 6).rotation.z = Math.PI / 2; const bob = cyl(0.11, 0.11, 0.025, M.brass, 0.3, 0.0, 0, pd, 24); bob.rotation.x = Math.PI / 2; bob.rotation.z = Math.PI / 2; }
+  O.crateCrank = grp(-0.1, h - 0.1, 0.08, O.crate); O.crateCrank.rotation.y = -0.4;
+  { const c = O.crateCrank; bev(0.26, 0.026, 0.026, M.iron, 0, 0, 0, c, 0.004); bev(0.03, 0.03, 0.05, M.iron, -0.13, 0, 0, c, 0.004); const hnd = cyl(0.014, 0.014, 0.1, M.wood, 0.13, 0.05, 0, c, 8); hnd.rotation.x = 0; }
+  // the lid: three boards and two battens, nailed down; it tips off over the far edge
+  O.crateLid = grp(0, h, -d / 2, O.crate);
+  for (let i = 0; i < 3; i++) bev(w, 0.018, d / 3 - 0.008, pine, 0, 0.009, (i + 0.5) * d / 3, O.crateLid, 0.003);
+  for (const sx of [-1, 1]) bev(0.05, 0.016, d - 0.02, batten, sx * (w / 2 - 0.06), 0.026, d / 2, O.crateLid, 0.003);
+  for (const sx of [-1, 1]) for (const k of [0.08, d / 2, d - 0.08]) cyl(0.006, 0.006, 0.004, M.ironBlack, sx * (w / 2 - 0.06), 0.035, k, O.crateLid, 6);
+  hb('crate', O.crate, 0.03);
 }
 
 /* =====================================================================
@@ -831,7 +871,7 @@ function buildLights() {
   L.head.target.position.set(0, -0.03, -1); camera.add(L.head.target);
   L.head.castShadow = true; L.head.shadow.mapSize.set(IS_TOUCH ? 512 : 1024, IS_TOUCH ? 512 : 1024); L.head.shadow.bias = -0.0015; L.head.shadow.normalBias = 0.02; L.head.shadow.camera.near = 0.08; L.head.shadow.camera.far = 12;
   // the restorers' work lamp: a cold battery panel on a tripod, aimed at the back of the clock
-  L.work = new THREE.SpotLight(0xe6eeff, 0, 10, 0.75, 0.6, 1.6); L.work.position.set(POS.light.x, 1.75, POS.light.z); L.work.target.position.set(-0.4, 1.2, 0.6); scene.add(L.work); scene.add(L.work.target);
+  L.work = new THREE.SpotLight(0xe6eeff, 0, 10, 0.75, 0.6, 1.6); L.work.position.set(POS.light.x, 1.75, POS.light.z); L.work.target.position.set(-0.2, 1.15, 0.55); scene.add(L.work); scene.add(L.work.target);
   if (!IS_TOUCH) { L.work.castShadow = true; L.work.shadow.mapSize.set(1024, 1024); L.work.shadow.bias = -0.002; L.work.shadow.normalBias = 0.02; L.work.shadow.camera.near = 0.2; L.work.shadow.camera.far = 9; }
   L.workFill = new THREE.PointLight(0xdfe8ff, 0, 6, 2); L.workFill.position.set(1.4, 2.4, 1.6); scene.add(L.workFill);
   // the town's light, blue-orange, through the little window and the apostles' windows
@@ -847,136 +887,97 @@ function buildLights() {
 
 /* =====================================================================
    THE BLIND HOUR · part D: items, documents, things heard, hints, the painted things
-   (both dials, the zodiac ring, the count wheel, the calendar plate, the tower face, the square,
-   his face), and the little panels for the locks, the count wheel, the fly and the hands
+   (both dials, the zodiac ring, the count wheel, the calendar plate, the tower face, the square, his face)
    ===================================================================== */
 const TONIGHT = '8 January 2018';
+const VM_TEXT = '"Hi, it\'s Tomáš. We locked up at ten. The watchman has the key until six. I hope you\'re not still up there. Listen. Old Kroupa made us promise: if anyone\'s up in the works while she\'s stopped, keep quiet. The old master is blind. He finds you by sound. But when a bell rings, he stands still, and he counts the strokes. So anything noisy, do it while a bell is ringing. Crazy old man. Six o\'clock."';
+// the voicemail's subtitles come up a sentence or two at a time, with the recording
+const VM_PARTS = [[0, 'Hi, it\'s Tomáš. We locked up at ten. The watchman has the key until six. I hope you\'re not still up there.'], [10.1, 'Listen. Old Kroupa made us promise: if anyone\'s up in the works while she\'s stopped, keep quiet.'], [18.5, 'The old master is blind. He finds you by sound. But when a bell rings, he stands still, and he counts the strokes.'], [28.9, 'So anything noisy, do it while a bell is ringing. Crazy old man. Six o\'clock.']];
 const ITEMS = {
   phone: { name: 'Your phone', short: 'Phone', desc: 'Three per cent battery and no signal up here: the tower walls are a metre and a half thick. One voicemail, from Tomáš, at 22:14.' },
+  crowbar: { name: 'Crowbar', short: 'Crowbar', desc: 'A short steel crowbar from the restorers\' bench, the red paint worn off the claw. Good for prising up nailed boards. Not quietly.' },
+  key: { name: 'Iron key', short: 'Key', desc: 'A plain iron key on a loop of wire. It was hanging on St Peter\'s gilded keys.' },
   crank: { name: 'Winding crank', short: 'Crank', desc: 'A heavy iron crank with a square socket and a wooden handle, worn smooth by a hundred and fifty years of keepers\' hands. It fits a winding square.' },
-  box: { name: 'Brass box', short: 'Brass box', desc: 'A little box of dark old brass, heavier than it looks. On its side, two rings of zodiac signs, one marked SOL and one LUNA. No keyhole.' },
-  pin: { name: 'Brass pin', short: 'Pin', desc: 'A brass pin as long as your finger, filed square at one end and engraved along its length: a tiny figure of a man holding keys, then another, and another. Twelve of them.' },
-  key: { name: 'Iron key', short: 'Key', desc: 'A plain iron key with a short barrel, tied on a loop of wire. It was hanging on St Peter\'s gilded keys.' },
+  pin: { name: 'Brass pin', short: 'Pin', desc: 'A brass pin as long as your finger, filed square at one end and engraved with twelve tiny figures. The apostles\' pin: it couples their wheel to the strike.' },
 };
 const HEARD = {
-  vm: { title: 'Voicemail from Tomáš, 22:14', text: '"Hi, it\'s Tomáš. We locked up at ten. The watchman has the key until six. I hope you\'re not still up there with your camera... Old Kroupa made us promise: nobody stays in the works while she is stopped. He was very serious. Anyway. Six o\'clock. Don\'t be late."' },
-  count: { title: 'At midnight, as Týn struck twelve', text: 'Someone inside the clock\'s frame, whispering each stroke in Czech: "Jedna... dvě... tři..." One, two, three... all the way to "Dvanáct." Twelve.' },
+  vm: { title: 'Voicemail from Tomáš, 22:14', text: VM_TEXT },
+  rule: { title: 'The rule', text: 'He is blind, and he finds you by sound. While a bell is ringing he stands still and counts the strokes, so that is the only time you can make a noise. Anything marked "loud": do it while the bell sign is showing at the top of the screen.' },
+  count: { title: 'At midnight, as Týn struck twelve', text: 'A grey figure standing in the works, head on one side, whispering each stroke in Czech: "Jedna... dvě... tři..." all the way to "Dvanáct." Twelve. On the last stroke the light stuttered, and he was gone.' },
   kdo: { title: 'When you made a noise', text: 'A whisper, close: "Kdo je tam?" Who\'s there?' },
   watch: { title: 'At the stair door', text: 'Knocking, and a man\'s voice in Czech: "Haló? Je tam nahoře někdo?" (Hello? Is somebody up there?) ... "To jsem já, hlídač. Otevřete mi." (It\'s me, the watchman. Open up for me.) ... Then, at the keyhole, a whisper: "Slyším tě." (I can hear you.)' },
   dech: { title: 'In the dark', text: 'A whisper, inches from your face: "Slyším tvůj dech." I can hear your breath.' },
 };
 
-/* ---------------- documents ---------------- */
-const moonSketch = () => `<svg class="okmoon" viewBox="0 0 420 150" aria-label="Two small dial sketches">
-  ${[[80, 0, 1, 'Moon over the Sun:', 'new moon'], [300, 1, 0, 'Moon opposite the Sun:', 'full moon']].map(([cx, opp, dark, t1, t2]) => `<g transform="translate(${cx} 66)">
-    <circle r="50" fill="none" stroke="#3a2a1a" stroke-width="1.6"/><circle r="36" fill="none" stroke="#3a2a1a" stroke-width="0.8" stroke-dasharray="3 3"/>
-    <line x1="0" y1="0" x2="0" y2="-44" stroke="#8a6a1a" stroke-width="3"/><circle cx="0" cy="-36" r="7" fill="#c89a2a" stroke="#6a4a10"/>
-    <line x1="0" y1="0" x2="0" y2="${opp ? 40 : -40}" stroke="#4a4a4a" stroke-width="1.6"/>
-    <circle cx="0" cy="${opp ? 36 : -36}" r="${opp ? 6 : 5}" fill="${dark ? '#151515' : '#f4f2ea'}" stroke="#222" stroke-width="1.2" transform="translate(${opp ? 0 : 12} 0)"/>
-    <text x="0" y="74" text-anchor="middle" font-family="Caveat, cursive" font-size="17" fill="#2a2018">${t1}</text><text x="0" y="92" text-anchor="middle" font-family="Caveat, cursive" font-size="19" font-weight="600" fill="#5a1a14">${t2}</text></g>`).join('')}
-  <text x="210" y="16" text-anchor="middle" font-family="Caveat, cursive" font-size="16" fill="#2a2018">sun hand gold, moon hand with the little ball</text></svg>`;
+/* ---------------- documents: two short ones, both optional ---------------- */
 const DOCS = {
   book: { title: 'The keepers\' book (on the lectern)', style: 'okbook', pages: [
-    `<p class="okh">Kniha hodinářů &middot; The Keepers' Book</p><p class="okfell">Begun in the year 1866, when Master Hainz had made her new. &mdash; Jan Brabec, keeper.</p>
-     <p class="okfell"><b>The rules of the keepers, as they were told to me:</b></p>
-     <ol class="okrules"><li>She must never stop. If she stops, go down at once, and do not come up into the works again until she is going.</li>
-     <li>He cannot see. Make no sound up here that you need not make.</li>
-     <li>When a bell strikes he stands where he is and counts the strokes, and he does not move again until the last. A keeper with loud work to do does it then, and only then.</li>
-     <li>Her day begins at sunset. Her twenty-fourth hour is the hour the sun goes down, and it is the longest she strikes.</li>
-     <li>Wind her every morning. Write in this book the hour you wound her, by the town's clock. Then set the cupboard to that same hour in her own reckoning, and to the sign the Sun stands in, so that the next man may know the book is true.</li></ol>`,
-    `<p class="okh2">What the old men say. Written down by me, Václav Novák, keeper, 1902.</p>
-     <p class="okink">In the year 1490 the councillors of the Old Town put out the eyes of Master Hanuš, who made her, so that he should never make her like for any other town. They did it on <u>St Martin's night</u>, with a hot iron, under a <u>full moon</u>.</p>
-     <p class="okink">Blind, he had himself led up here. He put his hands into the works and stopped her. They say he never went down again.</p>
-     <p class="okink">His box is still in the cupboard. No one has a key to it. He made it to open only to the sky of that night: <i>the Sun where it stood, and the Moon where it stood.</i></p>`,
-    `<p class="okfell">1866. Master Hainz has narrowed the vanes of the fly, so that she strikes briskly for the visitors. Wide open, as in the old days, she struck so slowly that the whole square could count along with her. &mdash; J.&nbsp;B.</p>
-     <p class="okpen">1979. For the apprentice, how to read the Moon on her face:</p>${moonSketch()}<p class="okpen" style="text-align:right">&mdash; M. Kroupa</p>`,
-    `<p class="okh2">1948. She is going again. I write what I could not write in '45.</p>
-     <p class="okink">On the eighth of May, when the hall burned, she stopped, and I was up here. He came. I heard him in the works, feeling his way towards my breathing.</p>
-     <p class="okink">I had one way out. I made her strike the long hour, and strike it slow, the way she struck for the old masters, and while he stood and counted every stroke I went out between the apostles, through their window, and on to the firemen's ladders. I will not write the rest.</p>
-     <p class="okink">I have hung the winding key on <u>St Peter's keys</u>, where it belongs. Let no one wind her who does not know where to find it. &mdash; Karel Brož, keeper.</p>`,
-    `<div class="okents">
-     <p><span class="d">27. 12. 2017</span> wound 07:00 &mdash; M.&nbsp;K.</p><p><span class="d">28. 12.</span> wound 07:05 &mdash; M.&nbsp;K.</p><p><span class="d">29. 12.</span> wound 07:00. Ice on the gallery. &mdash; M.&nbsp;K.</p>
-     <p><span class="d">31. 12.</span> wound 06:40. Fireworks all night, he was quiet. &mdash; M.&nbsp;K.</p><p><span class="d">2. 1. 2018</span> wound 07:00 &mdash; M.&nbsp;K.</p><p><span class="d">5. 1.</span> wound 07:00. The restorers came to look. &mdash; M.&nbsp;K.</p><p><span class="d">7. 1.</span> wound 07:10 &mdash; M.&nbsp;K.</p>
-     <p class="last"><span class="d">8. 1. 2018</span> wound <b>07:00</b>, for the last time. The restorers stopped her at 11:00. Cupboard set. God keep anybody who is up here tonight. &mdash; Miroslav Kroupa</p></div>`,
-  ] },
-  sheet: { title: 'Restorers\' sheet (on the bench)', style: 'osheet', pages: [
+    `<p class="okh">Kniha hodinářů &middot; The Keepers' Book</p>
+     <p class="okfell"><b>The rules of the keepers.</b> &mdash; Jan Brabec, keeper, 1866</p>
+     <ol class="okrules"><li>He cannot see. He hears. Make no sound up here that you need not make.</li>
+     <li>When a bell strikes, he stands where he is and counts the strokes. Do your loud work then, and only then.</li>
+     <li>If she stops, go down, and do not come up into the works again until she is going.</li></ol>
+     <p class="okink">In 1490 the councillors put out the eyes of Master Hanuš, who made her, so that he should never make her like again. Blind, he had himself led up here, put his hands into the works and stopped her. They say he never went down.</p>
+     <p class="okink">1948. When the hall burned she stopped, and he came for me. I made her strike slow, and while he stood and counted I went out between the apostles, through their window. &mdash; K.&nbsp;Brož</p>`] },
+  sheet: { title: 'Restorers\' notes (clipboard on the bench)', style: 'osheet', pages: [
     `<div class="osh"><b>STAROMĚSTSKÝ ORLOJ &middot; RESTORATION 2018</b><span>Day 1 &middot; Monday 8 January &middot; T. Šimek</span></div>
-     <p>Clock stopped 11:00. Today: label and record everything. Dismantling starts tomorrow. Nothing leaves the tower tonight.</p>
-     <p><b>Apostles</b>, tagged in the order they come round in the procession:</p>
-     <table class="osht">${APOSTLES.map(a => `<tr><td>${a.tag}</td><td>${a.name}</td><td>${{ club: 'club', keys: 'keys', xcross: 'X-shaped cross', axe: 'axe', halberd: 'halberd', cross: 'tall cross', spear: 'spear', sword: 'sword', chalice: 'chalice', saw: 'saw', scroll: 'scroll', knife: 'knife (and his skin)' }[a.attr]}</td></tr>`).join('')}</table>`,
-    `<p><b>Notes</b></p><ul class="oshn">
-     <li>Strike train: weight run right down. Winding cover LOCKED. Kroupa says the key is "with the saint". Which saint??</li>
-     <li>Apostles' clutch (top of frame): pin missing. Kroupa: "in his box". Won't say whose box.</li>
-     <li>Fly vanes: narrow (Hainz setting, 1866).</li>
-     <li>Count wheel: next strike 20.</li>
-     <li>Pendulum off, in crate 3.</li>
-     <li>Tower power off at midnight (timer). Work lamp runs on its own battery.</li>
-     <li>Kroupa asked us to leave a bell up here tonight. Said no.</li></ul>`,
-  ] },
-  cal: { title: 'Photograph of the calendar plate (taped above the bench)', style: 'ocal', pages: () => [
-    `<div class="ocal-wrap"><img class="ocal-img" alt="The calendar plate: a ring of day names round the edge, the twelve months, the zodiac signs, and the Old Town arms in the middle." src="${calURL()}"></div><p class="ocal-c">The calendar plate, below the dial outside. Round the edge, a name for every day of the year; inside, the twelve months and the signs of the zodiac. <span class="muted">Click the picture to look closer.</span></p>`], bind: card => { const im = card.querySelector('.ocal-img'); if (im) im.onclick = () => im.classList.toggle('big'); } },
-  card: { title: 'Label hung under the setting dial', style: 'ocard', pages: [
-    `<p class="och">SETTING DIAL</p><p class="ocs">(repeats the great dial outside)</p>
-     <ul><li><b>Gold Roman numerals:</b> the town's time, 24 hours. XII at the top is noon, XII at the bottom is midnight.</li>
-     <li><b>Gold outer ring, old Schwabacher numerals:</b> Old Bohemian time. Hours 1 to 24, counted from sunset. The ring is turned through the year to follow the sunset.</li>
-     <li><b>Zodiac ring:</b> the Sun's hand shows the Sun's sign; the Moon's hand shows the Moon's, and its phase on the little ball.</li></ul>
-     <p class="ocn">Hands are set with the little crank on the right. DON'T turn them with the strike wound! &mdash; T.&nbsp;Š.</p>`] },
-  dialLook: { title: 'The setting dial, close up', style: 'odial', pages: () => [`<div class="odial-wrap"><img alt="The setting dial: a gold outer ring of old numerals, the Roman ring, the zodiac ring and the two hands." src="${dialURL()}"></div><p class="odial-c">${dialCaption()}</p>`] },
+     <p>Clock stopped 11:00. Dismantling starts tomorrow. Nothing leaves the tower tonight.</p>
+     <ul class="oshn">
+     <li>Strike train: weight run right down.</li>
+     <li>Winding cover LOCKED. Kroupa says the key hangs on St Peter's keys. On the apostle?!</li>
+     <li>Winding crank and pendulum: packed in crate 3, nailed.</li>
+     <li>Apostles' clutch, top of frame: pin missing.</li>
+     <li>Fly vanes: narrow (Hainz, 1866).</li></ul>`] },
 };
-function dialCaption() { const h = S.hands / 60, hh = Math.floor(h), mm = Math.round((h - hh) * 60); return `The hands stand at ${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')} by the Roman ring. The sun, on the gold hand, sits in Capricorn. The moon ball is half dark.`; }
 
 /* ---------------- hints ---------------- */
+const crankIn = s => !!s.crankTaken || s.inv.includes('crank');
 const HINTS = [
-  { id: 'start', title: 'Where am I?', when: s => s.flags.bookRead ? 'solved' : 'active', tiers: [
-    'You fell asleep inside the clock. The restorers have locked the tower for the night. Your phone has a message.',
-    'Look round: the restorers\' bench at the back, the clock in the middle, the keepers\' book on the lectern by the little window.',
-    'The keepers\' book has rules for anyone up here while the clock is stopped. Read them.',
-    'The stair door is locked from outside. The only other way out is the apostles\' windows up on the loft, and they only open while the clock strikes.' ] },
+  { id: 'start', title: 'Getting out', when: s => s.flags.escaped ? 'solved' : 'active', tiers: [
+    'The stair door is locked from outside until six. The only other way out is through the apostles\' windows, up on the loft, over the square.',
+    'Those windows only open while the clock strikes and the apostles go round.',
+    'The restorers\' notes on the bench say what\'s wrong with her: the strike isn\'t wound, and the apostles\' pin is missing.',
+    'Wind the strike, fit the pin, then turn the hands to the next hour. While she strikes, go up the ladder and out through the drum.' ] },
   { id: 'rule', title: 'Something that hears', when: s => !(s.flags.counted || s.ev.warned) ? 'hidden' : s.flags.loudOk ? 'solved' : 'active', tiers: [
-    'Something up here counted the strokes when Týn church struck midnight. It can\'t see you. It can hear you.',
-    'The keepers\' rules: make no noise you needn\'t, and do loud work only while a bell is striking.',
-    'Týn church across the square strikes every quarter of an hour, a longer peal on the hour. Wait for it, then do the loud thing while it rings.',
-    'Only use actions marked "loud" while you can hear a bell striking. The prompt tells you when one is.' ] },
-  { id: 'cupboard', title: 'The keepers\' cupboard', when: s => !s.flags.cupSeen ? 'hidden' : s.cupOpen ? 'solved' : 'active', tiers: [
-    'The iron cupboard in the wall has a lock of two rings: the old gold numerals from the dial\'s outer ring, and the signs of the zodiac.',
-    'Rule V in the keepers\' book says what each keeper sets it to after winding. The last entry in the book says when she was last wound.',
-    'Her own reckoning is the old time on the gold outer ring, counted from sunset. Find 07:00 on the Roman ring (the town\'s hours, noon at the top) and read the gold numeral beside it. Don\'t go by where the hands stopped: she was wound at seven, stopped at eleven.',
-    'Outer ring: her 15, the numeral like an I next to a hooked h. Inner ring: Capricorn, the sign under the sun on the dial.' ] },
-  { id: 'peter', title: 'St Peter\'s keys', when: s => !(s.flags.coverSeen || s.flags.brozRead) ? 'hidden' : s.keyTaken ? 'solved' : 'active', tiers: [
-    'The winding cover is locked. Karel Brož wrote in the keepers\' book where he hid the key.',
-    'On St Peter\'s keys. The apostles stand on a wheel inside the drum up on the loft. You can only reach the one standing at the little door at the back.',
-    'The restorers\' sheet lists them in the order they come round, A1 to A12, with what each carries. Find which one is at the door now. Each turn of the wheel brings round the next, and every turn is loud.',
-    'The figure at the door at the start carries a spear: A7, St Thomas. Turn the wheel 7 times, while a bell is ringing, to bring St Peter (A2, the keys) round. Take the key from his hand.' ] },
-  { id: 'wind', title: 'Winding the strike', when: s => !(s.flags.coverSeen || s.cupOpen) ? 'hidden' : s.wound >= WIND_N ? 'solved' : 'active', tiers: [
-    'The strike train\'s weight has run right down: the bell can\'t strike until it\'s wound up.',
-    'The winding square is behind the locked iron cover on the back of the clock, low on the right. The crank fits it.',
-    'Unlock the cover with St Peter\'s key. Winding is loud: it takes several turns of the crank.',
-    'Turn the crank only while a bell is striking (Týn strikes every quarter of an hour) until it\'s fully wound.' ] },
-  { id: 'box', title: 'The brass box', when: s => !s.flags.boxSeen ? 'hidden' : s.boxOpen ? 'solved' : 'active', tiers: [
-    'The brass box from the cupboard has two rings of zodiac signs: SOL, the Sun, and LUNA, the Moon.',
-    'The keepers\' book tells the legend. Hanuš\'s box opens to the sky on the night he was blinded: St Martin\'s night, under a full moon.',
-    'Find Martin on the calendar photograph over the bench: his day falls in one of the zodiac sectors. For the Moon, the keepers\' sketch shows where the Moon stands when it\'s full.',
-    'SOL: Scorpio (St Martin\'s day, 11 November). LUNA: Taurus, the sign opposite Scorpio, because a full Moon stands opposite the Sun.' ] },
-  { id: 'pin', title: 'The apostles\' clutch', when: s => !s.boxOpen ? 'hidden' : s.pinIn ? 'solved' : 'active', tiers: [
-    'The pin from the box has twelve tiny apostles engraved on it.',
-    'The restorers\' sheet: the apostles\' clutch on top of the frame is missing its pin.',
-    'The clutch is on the upright shaft on top of the clock, that runs up to the drum on the loft.',
-    'Use the pin on the clutch on top of the clock\'s frame.' ] },
-  { id: 'count', title: 'The longest hour', when: s => !(s.flags.countSeen && s.wound >= WIND_N) ? 'hidden' : (s.flags.escaped || s.count === 24) ? 'solved' : 'active', tiers: [
-    'She strikes her own hours, 1 to 24, counted from sunset. The count wheel on the back of the clock decides how many strokes come next.',
-    'While she strikes he stands and counts. You need a lot of strokes to get from the clock, up the ladder and out of a window.',
-    'The keepers\' rules: her 24th hour, sunset, is the longest she strikes. Brož got out on "the long hour".',
-    'Turn the count wheel until 24 is under the click: the Z-shaped 2 and the "half-eight" 4. It\'s the numeral at OCCASVS, sunset, on the dial\'s outer ring.' ] },
-  { id: 'fly', title: 'Slow strokes', when: s => !(s.flags.countSeen && s.wound >= WIND_N) ? 'hidden' : (s.flags.escaped || s.fly === 'wide') ? 'solved' : 'active', tiers: [
-    'The way the clock is set now, even twenty-four strokes go by fast.',
-    'Brož says she struck the long hour "slow, the way she struck for the old masters". A note in the keepers\' book from 1866 says what makes her strike fast or slow.',
-    'The fly on top of the clock: two vanes that spin while she strikes. Edge-on they slice the air and she strikes briskly. Face-on they hold her back.',
-    'Set the fly\'s vanes wide open (face-on).' ] },
-  { id: 'out', title: 'Getting out', when: s => !(s.pinIn || s.flags.tried) ? 'hidden' : s.flags.escaped ? 'solved' : 'active', tiers: [
-    'The apostles\' windows open only while the clock strikes, with the procession running.',
-    'She strikes when her hands pass the hour. They\'re turned with the little crank beside the setting dial.',
-    'While she strikes he stands still and counts. Go straight up the ladder to the little door at the back of the drum, and slip through between the apostles to the open window.',
-    'With the strike wound, the pin in, the count wheel at 24 and the fly wide open, turn the hands on to the next hour. Then go straight up the ladder and out through the drum.' ] },
+    'He\'s blind. He finds you by sound.',
+    'While a bell is ringing, he stands still and counts the strokes.',
+    'Týn church across the square rings every quarter of an hour. While a bell rings, a bell sign shows at the top of the screen.',
+    'Only do things marked "loud" while the bell sign is showing.' ] },
+  { id: 'key', title: 'The locked cover', when: s => !(s.flags.coverSeen || s.flags.clipRead || s.flags.doorSeen || s.keyTaken) ? 'hidden' : s.keyTaken ? 'solved' : 'active', tiers: [
+    'The winding cover on the back of the clock is locked. The tag on it says the key hangs on St Peter\'s keys.',
+    'St Peter is one of the twelve carved apostles, on the wheel inside the painted drum up on the loft.',
+    'Turn the handwheel beside the drum (loud) and look in at the little door: each turn brings the next apostle round.',
+    'Keep turning until the saint holding two gilded keys stands in the door. An iron key hangs on them. Take it.' ] },
+  { id: 'crank', title: 'A crank', when: s => !(s.flags.squareSeen || s.flags.clipRead || s.coverOpen) ? 'hidden' : crankIn(s) ? 'solved' : 'active', tiers: [
+    'Winding the strike needs a crank.',
+    'The restorers packed it in crate 3, the pine crate by the right-hand wall.',
+    'The crate is nailed shut. There\'s a crowbar on the restorers\' bench.',
+    'Take the crowbar, and prise the crate\'s lid off while a bell is ringing (it\'s loud). The crank is inside.' ] },
+  { id: 'wind', title: 'Winding the strike', when: s => !(s.coverOpen || crankIn(s)) ? 'hidden' : s.wound >= WIND_N ? 'solved' : 'active', tiers: [
+    'The strike\'s weight has run right down. It has to be wound up again before she can strike.',
+    'The winding square is behind the iron cover, low on the back of the clock. St Peter\'s key unlocks it.',
+    'The crank fits the square. Every turn is loud.',
+    'Turn the crank only while a bell is ringing, until she\'s fully wound: six turns.' ] },
+  { id: 'pin', title: 'The missing pin', when: s => !(s.flags.clutchSeen || s.flags.clipRead || s.flags.pinSeen) ? 'hidden' : s.pinTaken ? 'solved' : 'active', tiers: [
+    'The apostles\' clutch, on top of the clock, is missing its pin.',
+    'Something small and brass glints far down the weight shaft, in the back left corner, on top of the strike weight.',
+    'It\'s much too deep to reach. But winding the strike hauls that weight up the shaft.',
+    'Wind the strike all the way, then go to the rail round the shaft and reach down for the pin.' ] },
+  { id: 'clutch', title: 'Up on the clock', when: s => !s.pinTaken ? 'hidden' : s.pinIn ? 'solved' : 'active', tiers: [
+    'The pin goes in the apostles\' clutch, on top of the clock\'s iron frame.',
+    'It\'s too high to reach from the floor. You need something to stand on, right next to the clock.',
+    'The restorers\' crate can be dragged: E takes hold of it, E again lets go.',
+    'Drag the crate against the back of the clock, jump onto it (Space, or the Jump button) and fit the pin into the clutch.' ] },
+  { id: 'fly', title: 'Too fast', when: s => !s.flags.fastSeen ? 'hidden' : s.fly === 'wide' ? 'solved' : 'active', tiers: [
+    'She struck far too fast: the windows were open for only a few seconds.',
+    'What sets her speed is the fly: two brass vanes spinning on top of the clock.',
+    'Edge-on, the vanes slice the air and she races. Face-on, they hold her back.',
+    'Stand on the crate by the back of the clock and turn the fly\'s vanes face-on. Then turn the hands again.' ] },
+  { id: 'out', title: 'Out of the window', when: s => !(s.pinIn && s.wound >= WIND_N) ? 'hidden' : s.flags.escaped ? 'solved' : 'active', tiers: [
+    'With the strike wound and the pin in, turning the hands to the next hour makes her strike.',
+    'The hands turn with the little brass crank beside the setting dial, on the back of the clock.',
+    'While she strikes he stands still and counts, and the apostles\' windows are open.',
+    'Turn the hands on, then go straight up the ladder to the little door in the drum and squeeze between the apostles to the open window. Don\'t stop.' ] },
   { id: 'still', title: 'Don\'t move', when: s => !s.ev.still ? 'hidden' : 'solved', tiers: ['He finds you by sound.', 'Footsteps are enough.', 'Stand still until he has gone.', 'Don\'t move, and don\'t touch anything, until he goes.'] },
 ];
 const WIND_N = 6;
@@ -987,9 +988,7 @@ function paintThings() {
   T.zodTex = tex(canv(1024, 1024, (g, w) => paintZodRing(g, w))); T.zodTex.wrapS = T.zodTex.wrapT = THREE.ClampToEdgeWrapping;
   T.sunTex = tex(canv(128, 128, (g, w) => { const c = w / 2; g.clearRect(0, 0, w, w); g.fillStyle = '#f2c860'; for (let i = 0; i < 16; i++) { const a = i / 16 * TAU; g.beginPath(); g.moveTo(c + Math.cos(a - 0.12) * 34, c + Math.sin(a - 0.12) * 34); g.lineTo(c + Math.cos(a) * 62, c + Math.sin(a) * 62); g.lineTo(c + Math.cos(a + 0.12) * 34, c + Math.sin(a + 0.12) * 34); g.fill(); } const gr = g.createRadialGradient(c - 8, c - 8, 4, c, c, 36); gr.addColorStop(0, '#fff2b0'); gr.addColorStop(1, '#c8902a'); g.fillStyle = gr; g.beginPath(); g.arc(c, c, 36, 0, TAU); g.fill(); g.strokeStyle = '#7a5010'; g.lineWidth = 3; g.beginPath(); g.arc(c - 11, c - 6, 4, 0, TAU); g.arc(c + 11, c - 6, 4, 0, TAU); g.stroke(); g.beginPath(); g.arc(c, c + 6, 12, 0.3, Math.PI - 0.3); g.stroke(); }));
   T.countTex = tex(canv(512, 512, (g, w) => paintCountWheel(g, w)));
-  T.cupTex = tex(canv(512, 512, (g, w) => paintCupLock(g, w)));
   T.calTex = tex(canv(1024, 1024, (g, w) => paintCalendar(g, w)));
-  T.cardTex = tex(canv(256, 160, (g, w, h) => { g.fillStyle = '#f2eee0'; g.fillRect(0, 0, w, h); g.fillStyle = '#1a3a8a'; g.font = '700 18px ' + MONO; g.fillText('SETTING DIAL', 16, 30); g.fillStyle = '#333'; for (let i = 0; i < 6; i++) { g.fillRect(16, 46 + i * 16, rand(140, 220), 3); } g.fillStyle = '#b01a14'; g.fillRect(16, 146, 120, 4); }));
   T.bookTex = tex(canv(512, 360, (g, w, h) => { g.fillStyle = '#e6dcc0'; g.fillRect(0, 0, w, h); const gr = g.createLinearGradient(w / 2 - 30, 0, w / 2 + 30, 0); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(0.5, 'rgba(60,40,20,0.35)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(w / 2 - 30, 0, 60, h); g.strokeStyle = 'rgba(30,30,60,0.75)'; g.lineWidth = 1.6; for (const x0 of [30, w / 2 + 24]) for (let y = 40; y < h - 30; y += 22) { g.beginPath(); let x = x0; g.moveTo(x, y); while (x < x0 + 200) { x += rand(4, 9); g.lineTo(x, y + rand(-3, 3)); } g.stroke(); } speckle(g, w, h, 600, 0.12, '90,60,30', 3); }));
   T.sheetTex = tex(canv(256, 340, (g, w, h) => { g.fillStyle = '#f4f2ec'; g.fillRect(0, 0, w, h); g.fillStyle = '#111'; g.font = '700 13px ' + MONO; g.fillText('ORLOJ 2018 - DAY 1', 14, 26); g.fillStyle = '#444'; for (let i = 0; i < 16; i++) g.fillRect(14, 44 + i * 17, rand(80, 220), 3); g.strokeStyle = '#1a3a9a'; g.lineWidth = 2; g.beginPath(); g.ellipse(170, 250, 40, 14, 0.1, 0, TAU); g.stroke(); }));
   T.facadeTex = tex(canv(1024, 1760, (g, w, h) => paintFacade(g, w, h)));
@@ -1060,18 +1059,6 @@ function paintCountWheel(g, S0) {
   for (let n = 1; n <= 24; n++) { const a = (n - 1) * Math.PI / 12, [x, y] = P(R * 0.62, a); g.fillStyle = '#e8c070'; g.beginPath(); g.arc(x, y, 4, 0, TAU); g.fill(); }
   speckle(g, S0, S0, 900, 0.15, '40,30,10', 2);
 }
-function paintCupLock(g, S0) {
-  const R = S0 / 2, c = S0 / 2, P = (r, a) => [c + r * Math.sin(a), c - r * Math.cos(a)];
-  g.fillStyle = '#2a2622'; g.fillRect(0, 0, S0, S0);
-  const gr = g.createRadialGradient(c, c, R * 0.2, c, c, R); gr.addColorStop(0, '#c8a060'); gr.addColorStop(1, '#7a5a28'); g.fillStyle = gr; g.beginPath(); g.arc(c, c, R * 0.98, 0, TAU); g.fill();
-  g.fillStyle = '#1a140c'; g.beginPath(); g.arc(c, c, R * 0.66, 0, TAU); g.fill();
-  const g2 = g.createRadialGradient(c, c, R * 0.1, c, c, R * 0.62); g2.addColorStop(0, '#d8b070'); g2.addColorStop(1, '#8a6a30'); g.fillStyle = g2; g.beginPath(); g.arc(c, c, R * 0.62, 0, TAU); g.fill();
-  for (let n = 1; n <= 24; n++) { const a = (n - 1) * Math.PI / 12, [x, y] = P(R * 0.82, a); drawNum(g, n, x, y, R * 0.13, '#22160a', 10, a); }
-  for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6, [x, y] = P(R * 0.45, a); drawZod(g, k, x, y, R * 0.16, '#22160a', 8, a); }
-  g.fillStyle = '#1a140c'; g.beginPath(); g.arc(c, c, R * 0.22, 0, TAU); g.fill();
-  g.fillStyle = '#e8d0a0'; g.beginPath(); g.moveTo(c, c - R * 0.99); g.lineTo(c - 12, c - R * 1.08); g.lineTo(c + 12, c - R * 1.08); g.fill();
-  speckle(g, S0, S0, 1500, 0.15, '30,20,10', 2);
-}
 // the calendar plate, as the restorers photographed it: Jan 1 at the top, the year going round clockwise
 const NAMEDAYS = [[1, 1, 'Nový rok'], [1, 2, 'Karina'], [1, 3, 'Radmila'], [1, 4, 'Diana'], [1, 5, 'Dalimil'], [1, 6, 'Tři králové'], [1, 8, 'Čestmír'], [2, 2, 'Hromnice'], [2, 14, 'Valentýn'], [3, 1, 'Bedřich'], [3, 12, 'Řehoř'], [3, 19, 'Josef'], [3, 25, 'Marián'], [4, 24, 'Jiří'],
   [5, 1, 'Svátek práce'], [5, 12, 'Pankrác'], [5, 13, 'Servác'], [5, 14, 'Bonifác'], [5, 16, 'Přemysl'], [6, 24, 'Jan'], [6, 29, 'Petr a Pavel'], [7, 5, 'Cyril a Metoděj'], [7, 6, 'Mistr Jan Hus'], [7, 22, 'Magdaléna'], [7, 26, 'Anna'], [8, 10, 'Vavřinec'], [9, 28, 'Václav'], [9, 29, 'Michal'],
@@ -1112,24 +1099,6 @@ function paintCalendar(g, S0) {
   g.fillStyle = '#111'; g.fillRect(24 * k, S0 - 40 * k, 200 * k, 10 * k); for (let i = 0; i < 10; i += 2) { g.fillStyle = '#eee'; g.fillRect(24 * k + i * 20 * k, S0 - 40 * k, 20 * k, 10 * k); }
   g.fillStyle = '#222'; g.font = `${Math.round(13 * k)}px ${MONO}`; g.textAlign = 'left'; g.fillText('ORLOJ 2018 / KALENDÁŘ / A-31', 24 * k, S0 - 50 * k);
 }
-let CAL_URL = null;
-function calURL() { if (!CAL_URL) CAL_URL = canv(1400, 1400, (g, w) => paintCalendar(g, w)).toDataURL('image/jpeg', 0.9); return CAL_URL; }
-// the setting dial as it stands now, for the close look and the hands panel
-function drawDialNow(g, S0, hours) {
-  g.clearRect(0, 0, S0, S0);
-  g.drawImage(T.dialTex.userData.canvas, 0, 0, S0, S0);
-  const R = S0 / 2, c = S0 / 2, ring = T.zodTex.userData.canvas, ro = R * 0.65;
-  g.save(); g.translate(c, c); g.rotate(zodRingRot(hours)); g.drawImage(ring, -ro, -ro, ro * 2, ro * 2); g.restore();
-  const hand = (a, len, col, wdt) => { g.save(); g.translate(c, c); g.rotate(a); g.fillStyle = col; g.strokeStyle = '#2a1a06'; g.lineWidth = 1.2; g.beginPath(); g.rect(-wdt / 2, -len, wdt, len); g.fill(); g.stroke(); g.restore(); };
-  const as = angHour(hours), am = as + Math.PI / 2;
-  hand(am, R * 0.6, '#d8d8d4', S0 * 0.012);
-  g.save(); g.translate(c, c); g.rotate(am); g.translate(0, -R * 0.555); g.fillStyle = '#f2f2ec'; g.beginPath(); g.arc(0, 0, S0 * 0.026, -Math.PI / 2, Math.PI / 2); g.fill(); g.fillStyle = '#121212'; g.beginPath(); g.arc(0, 0, S0 * 0.026, Math.PI / 2, Math.PI * 1.5); g.fill(); g.strokeStyle = '#333'; g.lineWidth = 1.5; g.beginPath(); g.arc(0, 0, S0 * 0.026, 0, TAU); g.stroke(); g.restore();
-  hand(as, R * 0.8, '#e2b450', S0 * 0.018);
-  g.save(); g.translate(c, c); g.rotate(as); g.translate(0, -R * 0.555); g.drawImage(T.sunTex.userData.canvas, -S0 * 0.05, -S0 * 0.05, S0 * 0.1, S0 * 0.1); g.restore();
-  g.save(); g.translate(c, c); g.rotate(as); g.fillStyle = '#e2b450'; g.strokeStyle = '#2a1a06'; g.beginPath(); g.moveTo(-S0 * 0.02, -R * 0.75); g.lineTo(S0 * 0.02, -R * 0.75); g.lineTo(S0 * 0.006, -R * 0.85); g.lineTo(-S0 * 0.006, -R * 0.85); g.closePath(); g.fill(); g.stroke(); g.restore();
-  g.fillStyle = '#d8b050'; g.beginPath(); g.arc(c, c, S0 * 0.02, 0, TAU); g.fill();
-}
-function dialURL() { return canv(900, 900, (g, w) => drawDialNow(g, w, S.hands / 60)).toDataURL('image/jpeg', 0.92); }
 // the tower round the clock, as the square sees it (u runs left to right from the square; the dial is at u = 0.2 m)
 function paintFacade(g, W, H) {
   const ppm = W / 9.2, X = xw => (4.6 - xw) / 9.2 * W, Y = yw => (7.6 - yw) / 15.8 * H;
@@ -1215,49 +1184,15 @@ function paintHisFace(g, w, h) {
   const vg = g.createRadialGradient(cx, cy, h * 0.3, cx, cy, h * 0.62); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,1)'); g.fillStyle = vg; g.fillRect(0, 0, w, h);
 }
 
-/* ---------------- the little panels ---------------- */
-// a ring of symbols that turns under a fixed pointer at the top: used by the cupboard, the box and the count wheel
-function ringSVG(n, r, val, drawItem, cls = '') {
-  const step = 360 / n, rot = -(val * step);
-  let s = `<g class="oring ${cls}" transform="rotate(${rot})">`;
-  for (let i = 0; i < n; i++) { const a = i * step * Math.PI / 180, x = Math.sin(a) * r, y = -Math.cos(a) * r; s += drawItem(i, x, y, i * step); }
-  return s + '</g>';
-}
-const LOCK = {};
-function lockUI({ title, sub, rings, answer, onOpen, btn = 'Try it', fail = 'Nothing gives.', id }) {
-  // rings: [{ n, r, draw(i,x,y,deg), label }]; S.locks[id] holds the current values
-  const vals = (S.locks[id] || rings.map(() => 0)).slice(); let cur = 0; LOCK.tok = (LOCK.tok || 0) + 1;
-  const draw = (msg = '', bad = false) => {
-    const svg = `<svg class="olock" viewBox="-170 -175 340 345">
-      <circle r="164" fill="#2a2218" stroke="#7a5a2a" stroke-width="3"/>${rings.map((rg, k) => `<circle r="${rg.r + rg.band}" fill="${k ? '#3a2c1a' : '#4a3820'}" stroke="#8a6a32" stroke-width="1.5"/>`).join('')}
-      ${rings.map((rg, k) => ringSVG(rg.n, rg.r, vals[k], rg.draw, k === cur ? 'cur' : '')).join('')}<circle r="${rings[rings.length - 1].r - rings[rings.length - 1].band}" fill="#1a140c" stroke="#8a6a32"/>
-      <path d="M0 -168 L-11 -183 L11 -183 Z" fill="#e8d0a0"/><line x1="0" y1="-164" x2="0" y2="${-(rings[rings.length - 1].r - rings[rings.length - 1].band)}" stroke="rgba(232,208,160,0.35)" stroke-width="2"/></svg>`;
-    UI.show('box', `<button class="x">Close &middot; Esc</button><h2>${esc(title)}</h2><p class="sub">${sub}</p>
-      <div class="olockw">${svg}<div class="olockc">${rings.map((rg, k) => `<div class="olrow ${k === cur ? 'on' : ''}"><span>${rg.label}</span><button class="btn" data-r="${k}" data-d="-1" aria-label="${rg.label}: previous">&#9664;</button><button class="btn" data-r="${k}" data-d="1" aria-label="${rg.label}: next">&#9654;</button></div>`).join('')}
-      <div id="lmsg" class="lockmsg ${bad ? 'bad' : ''}">${esc(msg)}</div><button class="btn primary" id="otry">${esc(btn)}</button>
-      <p class="muted" style="font-size:11px;margin:6px 0 0">${G.touch ? 'Tap the arrows to turn a ring' : 'Arrow keys: up/down picks a ring, left/right turns it &middot; Enter to try'}</p></div></div>`,
-      { cls: 'ui-card olockcard', onKey: e => { if (e.code === 'ArrowUp') { cur = (cur + rings.length - 1) % rings.length; draw(); } else if (e.code === 'ArrowDown') { cur = (cur + 1) % rings.length; draw(); } else if (e.code === 'ArrowLeft') turn(cur, -1); else if (e.code === 'ArrowRight') turn(cur, 1); else if (e.code === 'Enter') { e.preventDefault(); tryIt(); } } });
-    $('#card').querySelectorAll('[data-r]').forEach(b => b.onclick = () => turn(+b.dataset.r, +b.dataset.d));
-    $('#otry').onclick = tryIt;
-  };
-  const turn = (k, d) => { vals[k] = (vals[k] + d + rings[k].n) % rings[k].n; cur = k; S.locks[id] = vals.slice(); sClick(null, 0.22, 2600); draw(); };
-  const tryIt = () => {
-    if (G.time < (G.lockout || 0)) { draw('Your hands are shaking too much. Give it a few seconds.', true); return; }
-    if (answer.every((a, k) => a === vals[k])) { sThunk(null, 0.7, 220); sClick(null, 0.5, 1800); UI.close(); onOpen(); }
-    else { S.wrong++; save(); sThunk(null, 0.5, 110); draw(fail, true); const tok = LOCK.tok = (LOCK.tok || 0) + 1; after(0.8, () => { if (LOCK.tok === tok && UI.kind === 'box' && document.querySelector('#card #otry')) { UI.close(true); penalty(); } }); }
-  };
-  draw();
-}
-const numItem = (i, x, y, deg, h = 22, col = '#f0c868') => svgNum(i + 1, x, y, h, col, 10, deg);
-const zodItem = (i, x, y, deg, s = 30, col = '#f0c868') => svgZod(i, x, y, s, col, 8, deg);
 
 /* =====================================================================
-   THE BLIND HOUR · part E: the bells of Týn across the square, the rule (loud only while a bell
-   strikes), the cupboard, the wheel and St Peter, winding, the box, the clutch, the count wheel,
-   the fly, the hands, the strike and the procession; the scares; the escape and the last photograph
+   THE BLIND HOUR · part E: the bells of Týn and the bell sign, the rule (loud only while a bell rings),
+   him standing and counting, the body (the ladder, the crate), St Peter's key on the wheel, the crate,
+   winding (which brings the pin up the shaft), the clutch, the fly, the hands, the strike and the
+   procession; the scares; the escape and the last photograph
    ===================================================================== */
-const V = { bellUntil: 0, strike: null, proc: 0, shut: 0, view: null, still: null, watch: null, scare: false, envDue: true, dirT: 50, last: '', head: 1, headOff: false, flick: 0, dip: 0,
-  black: 0, prevM: null, hnode: 'bellShaft', escaping: false, stuckT: 0, progKey: '', hb: 0, gearSpin: 0, flySpin: 0, wheelTurn: null, han13: false, clutchScene: false, finalOut: false };
+const V = { bellUntil: 0, strike: null, proc: 0, still: null, watch: null, scare: false, envDue: true, dirT: 50, last: '', head: 1, headOff: false, flick: 0, dip: 0,
+  black: 0, prevM: null, escaping: false, stuckT: 0, progKey: '', gearSpin: 0, wheelTurn: null, clutchScene: false, finalOut: false, hanShown: false, hanUntil: 0, hold: null, bellEl: null, bellShown: false };
 const heard = id => { if (!S.heard.includes(id)) { S.heard.push(id); save(); } };
 const look = (txt, ms = 5600) => ({ label: 'Look', run: () => subtitle('', `<i>${txt}</i>`, ms) });
 const sayI = (txt, ms = 5600) => subtitle('', `<i>${txt}</i>`, ms);
@@ -1266,10 +1201,12 @@ function drop(id) { S.inv = S.inv.filter(i => i !== id); renderInv(); save(); }
 function wrapA(a) { a = (a + Math.PI) % TAU; if (a < 0) a += TAU; return a - Math.PI; }
 const onLoft = () => !!S.onLoft;
 const bellOn = () => G.time < V.bellUntil;
-function progCount() { return [S.cupOpen, S.keyTaken, S.wound >= WIND_N, S.boxOpen, S.pinIn, S.count === 24, S.fly === 'wide'].filter(Boolean).length; }
+function progCount() { return [S.keyTaken, S.crateOpen, S.wound >= WIND_N, S.pinTaken, S.pinIn, S.fly === 'wide'].filter(Boolean).length; }
 const NODES = { bellShaft: new THREE.Vector3(0.75, 4.5, 0.25), shaft: new THREE.Vector3(-2.45, -1.2, 1.85), dialWall: new THREE.Vector3(-0.2, 1.3, -2.45), loft: new THREE.Vector3(0.9, 2.9, -1.7), frame: new THREE.Vector3(-0.2, 1.2, 0.25), door: new THREE.Vector3(3.15, 1.2, 1.05) };
 const NODE_ORDER = ['bellShaft', 'shaft', 'dialWall', 'door', 'loft', 'frame'];
 function hisNode() { const k = Math.min(NODE_ORDER.length - 1, Math.floor(progCount() * 0.9)); return NODES[NODE_ORDER[irand(Math.max(0, k - 2), k)]]; }
+// where you stand on the crate counts: up on it, beside the clock
+const highNear = (p, maxD = 1.25) => BODY.y > 0.3 && Math.hypot(P.x - p.x, P.z - p.z) < maxD;
 
 /* ---------------- sounds ---------------- */
 function bellTone(pos, vol, base, parts, decay, wet = 0.5) { if (!A.ready) return; const t = now(); parts.forEach(([r, a, dk]) => { const o = A.ctx.createOscillator(); o.frequency.value = base * r * (1 + rand(-0.002, 0.002)); const g = A.ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol * a, t + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t + decay * dk); o.connect(g); route(g, { pos, wet }); o.start(t); o.stop(t + decay * dk + 0.05); }); }
@@ -1280,15 +1217,17 @@ function sDeathBell() { if (!A.ready) return; for (let i = 0; i < 3; i++) after(
 function sRatchet(pos, vol = 0.5) { if (!A.ready) return; sClick(pos, vol, 1400 + rand(-200, 200)); after(0.06, () => sClick(pos, vol * 0.7, 900)); sThunk(pos, vol * 0.5, 170); }
 function sWhirr(dur = 0.6) { if (!A.ready) return; const t = now(), n = noiseSrc(false), bp = filt('bandpass', 1200, 4), g = A.ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.08, t + 0.05); g.gain.linearRampToValueAtTime(0.0001, t + dur); n.connect(bp); bp.connect(g); route(g, { pos: POS.frame, wet: 0.2 }); n.start(t); n.stop(t + dur + 0.05); }
 function sPop(pos) { if (!A.ready) return; sClick(pos, 0.5, 3200); sThunk(pos, 0.3, 300); }
+// nails shrieking out of pine, one after another
+function sNails(pos) { if (!A.ready) return; for (let i = 0; i < 4; i++) after(i * 0.32, () => { sCreak(pos, 0.35, 0.16, 900 + rand(-150, 250)); sClick(pos, 0.25, 2400); }); after(1.45, () => sThunk(pos, 0.7, 120)); }
 function whisper(id, pos, vol = 1) { playClip('o_' + id, { pos, fx: 'whisper', volume: vol, wet: 0.25 }); }
 function countWhisper(k, pos, vol = 0.9) { if (k >= 1 && k <= 24) whisper('n' + k, pos, vol); }
 
 /* ---------------- the bells of Týn, every quarter of an hour ---------------- */
-// game time: 23:53 when you wake; a minute passes every five seconds
-const GSEC = 5, START_MIN = 23 * 60 + 52.5;
+// game time: 23:45 when you wake (midnight comes just after the voicemail); a minute passes every three seconds, so Týn rings every 45 seconds
+const GSEC = 3, START_MIN = 23 * 60 + 45;
 const clockMin = () => START_MIN + S.gm;
 function tynUpdate(dt) {
-  if (V.finalOut) return;
+  if (V.finalOut || V.still) return;            // the clock in the square waits for the stand-still
   S.gm += dt / GSEC;
   const m = clockMin(); if (V.prevM === null) V.prevM = m;
   const q0 = Math.floor(V.prevM / 15), q1 = Math.floor(m / 15); V.prevM = m;
@@ -1297,44 +1236,112 @@ function tynUpdate(dt) {
 function peal(minute) {
   const q = (minute / 15) % 4, hour = Math.floor(minute / 60) % 24, strokes = hour % 12 || 12;
   const n = q === 0 ? 4 : q; let t = 0;
+  const midnight = q === 0 && !S.flags.counted;
   for (let i = 0; i < n; i++) { after(t, () => sTyn('ding')); after(t + 0.8, () => sTyn('dong')); t += 2.1; }
   if (q === 0) {
-    t += 1.6; const midnight = !S.flags.counted;
-    const pos = midnight ? NODES.frame.clone() : hisNode();
-    for (let k = 1; k <= strokes; k++) { after(t, () => { sTyn('hour'); if (!V.finalOut) after(0.5, () => countWhisper(k, pos, midnight ? 1.0 : 0.75)); }); t += 2.5; }
-    if (midnight) after(t + 1.2, midnightAfter);
+    t += 1.6;
+    const dur = t + strokes * 2.5 + 0.4;
+    // on the hour he stands where you can see him, and counts
+    let pos = null;
+    if (!V.hanShown && !V.strike && !V.still && !V.escaping) { pos = standSpot(midnight ? 'view' : 'any'); if (pos) after(0.3, () => { if (!V.strike && !V.still && !V.escaping) standAndCount(pos, dur - 0.3, midnight ? 1.5 : 0.9); }); }
+    if (midnight) after(t + 1.3, () => { if (!V.sawHan) sayI('Someone in the room is counting with the bell. Under his breath. Close.', 4600); });
+    for (let k = 1; k <= strokes; k++) { after(t, () => { sTyn('hour'); if (!V.finalOut) after(0.5, () => countWhisper(k, V.hanShown ? hanHead() : hisNode(), midnight ? 1.05 : 0.8)); }); t += 2.5; }
+    if (midnight) after(t + 0.6, midnightAfter);
+  } else {
+    // the quarters: he counts them under his breath, somewhere in the works
+    const p = hisNode(); for (let i = 1; i <= n; i++) after((i - 1) * 2.1 + 1.3, () => { if (!V.finalOut) countWhisper(i, p, 0.6); });
   }
   V.bellUntil = Math.max(V.bellUntil, G.time + t + 1.4);
 }
 function midnightAfter() {
   if (S.flags.counted) return;
-  flag('counted'); heard('count');
-  sScrape(NODES.frame, 1.2, 0.25); after(1.4, () => { for (let i = 0; i < 4; i++) after(i * 0.5, () => sClick(new THREE.Vector3(-0.2, 1.4 - i * 0.1, 0.2), 0.12, 1800)); });
+  flag('counted'); heard('count'); heard('rule');
   G.fearT = 0.6; sHeart(6, 0.35, 0.8);
-  after(1.0, () => sayI('Someone was counting the strokes. Up here. Inside the clock, a few feet from you. Then the whisper stopped, and something moved away through the works.', 8000));
+  after(0.4, () => sayI(V.sawHan ? 'He stood there the whole time, head on one side, counting with the bell. On the last stroke the light stuttered, and he was gone.' : 'Someone was counting with the bell, in the room with you. On the last stroke the light stuttered, and the whispering stopped.', 6600));
+  after(7.2, () => subtitle('', '<b>He\'s blind, and he hunts by sound. While a bell rings, he stands still and counts.</b> <i>Anything loud, do it while the bell sign is showing.</i>', 9000));
+}
+
+/* ---------------- the bell sign: on screen whenever a bell is ringing ---------------- */
+function bellSign() {
+  if (!V.bellEl) {
+    const el = document.createElement('div'); el.id = 'obell'; el.setAttribute('aria-live', 'polite');
+    el.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c.7 0 1.2.5 1.2 1.2v.7a6.3 6.3 0 0 1 5.1 6.2v4.2l1.9 2.6c.4.5 0 1.2-.6 1.2H4.4c-.6 0-1-.7-.6-1.2l1.9-2.6v-4.2a6.3 6.3 0 0 1 5.1-6.2v-.7c0-.7.5-1.2 1.2-1.2Z" fill="currentColor"/><path d="M9.6 20h4.8a2.4 2.4 0 0 1-4.8 0Z" fill="currentColor"/></svg><span></span>';
+    $('#hud').appendChild(el); V.bellEl = el;
+  }
+  const on = G.mode === 'play' && bellOn() && !V.finalOut && !V.escaping;
+  const txt = V.strike ? 'She is striking. He is counting.' : 'A bell is ringing. He is counting.';
+  const sp = V.bellEl.querySelector('span'); if (sp.textContent !== txt) sp.textContent = txt;
+  if (on !== V.bellShown) {
+    V.bellShown = on; V.bellEl.classList.toggle('on', on);
+    if (on && S.flags.counted && !S.ev.bellTold) { S.ev.bellTold = true; save(); toast('<b>The bell sign is up.</b> While it shows, he stands and counts: loud things are safe.', 6500); }
+  }
+}
+
+/* ---------------- him, standing still and counting ---------------- */
+// places on the floor where he can stand clear of everything
+const SPOTS = [[1.6, -1.25], [-2.5, 0.05], [-1.0, 1.85], [0.0, -1.3], [-2.4, -1.8], [2.4, -2.0], [1.05, 1.35]];
+// does the line from you to (x, z) pass through the clock? (then you couldn't see him there)
+function hidden(x, z) {
+  const r = { x0: FR.x0 - 0.08, x1: FR.x1 + 0.08, z0: FR.z0 - 0.08, z1: FR.z1 + 0.08 };
+  for (let i = 1; i < 20; i++) { const k = i / 20, px = lerp(P.x, x, k), pz = lerp(P.z, z, k); if (px > r.x0 && px < r.x1 && pz > r.z0 && pz < r.z1) return true; }
+  return false;
+}
+function standSpot(mode) {
+  const fwd = new THREE.Vector2(-Math.sin(G.yaw), -Math.cos(G.yaw)), cp = O.crate.position;
+  const ok = SPOTS.filter(([x, z]) => (onLoft() || Math.hypot(x - P.x, z - P.z) > 2.0) && Math.hypot(x - cp.x, z - cp.z) > 0.75);
+  if (!ok.length) return null;
+  const score = ([x, z]) => { const d = new THREE.Vector2(x - P.x, z - P.z).normalize(); return d.dot(fwd) - (!onLoft() && hidden(x, z) ? 3 : 0); };
+  ok.sort((a, b) => score(b) - score(a));
+  const pick = mode === 'view' ? ok[0] : mode === 'strike' ? ok.find(([x]) => x > 0.5) || ok[0] : ok[Math.min(ok.length - 1, irand(0, 1))];
+  return new THREE.Vector3(pick[0], 0, pick[1]);
+}
+const hanHead = () => O.han.userData.neck.getWorldPosition(new THREE.Vector3());
+function standAndCount(p, dur, rim = 0.9) {
+  const h = O.han; h.visible = true; h.scale.setScalar(1); h.position.set(p.x, 0, p.z);
+  h.rotation.y = Math.atan2(P.x - p.x, P.z - p.z) + rand(-0.6, 0.6);
+  h.userData.neck.rotation.set(0.25, 0, 0.14);
+  V.hanShown = true; V.hanUntil = G.time + dur;
+  COL.han.minX = p.x - 0.3; COL.han.maxX = p.x + 0.3; COL.han.minZ = p.z - 0.3; COL.han.maxZ = p.z + 0.3; COL.han.on = true;
+  L.rim.position.set(p.x + 0.55, 2.2, p.z + 0.5); L.rim.intensity = rim;
+}
+function hideHim() { V.hanShown = false; V.hanUntil = 0; O.han.visible = false; COL.han.on = false; L.rim.intensity = 0; }
+// did you see him? (the midnight lines depend on it)
+function seeHim() {
+  if (!V.hanShown || V.sawHan) return;
+  const c = O.han.userData.chest.getWorldPosition(new THREE.Vector3()), d = c.clone().sub(camera.position), dist = d.length(); d.normalize();
+  const f = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+  if (f.dot(d) > 0.82 && dist < 7 && (onLoft() || !hidden(c.x, c.z))) V.sawHan = true;
+}
+// a Týn peal ends: his head comes up, the light stutters, and he's gone
+function hanUpdate() {
+  seeHim();
+  if (!V.hanShown || V.strike || V.still || V.escaping || G.time < V.hanUntil) return;
+  V.hanUntil = 1e9; const nk = O.han.userData.neck;
+  tween(0.45, k => { nk.rotation.set(lerp(0.25, -0.05, k), 0, 0.14); });
+  after(0.7, () => { V.flick = 0.8; after(0.35, () => { if (!V.strike) hideHim(); }); });
 }
 
 /* ---------------- the rule: noise, outside a bell, is heard ---------------- */
-// run a loud action now if a bell is striking; otherwise he hears it, and the action doesn't happen
+// run a loud action now if a bell is ringing; otherwise he hears it, and the action doesn't happen
 function loud(run) {
   if (bellOn()) { if (!S.flags.loudOk) flag('loudOk'); run(); return true; }
   heardNoise(); return false;
 }
-const loudNote = () => bellOn() ? 'A bell is striking: nothing will hear you.' : 'Loud. Something will hear it.';
+const loudNote = () => bellOn() ? 'A bell is ringing: he can\'t hear you now.' : 'Loud. Wait for the next bell (every 45 seconds or so).';
 function heardNoise() {
   if (!S.ev.warned) {
     S.ev.warned = true; save(); closeAll();
-    const p = camera.position.clone().add(new THREE.Vector3(Math.sin(G.yaw) * 1.6, 0.1, Math.cos(G.yaw) * 1.6));
+    const p = camera.position.clone().add(new THREE.Vector3(-Math.sin(G.yaw) * 1.6, 0.1, -Math.cos(G.yaw) * 1.6));
     V.flick = 1.4; G.fearT = 0.9; sStinger(0.6);
     after(0.4, () => sScrape(p, 0.9, 0.3)); after(1.2, () => { whisper('kdo', p, 1.2); heard('kdo'); }); after(2.0, () => sHeart(8, 0.45, 0.7));
-    sayI('You stop dead. Something in the works heard that, and is coming closer.', 4200);
-    after(4.6, () => sayI('Nothing loud while it\'s quiet. Wait for a bell.', 4800));
+    sayI('You freeze. Somewhere in the works, something stopped moving, and turned towards the sound.', 4600);
+    after(5.0, () => subtitle('', '<b>He heard that.</b> <i>Nothing loud while it\'s quiet. Wait for a bell: the bell sign shows at the top of the screen.</i>', 6500));
     G.lockout = G.time + 3;
     return;
   }
   lungeScare('noise');
 }
-function closeAll() { if (UI.kind) UI.close(true); if (G.panelOpen) closePanel(true); }
+function closeAll() { if (UI.kind) UI.close(true); if (G.panelOpen) closePanel(true); if (DRAG.cur) dragEnd(true); }
 // he finds you: his face fills your eyes, his fingers on your face, then the dark
 function lungeScare(why) {
   if (V.scare) return; V.scare = true; closeAll(); releasePointer();
@@ -1345,90 +1352,83 @@ function lungeScare(why) {
   after(0.12, () => { G.flash = 0; });
   after(0.55, () => { V.black = 2.4; });
   after(1.6, () => sayI(why === 'still' ? 'Cold fingers on your face, feeling for your eyes. Then the dark. When you can see again, he has gone.' : 'Cold fingers on your face, feeling for your eyes. Then nothing. When you can see again, he has gone back into the works.', 5600));
-  after(3.0, () => { V.scare = false; G.cutscene = false; G.lockout = G.time + 4; updatePrompt(true); if (why === 'late') afterCaught(); });
+  after(3.0, () => { V.scare = false; G.cutscene = false; G.lockout = G.time + 4; updatePrompt(true); });
 }
-// a wrong code: something stirs in the works
 function penalty() { G.lockout = G.time + 4; V.flick = 0.8; sCreak(hisNode(), 1.2, 0.12, 70); }
 
-/* ---------------- moving about: the floor, the ladder, the loft ---------------- */
+/* ---------------- the body: the room's solids, the loft, the ladder ---------------- */
 const COL = {};
-function buildColliders() {
+function buildSolids() {
   colliders.length = 0;
-  const c = (id, x0, x1, z0, z1) => (COL[id] = addCol(id, x0, x1, z0, z1, true));
-  c('frame', FR.x0 - 0.17, FR.x1 + 0.17, FR.z0 - 0.17, FR.z1 + 0.12); c('bench', 0.28, 2.32, RM.z1 - 0.7, RM.z1);
-  c('lect', POS.lectern.x - 0.24, POS.lectern.x + 0.24, POS.lectern.z - 0.24, POS.lectern.z + 0.24); c('shaft', -2.9, -2.04, 1.44, 2.3);
-  c('ladder', LADDER.x - 0.24, LADDER.x + 0.24, LADDER.z0 - 0.12, LADDER.z0 + 0.06); c('lamp', POS.light.x - 0.2, POS.light.x + 0.2, POS.light.z - 0.2, POS.light.z + 0.2);
-  c('post1', -1.33, -1.17, LOFT.z1 - 0.16, LOFT.z1); c('post2', 1.47, 1.63, LOFT.z1 - 0.16, LOFT.z1);
-  c('han', 0, 0, 0, 0); COL.han.on = false;
+  COL.han = addCol('han', 0, 0, 0, 0, true); COL.han.on = false;
+  BODY.solids.length = 0;
+  solid('floor', RM.x0 - 1, RM.x1 + 1, -1, 0, RM.z0 - 1, RM.z1 + 1);
+  // the walls (so the crate can't go through them either)
+  solid('wL', RM.x0 - 1, RM.x0 + 0.03, -1, 6, RM.z0 - 1, RM.z1 + 1); solid('wR', RM.x1 - 0.03, RM.x1 + 1, -1, 6, RM.z0 - 1, RM.z1 + 1);
+  solid('wF', RM.x0 - 1, RM.x1 + 1, -1, 6, RM.z0 - 1, RM.z0 + 0.05); solid('wB', RM.x0 - 1, RM.x1 + 1, -1, 6, RM.z1 - 0.02, RM.z1 + 1);
+  // the clock on its plinth, the bench (you can climb on it), the lectern, the rail round the shaft, the ladder's foot, the lamp, the loft's posts
+  solid('frame', FR.x0 - 0.17, FR.x1 + 0.17, 0, FR.y1 + 0.25, FR.z0 - 0.17, FR.z1 + 0.12);
+  solid('bench', 0.28, 2.32, 0, 0.89, RM.z1 - 0.7, RM.z1);
+  solid('lect', POS.lectern.x - 0.24, POS.lectern.x + 0.24, 0, 1.2, POS.lectern.z - 0.24, POS.lectern.z + 0.24, { noStand: true });
+  solid('shaft', SH.x0 - 0.1, SH.x1 + 0.08, 0, 1.05, SH.z0 - 0.08, SH.z1 + 0.1, { noStand: true });
+  solid('ladder', LADDER.x - 0.24, LADDER.x + 0.24, 0, 1.2, LADDER.z0 - 0.12, LADDER.z0 + 0.06, { noStand: true });
+  solid('lamp', POS.light.x - 0.2, POS.light.x + 0.2, 0, 1.9, POS.light.z - 0.2, POS.light.z + 0.2, { noStand: true });
+  solid('post1', -1.33, -1.17, 0, LOFT.y, LOFT.z1 - 0.16, LOFT.z1); solid('post2', 1.47, 1.63, 0, LOFT.y, LOFT.z1 - 0.16, LOFT.z1);
+  // the loft floor (a ceiling for anyone under it), and the vault low over it
+  solid('loft', LOFT.x0, LOFT.x1, LOFT.y - 0.09, LOFT.y, LOFT.z0, LOFT.z1);
+  solid('loftVault', LOFT.x0, LOFT.x1, LOFT.y + 1.62, 9, LOFT.z0, LOFT.z1);
+  // the crate: drag it, stand on it
+  const d = draggable('crate', O.crate, { w: CRATE.w, dd: CRATE.d, h: CRATE.h, name: 'crate', heavy: 1.2 });
+  d.home = new THREE.Vector3(CRATE.x, 0, CRATE.z);
 }
 function constrainTo(p, r) {
   const R = onLoft() ? [-2.3, 1.95, -1.3, -0.84] : [RM.x0 + r + 0.02, RM.x1 - r - 0.02, RM.z0 + r + 0.08, RM.z1 - r];
   p.x = clamp(p.x, R[0], R[1]); p.z = clamp(p.z, R[2], R[3]);
 }
+// on the loft you stoop under the vault
+function loftBody(on) { BODY.standEye = on ? 1.42 : 1.62; BODY.standH = on ? 1.52 : 1.74; BODY.noJump = !!on; }
+// cutscenes that move the camera themselves take it from the body for a while, then hand it back
+function bodyHold() { V.hold = { y: BODY.y }; S.safe = { x: P.x, y: BODY.y, z: P.z }; BODY.on = false; G.eye = G.eyeT = BODY.y + BODY.eye; }
+function bodyFree(x, y, z) { BODY.on = true; V.hold = null; S.safe = null; bodyPlace(x, y, z, G.yaw, false); save(); }
 function climbUp() {
   if (G.cutscene || onLoft()) return;
-  G.cutscene = true; sCreak(new THREE.Vector3(LADDER.x, 1.2, -0.3), 1.0, 0.1, 110); const y0 = G.yaw, p0 = { x: P.x, z: P.z };
-  tween(0.5, k => { P.x = lerp(p0.x, LADDER.x, k); P.z = lerp(p0.z, LADDER.z0 + 0.35, k); G.yaw = y0 + wrapA(0 - y0) * k; G.pitch = lerp(G.pitch, 0.5, k); });
+  if (DRAG.cur) dragEnd(true);
+  G.cutscene = true; bodyHold(); sCreak(new THREE.Vector3(LADDER.x, 1.2, -0.3), 1.0, 0.1, 110); const y0 = G.yaw, p0 = { x: P.x, z: P.z, e: G.eye };
+  tween(0.5, k => { P.x = lerp(p0.x, LADDER.x, k); P.z = lerp(p0.z, LADDER.z0 + 0.35, k); G.eye = G.eyeT = lerp(p0.e, 1.62, k); G.yaw = y0 + wrapA(0 - y0) * k; G.pitch = lerp(G.pitch, 0.5, k); });
   after(0.55, () => { for (let i = 0; i < 5; i++) after(i * 0.3, () => sStep(0.14)); tween(1.5, k => { G.eye = G.eyeT = lerp(1.62, LOFT.y + 1.2, k); P.z = lerp(LADDER.z0 + 0.35, LADDER.z1 + 0.1, k); G.pitch = lerp(0.5, 0.15, k); }); });
-  after(2.1, () => { S.onLoft = true; save(); tween(0.5, k => { P.z = lerp(LADDER.z1 + 0.1, -1.0, k); P.x = lerp(LADDER.x, LADDER.x + 0.3, k); G.eye = G.eyeT = lerp(LOFT.y + 1.2, EYE_LOFT, k); G.pitch = lerp(0.15, -0.05, k); }, () => { G.cutscene = false; updatePrompt(true); if (!S.ev.loftSeen) { S.ev.loftSeen = true; save(); sayI('A low loft under the vault. A painted wooden drum fills most of it: the apostles\' house. A little door at its back. Beyond it, the two windows over the square. The top of the ladder is behind you.', 8200); } }); });
+  after(2.1, () => { S.onLoft = true; save(); tween(0.5, k => { P.z = lerp(LADDER.z1 + 0.1, -1.0, k); P.x = lerp(LADDER.x, LADDER.x + 0.3, k); G.eye = G.eyeT = lerp(LOFT.y + 1.2, EYE_LOFT, k); G.pitch = lerp(0.15, -0.05, k); }, () => {
+    loftBody(true); bodyFree(P.x, LOFT.y, P.z); G.cutscene = false; updatePrompt(true);
+    if (!S.ev.loftSeen) { S.ev.loftSeen = true; save(); sayI('A low loft under the vault. A painted wooden drum fills most of it: the apostles\' house, with a little door at its back and a handwheel beside it. Beyond it, the two windows over the square. The top of the ladder is behind you.', 8600); } }); });
 }
 function climbDown(fast) {
   if (G.cutscene && !fast) return; if (!onLoft()) return;
-  G.cutscene = true; const y0 = G.yaw, p0 = { x: P.x, z: P.z };
-  tween(0.45, k => { P.x = lerp(p0.x, LADDER.x, k); P.z = lerp(p0.z, LADDER.z1 + 0.1, k); G.yaw = y0 + wrapA(Math.PI - y0) * k; G.pitch = lerp(G.pitch, -0.6, k); G.eye = G.eyeT = lerp(EYE_LOFT, LOFT.y + 1.2, k); });
-  after(0.5, () => { S.onLoft = false; for (let i = 0; i < 5; i++) after(i * 0.28, () => sStep(0.14)); tween(1.4, k => { G.eye = G.eyeT = lerp(LOFT.y + 1.2, 1.62, k); P.z = lerp(LADDER.z1 + 0.1, LADDER.z0 + 0.45, k); G.pitch = lerp(-0.6, 0, k); }, () => { G.cutscene = false; save(); updatePrompt(true); }); });
-}
-
-/* ---------------- the keepers' cupboard ---------------- */
-function cupActions() {
-  if (!S.cupOpen) return [{ label: 'Try the lock', run: openCupLock }, look('An iron door set in the wall, studded, black with age. In the middle, a lock of two brass rings: old gold numerals round the outside, the signs of the zodiac inside. A little pointer at the top.')];
-  return [{ label: 'Look inside', run: openCupboard }];
-}
-function openCupLock() {
-  flag('cupSeen');
-  lockUI({ id: 'cup', title: 'The keepers\' cupboard', sub: 'Two brass rings under a pointer: her old numerals outside, the zodiac inside.', btn: 'Pull the handle', fail: 'The handle won\'t turn.',
-    rings: [{ n: 24, r: 136, band: 24, label: 'Numerals', draw: (i, x, y, deg) => numItem(i, x, y, deg, 26) }, { n: 12, r: 88, band: 24, label: 'Signs', draw: (i, x, y, deg) => zodItem(i, x, y, deg, 34) }],
-    answer: [14, SUN_SIGN], onOpen: () => { S.cupOpen = true; save(); sCreak(POS.cupboard, 1.4, 0.16, 70); tween(1.2, k => { O.cupDoor.rotation.y = k * 1.75; }); O.cupIn.visible = true; renderer.shadowMap.needsUpdate = true; after(1.0, openCupboard); } });
-}
-function openCupboard() {
-  const entries = [];
-  entries.push({ name: 'Winding crank', desc: 'A heavy iron crank with a square socket and a worn wooden handle.', take: 'crank', onTake: () => { O.crankItem.visible = false; } });
-  entries.push({ name: 'Brass box', desc: 'A small, heavy box of dark brass. On its side, two rings of zodiac signs: SOL and LUNA. No keyhole.', take: 'box', onTake: () => { O.boxItem.visible = false; flag('boxSeen'); } });
-  entries.push({ name: 'Oil can', desc: 'Clock oil, nearly empty. Kroupa\'s initials scratched on it.' });
-  entries.push({ name: 'Rags', desc: 'Old rags, black with oil. Something has been wrapped in them for a long time: they hold the shape of a box.' });
-  openContainer('Inside the keepers\' cupboard', 'Shelves of dark wood, a smell of oil and cold iron.', entries);
+  G.cutscene = true; bodyHold(); const y0 = G.yaw, p0 = { x: P.x, z: P.z, e: G.eye };
+  tween(0.45, k => { P.x = lerp(p0.x, LADDER.x, k); P.z = lerp(p0.z, LADDER.z1 + 0.1, k); G.yaw = y0 + wrapA(Math.PI - y0) * k; G.pitch = lerp(G.pitch, -0.6, k); G.eye = G.eyeT = lerp(p0.e, LOFT.y + 1.2, k); });
+  after(0.5, () => { S.onLoft = false; for (let i = 0; i < 5; i++) after(i * 0.28, () => sStep(0.14)); tween(1.4, k => { G.eye = G.eyeT = lerp(LOFT.y + 1.2, 1.62, k); P.z = lerp(LADDER.z1 + 0.1, LADDER.z0 + 0.45, k); G.pitch = lerp(-0.6, 0, k); }, () => { loftBody(false); bodyFree(P.x, 0, P.z); G.cutscene = false; save(); updatePrompt(true); }); });
 }
 
 /* ---------------- the apostles' wheel and St Peter ---------------- */
+// you turn it with the handwheel beside the drum and look in at the little door: no list, just look
 function wheelRot(i) { return -i / AP_N * TAU; }
 function apAtDoor() { return APOSTLES[S.wheel]; }
-function openWheelView() {
-  if (G.cutscene) return;
-  const saved = { x: P.x, z: P.z, yaw: G.yaw, pitch: G.pitch, eye: G.eye };
-  V.view = { kind: 'wheel', saved }; G.frozen = true;
-  P.x = HOUS.x; P.z = HOUS.z + HOUS.r + 0.36; G.eye = G.eyeT = LOFT.y + 0.6; G.yaw = 0; G.pitch = -0.32;
-  if (!S.flags.wheelSeen) { flag('wheelSeen'); }
-  drawWheelPanel();
-}
-function drawWheelPanel(msg) {
-  const ap = apAtDoor(), peter = ap.tag === 'A2' && !S.keyTaken;
-  openPanel(`<h3>The apostles' door</h3><p class="opanel-t">Standing at the little door, facing you: a carved figure in a painted robe, with ${esc(ap.look)}.${peter ? ' Hung on his gilded keys, on a twist of wire: a real iron key.' : ''}</p>
-    ${msg ? `<p class="opanel-m">${msg}</p>` : ''}
-    <div class="grp"><button class="btn" id="wTurn">Turn the wheel &middot; loud</button></div><p class="opanel-n">${esc(loudNote())}</p>
-    ${peter ? '<div class="grp"><button class="btn primary" id="wKey">Take the iron key</button></div>' : ''}
-    <div class="grp"><button class="btn" id="wBack">${IS_TOUCH ? 'Back' : 'Back &middot; E'}</button></div>`, p => {
-    p.querySelector('#wTurn').onclick = turnWheel; p.querySelector('#wBack').onclick = () => closePanel();
-    const k = p.querySelector('#wKey'); if (k) k.onclick = takeKey;
-  });
-}
+const peterHere = () => apAtDoor().tag === 'A2' && !S.keyTaken;
+function apLine(ap) { return ap.tag === 'A2' ? `St Peter: ${ap.look}.${S.keyTaken ? '' : ' Hung on his gilded keys, on a twist of wire, there\'s a real iron key.'}` : `${ap.name}, with ${ap.look}.`; }
+function lookDoor() { flag('doorSeen'); sayI(`In the little door, facing you: ${apLine(apAtDoor())}`, peterHere() ? 7000 : 5600); }
 function turnWheel() {
   if (V.wheelTurn || G.cutscene) return;
-  if (G.time < (G.lockout || 0)) { drawWheelPanel('Your hands are shaking. Give it a moment.'); return; }
+  if (G.time < (G.lockout || 0)) { sayI('Your hands are shaking. Give it a moment.', 2600); return; }
   if (!loud(() => {})) return;
   const first = !S.ev.thirteen, from = S.wheel; V.wheelTurn = { t: 0 };
   sRatchet(POS.crank, 0.6); sCreak(POS.housDoor, 0.7, 0.12, 120);
-  if (first) { S.ev.thirteen = true; save(); spawn13(from); }
-  const dur = first ? 2.6 : 0.7;
+  const dur = first ? 2.6 : 0.8;
+  if (first) {
+    // the first turn: your eyes go to the door, and for a moment there are thirteen
+    S.ev.thirteen = true; save(); G.cutscene = true; spawn13(from);
+    const hp = new THREE.Vector3(HOUS.x, LOFT.y + 0.42, HOUS.z + HOUS.r - 0.1), c = camera.position, y0 = G.yaw, p0 = G.pitch;
+    const yT = Math.atan2(-(hp.x - c.x), -(hp.z - c.z)), pT = Math.atan2(hp.y - c.y, Math.hypot(hp.x - c.x, hp.z - c.z));
+    tween(0.45, k => { G.yaw = y0 + wrapA(yT - y0) * k; G.pitch = lerp(p0, pT, k); });
+    after(dur + 0.2, () => { G.cutscene = false; updatePrompt(true); });
+  }
   tween(dur, k => {
     let kk = k; if (first) kk = k < 0.3 ? k / 0.3 * 0.5 : k < 0.75 ? 0.5 : 0.5 + (k - 0.75) / 0.25 * 0.5;
     O.wheel.rotation.y = lerp(wheelRot(from), wheelRot(from + 1), kk);
@@ -1436,7 +1436,10 @@ function turnWheel() {
   }, () => {
     S.wheel = (from + 1) % AP_N; save(); O.wheel.rotation.y = wheelRot(S.wheel); V.wheelTurn = null; sRatchet(POS.crank, 0.45);
     if (O.han13) O.han13.visible = false;
-    if (G.panelOpen && V.view) drawWheelPanel(first ? 'For a moment, between two of them, there was a thirteenth figure. Smaller than a man. Grey. Its face turned towards you. Then the next apostle came round, and it was gone.' : '');
+    const ap = apAtDoor();
+    if (first) sayI(`For a moment, between two of them, there was a thirteenth figure. Smaller than a man. Grey. Its face turned towards you. Then ${ap.name} came round to the door, and it was gone.`, 7600);
+    else sayI(ap.tag === 'A2' && !S.keyTaken ? `St Peter comes round to the little door: two gilded keys in his hand, and hung on them, on a twist of wire, a real iron key.` : `${ap.name} comes round to the door, with ${ap.look.split('. ')[0]}.`, 5400);
+    updatePrompt(true);
   }, k => k);
 }
 // the thirteenth: a little grey figure with his face, in the gap between two apostles, turning its head to look at you
@@ -1447,124 +1450,148 @@ function spawn13(from) {
   after(0.85, () => { sStinger(0.9); G.fearT = 0.9; G.shake = 0.6; tween(0.4, k => { nk.rotation.set(0.2 - k * 0.15, lerp(-0.6, 0, k), 0.15 + k * 0.1); }); whisper('zastavil', POS.housDoor, 0.9); });
 }
 function takeKey() {
-  if (S.keyTaken || apAtDoor().tag !== 'A2') return;
+  if (!peterHere()) return;
   S.keyTaken = true; give('key'); if (O.peterKey) O.peterKey.visible = false; save(); sClick(POS.housDoor, 0.3, 2600);
-  drawWheelPanel('You untwist the wire. The key comes away in your hand, cold.');
+  sayI('You reach in and untwist the wire. The key comes away in your hand, cold.', 4200);
 }
 
-/* ---------------- winding the strike ---------------- */
+/* ---------------- the crowbar and crate 3 ---------------- */
+function crateActions() {
+  if (DRAG.cur) return [];
+  const drag = { label: 'Drag it', run: () => { if (BODY.y > 0.3) { toast('Get down off it first.', 2200); return; } dragStart('crate'); } };
+  if (!S.crateOpen) {
+    if (took('crowbar')) return [{ label: 'Prise the lid off · loud', run: prise }, drag];
+    return [look('A pine crate, nailed shut, stencilled with a big 3: KYVADLO + KLIKA. Pendulum and crank. You\'d need something to prise the lid up.', 6400), drag];
+  }
+  if (!S.crankTaken) return [{ label: 'Take the crank', run: takeCrank }, drag];
+  return [drag, look('Empty now but for straw and the pendulum. Sturdy enough to stand on.')];
+}
+function prise() {
+  if (S.crateOpen || G.cutscene) return;
+  if (BODY.y > 0.3) { toast('Get down off it first.', 2200); return; }
+  if (G.time < (G.lockout || 0)) { sayI('Your hands are shaking. Give it a moment.', 2600); return; }
+  loud(() => {
+    S.crateOpen = true; save(); drop('crowbar'); const cp = O.crate.position.clone().setY(0.5);
+    sNails(cp);
+    const lid = O.crateLid, r0 = lid.rotation.x;
+    tween(1.2, k => { lid.rotation.x = r0 - Math.min(1, k * 1.3) * 0.5; lid.position.y = CRATE.h + Math.sin(k * Math.PI) * 0.02; });
+    after(1.3, () => { lidOff(true); });
+    after(1.6, () => sayI('The nails shriek out of the wood, one end, then the other, and the lid comes away. Inside, in straw: the pendulum, and the winding crank.', 6400));
+  });
+}
+// the lid, off and lying on the floor beside where the crate stood
+function lidOff(anim) {
+  const lid = O.crateLid, cp = O.crate.position;
+  if (lid.parent !== scene) scene.attach(lid);
+  const to = { x: CRATE.x - 0.08, y: 0.03, z: CRATE.z - 0.72, ry: 0.35 };
+  if (S.lidAt) Object.assign(to, S.lidAt); else { S.lidAt = { x: cp.x - 0.08, y: 0.03, z: clamp(cp.z - 0.72, RM.z0 + 0.4, RM.z1 - 0.4), ry: 0.35 }; Object.assign(to, S.lidAt); save(); }
+  if (!anim) { lid.position.set(to.x, to.y, to.z - CRATE.d / 2); lid.rotation.set(0, to.ry, 0); return; }
+  const p0 = lid.position.clone(), q0 = lid.rotation.clone();
+  tween(0.35, k => { lid.position.set(lerp(p0.x, to.x, k), lerp(p0.y, to.y, k * k), lerp(p0.z, to.z - CRATE.d / 2, k)); lid.rotation.set(lerp(q0.x, 0, k), lerp(q0.y, to.ry, k), 0); }, () => { sThunk(new THREE.Vector3(to.x, 0.1, to.z), 0.5, 140); renderer.shadowMap.needsUpdate = true; }, k => k);
+}
+function takeCrank() { if (S.crankTaken) return; S.crankTaken = true; O.crateCrank.visible = false; give('crank'); save(); sClick(O.crate.position.clone().setY(0.5), 0.3, 1600); }
+
+/* ---------------- winding the strike (and the weight comes up the shaft) ---------------- */
 function windActions() {
   if (!S.coverOpen) {
-    if (took('key')) return [{ label: 'Unlock the cover with the iron key', run: () => { S.coverOpen = true; save(); sClick(POS.wind, 0.4, 1600); sCreak(POS.wind, 0.5, 0.08, 160); tween(0.8, k => { O.windCover.rotation.y = -k * 1.7; }); sayI('The key turns. The cover swings aside on a stiff hinge: behind it, a square iron shaft end, for a crank.', 5200); } }];
-    return [{ label: 'Look', run: () => { flag('coverSeen'); sayI('A square iron cover, locked, low on the back of the clock: the strike train\'s winding square is behind it. A keyhole in one corner. Scratched into the iron beside it, a tiny pair of crossed keys.', 6400); } }];
+    if (took('key')) return [{ label: 'Unlock the cover with the iron key', run: unlockCover }];
+    return [{ label: 'Look', run: () => { flag('coverSeen'); sayI('A square iron cover, locked, low on the back of the clock: the strike\'s winding square is behind it. A restorer\'s tag hangs on it: "KEY? Kroupa says: on St Peter\'s keys."', 7400); } }];
   }
-  if (S.wound >= WIND_N) return [look('The strike train is wound. The weight hangs high in the shaft.')];
-  if (!took('crank')) return [look('A square shaft end: the strike train\'s winding square. It needs a crank.')];
+  if (S.wound >= WIND_N) return [look('Wound. The strike weight hangs high in the shaft now.')];
+  if (!took('crank')) return [{ label: 'Look', run: () => { flag('squareSeen'); sayI('The strike train\'s winding square: a stub of square iron. It needs a crank.', 4600); } }];
   return [{ label: `Turn the crank (${S.wound} of ${WIND_N}) · loud`, run: windOnce }];
 }
+function unlockCover() { S.coverOpen = true; drop('key'); save(); sClick(POS.wind, 0.4, 1600); sCreak(POS.wind, 0.5, 0.08, 160); tween(0.8, k => { O.windCover.rotation.y = -k * 1.7; }); sayI('The key turns. The cover swings aside on a stiff hinge: behind it, the square iron end of the winding shaft.', 5200); }
 function windOnce() {
   if (G.time < (G.lockout || 0)) { sayI('Your hands are shaking. Give it a moment.', 2600); return; }
   if (G.time < (V.windCD || 0)) return; V.windCD = G.time + 0.55;
   loud(() => {
-    S.wound++; save(); O.windCrank.visible = true; sRatchet(POS.wind, 0.7); after(0.25, () => sRatchet(POS.wind, 0.55));
-    tween(0.6, k => { O.windCrank.rotation.z = -k * TAU; O.stBarrel.rotation.y = 0; }, () => { O.windCrank.rotation.z = 0; if (S.wound >= WIND_N) { O.windCrank.visible = false; sayI('The ratchet catches and holds. The strike train is wound, its weight high in the shaft.', 5200); after(20, watchmanScene); } });
+    S.wound++; save(); O.windCrank.visible = true; sRatchet(POS.wind, 0.7); after(0.25, () => sRatchet(POS.wind, 0.55)); sCreak(new THREE.Vector3(-2.47, 2.9, 1.9), 0.6, 0.1, 200);
+    tween(0.6, k => { O.windCrank.rotation.z = -k * TAU; }, () => { O.windCrank.rotation.z = 0; if (S.wound >= WIND_N) { O.windCrank.visible = false; drop('crank'); sayI('The ratchet catches and holds. Wound. Behind you, in the shaft, the weight has come right up out of the dark.', 6000); after(20, watchmanScene); } else if (S.wound === 2 && !S.ev.risingSaid) { S.ev.risingSaid = true; save(); sayI('With every turn the cable over the shaft creaks: the strike weight is coming up.', 4600); } });
     setWeights();
   });
 }
-function setWeights() { const w = O.weights[1]; if (!w) return; const y = lerp(-4.2, -1.2, clamp(S.wound / WIND_N, 0, 1)); tween(0.6, k => { w.position.y = lerp(w.position.y, y, k); placeCable(w); }); placeCable(O.weights[0]); }
+function setWeights() { const w = O.weights[1]; if (!w) return; const y = lerp(WEIGHT_Y[0], WEIGHT_Y[1], clamp(S.wound / WIND_N, 0, 1)); tween(0.6, k => { w.position.y = lerp(w.position.y, y, k); placeCable(w); }); placeCable(O.weights[0]); }
 function placeCable(w) { const cab = w.userData.cab, top = 2.9 - w.position.y, bot = 0.34; cab.scale.y = Math.max(0.01, top - bot); cab.position.y = (top + bot) / 2; }
 
-/* ---------------- the brass box and the clutch ---------------- */
-function openBox() {
-  if (S.boxOpen) return;
-  flag('boxSeen');
-  lockUI({ id: 'box', title: 'The brass box', sub: 'Two rings of signs: SOL, the Sun, round the outside; LUNA, the Moon, inside.', btn: 'Open it', fail: 'The lid doesn\'t move.',
-    rings: [{ n: 12, r: 136, band: 24, label: 'SOL', draw: (i, x, y, deg) => zodItem(i, x, y, deg, 36) }, { n: 12, r: 88, band: 24, label: 'LUNA', draw: (i, x, y, deg) => zodItem(i, x, y, deg, 32, '#e4e4dc') }],
-    answer: [7, 1], onOpen: () => { S.boxOpen = true; save(); sClick(null, 0.5, 2000); drop('box'); give('pin'); setTimeout(() => sayI('A soft click, five hundred years late. Inside, on velvet gone to dust: a long brass pin, engraved with twelve tiny figures.', 6400), 300); V.stillDue = G.time + 28; } });
+/* ---------------- the weight shaft and the pin ---------------- */
+function shaftActions() {
+  if (S.pinTaken) return [look('The weight shaft: cables down into the dark, and a smell of cold stone.')];
+  if (S.wound >= WIND_N) return [{ label: 'Reach down for the pin', run: reachPin }, { label: 'Look down', run: lookShaft }];
+  return [{ label: 'Look down', run: lookShaft }];
 }
+function lookShaft() {
+  flag('pinSeen');
+  if (S.wound >= WIND_N) sayI('The strike weight hangs just below the floor now, an arm\'s length down. On top of it, the little brass pin.', 5600);
+  else if (S.wound > 0) sayI('The strike weight is coming up the shaft as you wind. The brass glint on top of it is nearer, but still out of reach.', 5600);
+  else sayI('A square shaft straight down through the tower, two cables into the dark. Far below, on top of the strike weight, something small and brass catches your lamp: a pin. Far too deep to reach.', 7400);
+}
+function reachPin() {
+  if (G.cutscene || S.pinTaken) return;
+  if (DRAG.cur) dragEnd(true);
+  G.cutscene = true; bodyHold(); const s0 = { x: P.x, z: P.z, yaw: G.yaw, pitch: G.pitch, eye: G.eye, y: V.hold.y };
+  const kx = SH.x1 + 0.38, kz = clamp(P.z, SH.z0 + 0.15, SH.z1 - 0.15), yT = Math.PI / 2;
+  // kneel at the rail and reach down into the shaft
+  tween(0.8, k => { P.x = lerp(s0.x, kx, k); P.z = lerp(s0.z, kz, k); G.eye = G.eyeT = lerp(s0.eye, 0.95, k); G.yaw = s0.yaw + wrapA(yT - s0.yaw) * k; G.pitch = lerp(s0.pitch, -1.15, k); });
+  after(0.9, () => { O.myHand.visible = true; O.myPin.visible = false; O.myHand.rotation.set(0.9, 0, 0); O.myHand.position.set(-0.04, -0.12, -0.28); tween(0.8, k => { O.myHand.position.set(-0.04, lerp(-0.12, -0.2, k), lerp(-0.28, -0.5, k)); }); });
+  after(1.8, () => { O.pinW.visible = false; O.myPin.visible = true; sClick(new THREE.Vector3(-2.47, -0.6, 2.0), 0.3, 2200); });
+  // as your fingers close on it, something far below takes hold of the weight
+  after(2.0, () => { const w = O.weights[1], y = w.position.y; sThunk(new THREE.Vector3(-2.47, -1.5, 2.0), 0.6, 80); G.shake = 0.8; G.fearT = 0.8; sStinger(0.6); tween(0.18, k => { w.position.y = y - k * 0.14; placeCable(w); }, () => tween(0.5, k => { w.position.y = y - 0.14 + k * 0.14; placeCable(w); })); after(0.6, () => countWhisper(1, new THREE.Vector3(-2.47, -3.5, 1.9), 0.9)); });
+  after(2.6, () => { tween(0.4, k => { O.myHand.position.set(-0.04, lerp(-0.2, -0.32, k), lerp(-0.5, -0.3, k)); }, () => { O.myHand.visible = false; O.myPin.visible = true; }); });
+  after(3.1, () => { S.pinTaken = true; give('pin'); save(); tween(0.7, k => { G.eye = G.eyeT = lerp(0.95, 1.62, k); G.pitch = lerp(-1.15, -0.2, k); }, () => { bodyFree(P.x, 0, P.z); G.cutscene = false; updatePrompt(true); sayI('As your fingers closed on the pin, the cable jerked, as if something far below had taken hold of the weight. Then it was still.', 6400); V.stillDue = G.time + 32; }); });
+}
+
+/* ---------------- up on the crate: the clutch and the fly ---------------- */
 function clutchActions() {
-  if (S.pinIn) return [look('The pin sits through the clutch. The apostles\' shaft is coupled to the strike.')];
+  if (S.pinIn) return [look('The pin sits through the clutch. The apostles are coupled to the strike.')];
+  if (!highNear(POS.clutch)) return [{ label: 'Look', run: () => { flag('clutchSeen'); sayI('The apostles\' clutch, up on top of the clock: two iron dogs on the shaft that runs up to the drum, a square hole through both. Empty: its pin is missing. Too high to reach from the floor.', 7400); } }];
   if (took('pin')) return [{ label: 'Fit the pin into the clutch', run: fitPin }];
-  return [look('The apostles\' clutch: two iron dogs on the shaft that runs up to the loft, with a square hole through both. Empty. Without its pin, the strike can\'t turn the apostles.')];
+  return [{ label: 'Look', run: () => { flag('clutchSeen'); sayI('The apostles\' clutch. A square hole through both dogs, and no pin in it.', 4200); } }];
 }
 function fitPin() {
   if (G.cutscene) return;
-  G.cutscene = true; V.clutchScene = true; const saved = { x: P.x, z: P.z, yaw: G.yaw, pitch: G.pitch, eye: G.eye };
+  G.cutscene = true; V.clutchScene = true; bodyHold(); const saved = { x: P.x, z: P.z, yaw: G.yaw, pitch: G.pitch, eye: G.eye, y: V.hold.y };
   tween(0.8, k => { P.x = lerp(saved.x, POS.clutch.x, k); P.z = lerp(saved.z, POS.clutch.z + 0.62, k); G.eye = G.eyeT = lerp(saved.eye, 2.4, k); G.yaw = saved.yaw + wrapA(0 - saved.yaw) * k; G.pitch = lerp(saved.pitch, -0.62, k); });
   // your hand reaches in from below, fingers forward, the pin between them
   after(0.9, () => { O.myHand.visible = true; O.myHand.rotation.set(0.3, 0, 0); O.myHand.position.set(-0.05, -0.24, -0.3); tween(1.1, k => { O.myHand.position.set(lerp(-0.05, -0.02, k), lerp(-0.24, -0.11, k), lerp(-0.3, -0.42, k)); }); });
-  after(2.1, () => { sClick(POS.clutch, 0.5, 1800); sThunk(POS.clutch, 0.4, 220); O.pinIn.visible = true; O.myPin.visible = false; });
+  after(2.1, () => { sClick(POS.clutch, 0.5, 1800); sThunk(POS.clutch, 0.4, 220); O.pinIn.visible = true; O.myPin.visible = false; drop('pin'); });
   // a grey hand comes out of the gears below and closes on your fingers
   after(2.5, () => { O.hand.visible = true; O.hand.scale.setScalar(1.3); O.hand.position.set(0.0, -0.32, -0.66); O.hand.rotation.set(-1.1, Math.PI - 0.1, 0.05); tween(0.35, k => { O.hand.position.set(lerp(0.0, -0.01, k), lerp(-0.32, -0.125, k), lerp(-0.66, -0.53, k)); O.hand.rotation.x = lerp(-1.1, -0.5, k); }); });
   after(2.9, () => { sStinger(1.0); G.flash = 0.25; G.shake = 1.2; G.fearT = 1; sBreath(camera.position.clone().add(new THREE.Vector3(0, -0.3, -0.4)), 1, 0.5, true); });
   after(3.05, () => { G.flash = 0; });
   after(3.6, () => { tween(0.25, k => { O.myHand.position.y = lerp(-0.11, -0.34, k); O.hand.position.y = lerp(-0.125, -0.4, k); }, () => { O.myHand.visible = false; O.hand.visible = false; O.hand.scale.setScalar(1); O.myPin.visible = true; }); });
-  after(4.0, () => { S.pinIn = true; save(); tween(0.7, k => { P.x = lerp(POS.clutch.x, saved.x, k); P.z = lerp(POS.clutch.z + 0.62, saved.z, k); G.eye = G.eyeT = lerp(2.4, saved.eye, k); G.pitch = lerp(-0.62, saved.pitch, k); }, () => { G.cutscene = false; V.clutchScene = false; updatePrompt(true); sayI('A hand. Out of the gears, grey and cold, round your fingers. You tore yours away. The pin is in: the apostles are coupled to the strike.', 7000); }); });
+  after(4.0, () => { S.pinIn = true; save(); tween(0.7, k => { P.x = lerp(POS.clutch.x, saved.x, k); P.z = lerp(POS.clutch.z + 0.62, saved.z, k); G.eye = G.eyeT = lerp(2.4, saved.eye, k); G.pitch = lerp(-0.62, saved.pitch, k); }, () => { bodyFree(saved.x, saved.y, saved.z); G.cutscene = false; V.clutchScene = false; updatePrompt(true); sayI('A hand. Out of the gears, grey and cold, round your fingers. You tore yours away. The pin is in: the apostles are coupled to the strike.', 7000); }); });
 }
-
-/* ---------------- the count wheel, the fly, the hands ---------------- */
-function openCountUI() {
-  flag('countSeen');
-  const draw = () => {
-    UI.show('box', `<button class="x">Close &middot; Esc</button><h2>The count wheel</h2><p class="sub">Her locking plate. The numeral under the click is how many strokes she strikes next.</p>
-      <div class="olockw"><svg class="olock" viewBox="-170 -175 340 345"><circle r="164" fill="#2a2218" stroke="#7a5a2a" stroke-width="3"/><circle r="150" fill="#6a5024" stroke="#8a6a32"/>
-      ${ringSVG(24, 120, S.count - 1, (i, x, y, deg) => svgNum(i + 1, x, y, 21, '#1e1408', 11, deg))}<circle r="78" fill="#1a1208" stroke="#8a6a32"/>
-      <path d="M0 -146 L-12 -178 L12 -178 Z" fill="#e8d0a0"/></svg>
-      <div class="olockc"><div class="olrow on"><span>Plate</span><button class="btn" data-d="-1" aria-label="Previous">&#9664;</button><button class="btn" data-d="1" aria-label="Next">&#9654;</button></div>
-      <p class="muted" style="font-size:12px;margin:8px 0 0">You lift the click with a thumb and turn the plate. Quiet work.</p><button class="btn primary" id="cDone">Done</button></div></div>`,
-      { cls: 'ui-card olockcard', onKey: e => { if (e.code === 'ArrowLeft') turn(-1); else if (e.code === 'ArrowRight') turn(1); else if (e.code === 'Enter') UI.close(); } });
-    $('#card').querySelectorAll('[data-d]').forEach(b => b.onclick = () => turn(+b.dataset.d));
-    $('#cDone').onclick = () => UI.close();
-  };
-  const turn = d => { S.count = ((S.count - 1 + d) % 24 + 24) % 24 + 1; save(); sClick(POS.count, 0.2, 2800); setCountPlate(); draw(); };
-  draw();
+function flyActions() {
+  const wide = S.fly === 'wide';
+  if (!highNear(POS.fly)) return [{ label: 'Look', run: lookFly }];
+  return [{ label: wide ? 'Turn the vanes edge-on (fast)' : 'Turn the vanes face-on (slow)', run: () => setFly(wide ? 'narrow' : 'wide') }, { label: 'Look', run: lookFly }];
 }
-function setCountPlate() { O.countPlate.rotation.z = (S.count - 1) * TAU / 24; }
-function openFlyUI() {
-  const draw = () => {
-    const wide = S.fly === 'wide', ang = wide ? 0 : 76;
-    const vane = (sx) => `<g transform="translate(${sx * 62} 0)"><rect x="-38" y="-46" width="76" height="92" rx="3" fill="#d8b868" stroke="#5a4012" stroke-width="3" transform="scale(${Math.cos(ang * Math.PI / 180).toFixed(3)} 1)"/></g>`;
-    UI.show('box', `<button class="x">Close &middot; Esc</button><h2>The fly</h2><p class="sub">The strike train's air brake: two brass vanes on a spindle above the frame. They spin while she strikes.</p>
-      <svg class="ofly" viewBox="-170 -110 340 200"><line x1="0" y1="-100" x2="0" y2="62" stroke="#9a9894" stroke-width="6"/>${vane(-1)}${vane(1)}<circle r="10" fill="#c8a050" stroke="#5a4012" stroke-width="3"/>
-      <text x="0" y="86" text-anchor="middle" fill="#bfb6a0" font-size="15" font-family="IBM Plex Mono, monospace">${wide ? 'vanes face-on: wide open' : 'vanes edge-on: narrow'}</text></svg>
-      <div class="row" style="justify-content:center;margin-top:10px"><button class="btn ${wide ? '' : 'primary'}" id="fN">Narrow &middot; edge-on</button><button class="btn ${wide ? 'primary' : ''}" id="fW">Wide open &middot; face-on</button></div>
-      <p class="muted" style="font-size:12px;margin:10px 0 0;text-align:center">A wing nut holds them. Quiet work.</p>`, { cls: 'ui-card ofly-card' });
-    $('#fN').onclick = () => setFly('narrow'); $('#fW').onclick = () => setFly('wide');
-  };
-  const setFly = f => { if (S.fly === f) return; S.fly = f; save(); sClick(POS.fly, 0.25, 2200); setVanes(); draw(); };
-  draw();
+function lookFly() {
+  const up = highNear(POS.fly) ? '' : ' It\'s up on top of the clock: you\'d need something to stand on.';
+  if (S.fly === 'wide') sayI('The fly\'s vanes are face-on now, flat to the air. They\'ll hold her back: she\'ll strike slowly.', 5200);
+  else if (S.flags.fastSeen) sayI('The fly: two brass vanes that spin while she strikes. Set edge-on, they slice the air and she races. Turned face-on, they\'d hold her back.' + up, 7200);
+  else sayI('The fly, on top of the clock: two brass vanes on a spindle that spin while she strikes, to brake her. They\'re set edge-on, slicing the air.' + up, 6800);
 }
+function setFly(f) { if (S.fly === f) return; S.fly = f; save(); sClick(POS.fly, 0.25, 2200); setVanes(); sayI(f === 'wide' ? 'You loosen the wing nut, turn the vanes face-on, flat to the air, and tighten it again.' : 'You turn the vanes back edge-on.', 4200); }
 function setVanes() { const r = S.fly === 'wide' ? 0 : 1.33; O.vanes.forEach(v => v.rotation.x = r); }
+
+/* ---------------- the hands, and she strikes ---------------- */
 function handsTo(h) { const a = angHour(h); O.sunHand.rotation.z = -a; O.moonHand.rotation.z = -(a + Math.PI / 2); O.zodRing.rotation.z = -zodRingRot(h); if (O.bigSun) { O.bigSun.rotation.z = -a; O.bigMoon.rotation.z = -(a + Math.PI / 2); O.bigZod.rotation.z = -zodRingRot(h); } }
-function openHandsUI() {
-  const draw = (msg = '') => {
-    const h = S.hands / 60, hh = Math.floor(h) % 24, mm = Math.round((h - Math.floor(h)) * 60);
-    UI.show('box', `<button class="x">Close &middot; Esc</button><h2>The hands</h2><p class="sub">A little crank on a square arbor, beside the setting dial. It turns the hands round, the sun and the moon with them.</p>
-      <div class="ohands"><canvas id="hCv" width="380" height="380"></canvas><div class="ohc"><p class="ohtime">${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')} <span>by the Roman ring</span></p>
-      <div class="row"><button class="btn" id="hB">&#8634; Back 15 min</button><button class="btn" id="hF">On 15 min &#8635;</button></div><div class="row" style="margin-top:8px"><button class="btn primary" id="hH">On to the next hour</button></div>
-      <p class="lockmsg ${msg ? '' : ''}" id="hMsg">${esc(msg)}</p></div></div>`, { cls: 'ui-card ohands-card', onKey: e => { if (e.code === 'ArrowLeft') step(-15); else if (e.code === 'ArrowRight') step(15); } });
-    const cv = $('#hCv'); if (cv) drawDialNow(cv.getContext('2d'), cv.width, S.hands / 60);
-    $('#hB').onclick = () => step(-15); $('#hF').onclick = () => step(15); $('#hH').onclick = () => step(60 - (S.hands % 60 || 0) || 60);
-  };
-  const step = d => {
-    if (V.strike) { draw('She is striking. The hands won\'t turn while she strikes.'); return; }
-    const before = S.hands; S.hands = before + d; if (S.hands < 0) S.hands += 1440; save(); sClick(POS.knob, 0.15, 3000); sWhirr(0.3);
-    tween(0.4, k => handsTo(lerp(before, before + d, k) / 60));
-    if (d > 0 && Math.floor((before + d) / 60) > Math.floor(before / 60)) { S.hands = (S.hands % 1440); after(0.45, () => release()); UI.close(); return; }
-    S.hands = (S.hands % 1440 + 1440) % 1440; draw();
-  };
-  draw();
+function turnHands() {
+  if (G.cutscene || V.handsT) return;
+  if (V.strike) { sayI('She\'s striking. The hands won\'t turn while she strikes.', 3000); return; }
+  const before = S.hands, to = (Math.floor(before / 60) + 1) * 60; V.handsT = true;
+  sClick(POS.knob, 0.2, 3000); sWhirr(0.9);
+  tween(1.0, k => { handsTo(lerp(before, to, k) / 60); O.knobArm.rotation.z = -k * TAU * 2; }, () => { S.hands = to % 1440; save(); V.handsT = false; release(); });
 }
-// the hands pass the hour: the warning drops and, if she is wound, she strikes
+// the hands pass the hour: the warning drops and, if she is wound, she strikes twelve
 function release() {
   sClick(POS.frame, 0.4, 900); sThunk(POS.frame, 0.25, 140);
   flag('tried');
-  if (S.wound < WIND_N) { sayI('Something drops inside the frame with a click, and catches. The strike train doesn\'t move: there\'s no weight on it.', 5600); return; }
-  const n = S.count; S.count = n % 24 + 1; save(); after(0.8, setCountPlate);
-  startStrike(n, S.fly === 'wide' ? 2.0 : 0.45, S.pinIn);
+  if (S.wound < WIND_N) { sayI('Something drops inside the frame with a click, and catches. Nothing else moves: the strike isn\'t wound.', 5600); return; }
+  startStrike(12, S.fly === 'wide' ? 2.0 : 0.45, S.pinIn);
 }
-
-/* ---------------- she strikes ---------------- */
 function startStrike(n, interval, proc) {
   const lead = proc ? 2.6 : 1.0;
   V.strike = { n, i: 0, interval, t: -lead, proc, end: G.time + lead + n * interval + 0.6 };
@@ -1575,8 +1602,8 @@ function startStrike(n, interval, proc) {
     after(0.6, () => { sCreak(POS.loftMid, 1.0, 0.12, 90); tween(1.2, k => O.shutters.forEach(s => s.rotation.y = s.userData.s * -k * 1.9)); });
     V.proc = 1;
   }
-  // after the pin is in he no longer hides in the works: he stands in the room and counts
-  if (S.pinIn) showHimCounting();
+  // while she strikes he doesn't hide in the works: he stands in the room and counts
+  showHimCounting();
 }
 function strikeUpdate(dt) {
   const st = V.strike; if (!st) return;
@@ -1585,7 +1612,7 @@ function strikeUpdate(dt) {
   if (st.proc && st.t > -1.0) { const total = st.n * st.interval + 1.0; O.wheel.rotation.y = wheelRot(S.wheel) - clamp((st.t + 1.0) / total, 0, 1) * TAU; }
   while (st.i < st.n && st.t >= st.i * st.interval) {
     st.i++; const k = st.i; sStrike(); tween(0.12, q => { O.bellHammer.rotation.z = Math.sin(q * Math.PI) * 0.5; O.hammer.rotation.z = Math.sin(q * Math.PI) * 0.3; });
-    const p = V.hanShown ? O.han.userData.neck.getWorldPosition(new THREE.Vector3()) : hisNode();
+    const p = V.hanShown ? hanHead() : hisNode();
     after(0.35, () => countWhisper(k, p, V.hanShown ? 1.1 : 0.7));
     if (V.hanShown) { const nk = O.han.userData.neck; tween(0.3, q => { nk.rotation.x = 0.25 + Math.sin(q * Math.PI) * 0.12; }); }
   }
@@ -1598,34 +1625,36 @@ function endStrike() {
     V.proc = 0; tween(1.0, k => O.shutters.forEach(s => s.rotation.y = s.userData.s * -(1 - k) * 1.9), () => { sThunk(POS.loftMid, 0.3, 120); });
     O.wheel.rotation.y = wheelRot(S.wheel);
   }
+  let caught = false;
   if (V.hanShown) {
     // the last stroke: his head comes up and turns towards you
     const nk = O.han.userData.neck, hp = O.han.position, dx = P.x - hp.x, dz = P.z - hp.z, d = Math.hypot(dx, dz);
     tween(0.5, k => { nk.rotation.set(lerp(0.25, -0.05, k), 0, 0.12); O.han.rotation.y = lerp(O.han.rotation.y, Math.atan2(dx, dz), k * 0.7); });
-    if (d < 1.4 && !onLoft()) { after(0.5, () => { hideHim(); lungeScare('late'); }); return; }
-    after(0.9, () => { V.flick = 0.8; after(0.4, hideHim); });
+    if (d < 1.4 && !onLoft()) { caught = true; after(0.5, () => { hideHim(); lungeScare('late'); }); }
+    else after(0.9, () => { V.flick = 0.8; after(0.4, hideHim); });
   }
+  if (caught) return;
+  if (st.proc && st.interval < 1 && !S.flags.fastSeen) { flag('fastSeen'); after(1.6, () => sayI('Twelve strokes, quick as a sewing machine, and the shutters banged shut again. Nobody could get up there in that time. Something has to slow her down.', 7600)); }
+  else if (!st.proc && !S.ev.noProcSaid) { S.ev.noProcSaid = true; save(); after(1.4, () => sayI('She struck twelve, but the apostles never moved and their windows stayed shut. The procession isn\'t coupled to the strike.', 6800)); }
 }
 function showHimCounting() {
-  V.hanShown = true; const h = O.han; h.visible = true; h.position.set(-2.42, 0, 0.5); h.rotation.y = Math.PI / 2 + 0.3; h.scale.setScalar(1);
-  const nk = h.userData.neck; nk.rotation.set(0.25, 0, 0.12);
-  COL.han.minX = h.position.x - 0.3; COL.han.maxX = h.position.x + 0.3; COL.han.minZ = h.position.z - 0.3; COL.han.maxZ = h.position.z + 0.3; COL.han.on = true;
-  L.rim.position.set(h.position.x + 0.6, 2.3, h.position.z + 0.5); L.rim.intensity = 0.9;
-  if (!S.ev.sawStanding) { S.ev.sawStanding = true; save(); after(1.5, () => sayI('He is standing by the cupboard, in the open, head on one side, counting under his breath. He doesn\'t move. He won\'t, until the last stroke.', 7000)); }
+  if (V.hanShown) { V.hanUntil = 1e9; return; }
+  const p = standSpot('strike'); if (!p) return;
+  standAndCount(p, 1e9, 0.9);
+  if (!S.ev.sawStanding && S.pinIn) { S.ev.sawStanding = true; save(); after(1.6, () => sayI('He is standing in the open, head on one side, counting under his breath. He won\'t move until the last stroke.', 6400)); }
 }
-function hideHim() { V.hanShown = false; O.han.visible = false; COL.han.on = false; L.rim.intensity = 0; }
-function afterCaught() { /* after a lunge at the end of a strike: nothing to reset; the count wheel has moved on */ }
 
 /* ---------------- the escape ---------------- */
 const ESC_NEED = 6.6;
 function housDoorActions() {
   if (V.proc && V.strike && V.strike.proc && !V.escaping) return [{ label: 'Squeeze between the apostles', run: escape }];
-  return [{ label: 'Look in at the little door', run: openWheelView }];
+  if (peterHere()) return [{ label: 'Take the iron key', run: takeKey }, { label: 'Look', run: lookDoor }];
+  return [{ label: 'Look', run: lookDoor }];
 }
 function escape() {
   if (V.escaping || G.cutscene) return;
   const left = V.strike ? V.strike.end - G.time : 0;
-  V.escaping = true; G.cutscene = true; closeAll(); flag('triedOut'); V.escN = V.strike ? V.strike.n : 24;
+  V.escaping = true; G.cutscene = true; closeAll(); flag('triedOut'); V.escN = V.strike ? V.strike.n : 12; bodyHold();
   const ok = left >= ESC_NEED;
   const p0 = { x: P.x, z: P.z, eye: G.eye, yaw: G.yaw, pitch: G.pitch };
   // crouch into the door, the apostles sliding past your face
@@ -1634,7 +1663,7 @@ function escape() {
   if (!ok) {
     after(1.4, () => { tween(0.8, k => { P.z = lerp(HOUS.z + HOUS.r + 0.1, HOUS.z + 0.25, k); }); });
     after(2.0, () => { sayI('Too late: the last stroke. He turns. The apostles stop, and the wheel is a wall of wood.', 4000); });
-    after(2.6, () => { G.cutscene = false; V.escaping = false; P.x = HOUS.x; P.z = -1.05; G.eye = G.eyeT = EYE_LOFT; hideHim(); O.shutters.forEach(s => s.rotation.y = 0); lungeScare('late'); });
+    after(2.6, () => { V.escaping = false; P.x = HOUS.x; P.z = -1.05; G.eye = G.eyeT = EYE_LOFT; bodyFree(HOUS.x, LOFT.y, -1.05); G.cutscene = false; hideHim(); O.shutters.forEach(s => s.rotation.y = 0); lungeScare('late'); });
     return;
   }
   after(0.9, () => { tween(1.6, k => { P.z = lerp(HOUS.z + HOUS.r + 0.1, HOUS.z - 0.25, k); P.x = lerp(HOUS.x, APW.xs[0] + 0.05, k); G.yaw = lerp(0, -0.25, k); }); });
@@ -1646,7 +1675,7 @@ function escape() {
 }
 function finale() {
   // the last stroke: a grey hand out of the window, round your ankle; you kick free and it lets go
-  countWhisper(V.escN || 24, new THREE.Vector3(APW.xs[0], APW.y0 + 0.3, RM.z0 + 0.1), 1.2);
+  countWhisper(V.escN || 12, new THREE.Vector3(APW.xs[0], APW.y0 + 0.3, RM.z0 + 0.1), 1.2);
   after(0.8, () => { G.pitch = -0.9; O.hand.visible = true; O.hand.scale.setScalar(1.5); O.hand.position.set(0.05, -0.62, -0.85); O.hand.rotation.set(0.9, 0.12, 0.08); camera.updateMatrixWorld(); L.rim.position.copy(camera.localToWorld(new THREE.Vector3(0.15, -0.1, -0.75))); L.rim.intensity = 0.6; tween(0.45, k => { O.hand.position.y = lerp(-0.62, -0.34, k); O.hand.position.z = lerp(-0.85, -1.05, k); }); sayI('A grey hand, out of the window behind you, along the plank. Round your ankle.', 1800); sStinger(0.9); G.shake = 1.0; G.fearT = 1; });
   after(1.6, () => { tween(0.3, k => { O.hand.position.y = lerp(-0.34, -0.7, k); O.hand.position.z = lerp(-1.05, -0.85, k); }, () => { O.hand.visible = false; O.hand.scale.setScalar(1); L.rim.intensity = 0; }); sThunk(new THREE.Vector3(APW.xs[0], APW.y0, FZ), 0.6, 90); sayI('You kick, and kick, and it lets go. The shutters bang shut behind you.', 4000); tween(0.8, k => O.shutters.forEach(s => s.rotation.y = s.userData.s * -(1 - k) * 1.9)); });
   after(3.6, () => { V.black = 3; $('#fx').className = 'lids'; });
@@ -1657,7 +1686,8 @@ function finale() {
 // "Don't move": the lamps die, he comes down into the room and walks round you in the dark
 function stillScene() {
   if (V.still || S.ev.still) return;
-  V.still = { t: 0, p0: null, failed: false, path: null }; S.ev.still = true; save(); closeAll();
+  if (DRAG.cur) dragEnd(true);
+  V.still = { t: 0, p0: null, failed: false, path: null }; S.ev.still = true; save(); closeAll(); hideHim();
   sPop(POS.light); S.workLamp = false; save(); V.flick = 0.6; after(0.7, () => { V.headOff = true; }); after(1.0, () => { V.envDue = true; });
   sayI('The work lamp pops and dies. Your headlamp flickers, and goes out.', 4000);
 }
@@ -1666,7 +1696,7 @@ function stillUpdate(dt) {
   const t = s.t;
   if (t > 1.2 && !s.thud) { s.thud = true; sThunk(new THREE.Vector3(LADDER.x, LOFT.y, -1.2), 0.6, 80); sCreak(new THREE.Vector3(LADDER.x, 1.5, -0.4), 1.6, 0.14, 90); }
   if (t > 2.6 && !s.s1) { s.s1 = true; sayI('Something has come down the ladder. He\'s in the room.', 3600); }
-  if (t > 4.2 && !s.s2) { s.s2 = true; sayI('He finds you by sound. Don\'t move. Not a step.', 5000); s.p0 = { x: P.x, z: P.z }; sHeart(16, 0.4, 0.75);
+  if (t > 4.2 && !s.s2) { s.s2 = true; subtitle('', '<b>He finds you by sound. Don\'t move.</b> <i>Not a step.</i>', 5000); s.p0 = { x: P.x, z: P.z, y: BODY.y }; sHeart(16, 0.4, 0.75);
     // his walk: from the ladder, close past your face, round behind you, away to the weight shaft
     const fwd = new THREE.Vector3(-Math.sin(G.yaw), 0, -Math.cos(G.yaw)), side = new THREE.Vector3(fwd.z, 0, -fwd.x), P0 = new THREE.Vector3(P.x, 0, P.z);
     const pt = (f, sd) => P0.clone().add(fwd.clone().multiplyScalar(f)).add(side.clone().multiplyScalar(sd));
@@ -1677,8 +1707,8 @@ function stillUpdate(dt) {
     // walk the path slowly, pausing by your face
     const seg = [[4.5, 7.0], [7.0, 9.0], [9.0, 12.0], [12.0, 13.6], [13.6, 15.2], [15.2, 17.4], [17.4, 19.4]];
     for (let i = 0; i < seg.length - 1; i++) { const [a, b] = seg[i]; if (t >= a && t < b) { const k = smooth((t - a) / (b - a)); const p = s.path[i].clone().lerp(s.path[i + 1], k); const dir = s.path[i + 1].clone().sub(s.path[i]); O.han.position.copy(p); if (dir.lengthSq() > 1e-4) O.han.rotation.y = Math.atan2(dir.x, dir.z); } }
-    if (t >= 9.0 && t < 12.0) { const to = new THREE.Vector3(P.x - O.han.position.x, 0, P.z - O.han.position.z); O.han.rotation.y = Math.atan2(to.x, to.z) + Math.sin(t * 1.3) * 0.3; O.han.userData.neck.rotation.set(0.1, Math.sin(t * 0.9) * 0.4, 0.3); if (!s.br) { s.br = true; sBreath(camera.position.clone().add(new THREE.Vector3(0, -0.05, 0).add(new THREE.Vector3(-Math.sin(G.yaw), 0, -Math.cos(G.yaw)).multiplyScalar(0.5))), 2, 0.6, true); after(2.4, () => { whisper('dech', O.han.userData.neck.getWorldPosition(new THREE.Vector3()), 1.1); heard('dech'); }); } }
-    if (t > 5.0 && t < 19.0) { const moved = Math.hypot(P.x - s.p0.x, P.z - s.p0.z) > 0.05; if (moved) { s.failed = true; O.han.visible = false; lungeScare('still'); after(3.2, endStill); return; } }
+    if (t >= 9.0 && t < 12.0) { const to = new THREE.Vector3(P.x - O.han.position.x, 0, P.z - O.han.position.z); O.han.rotation.y = Math.atan2(to.x, to.z) + Math.sin(t * 1.3) * 0.3; O.han.userData.neck.rotation.set(0.1, Math.sin(t * 0.9) * 0.4, 0.3); if (!s.br) { s.br = true; sBreath(camera.position.clone().add(new THREE.Vector3(0, -0.05, 0).add(new THREE.Vector3(-Math.sin(G.yaw), 0, -Math.cos(G.yaw)).multiplyScalar(0.5))), 2, 0.6, true); after(2.4, () => { whisper('dech', hanHead(), 1.1); heard('dech'); }); } }
+    if (t > 5.0 && t < 19.0) { const moved = Math.hypot(P.x - s.p0.x, P.z - s.p0.z) > 0.05 || Math.abs(BODY.y - s.p0.y) > 0.05 || !!DRAG.cur; if (moved) { s.failed = true; O.han.visible = false; lungeScare('still'); after(3.2, endStill); return; } }
     if (t >= 19.4) { O.han.visible = false; sScrape(NODES.shaft, 1.0, 0.18); endStill(); }
     if (O.han.visible) { L.rim.position.set(O.han.position.x + 0.5, 2.2, O.han.position.z + 0.4); L.rim.intensity = 0.7; }
   }
@@ -1715,7 +1745,7 @@ const EVENTS = [
   { id: 'breath', ok: () => progCount() >= 3, run: () => { sBreath(camera.position.clone().add(new THREE.Vector3(Math.sin(G.yaw) * 0.6, 0, Math.cos(G.yaw) * 0.6)), 1, 0.3, true); } },
 ];
 function director(dt) {
-  if (G.cutscene || G.uiOpen || V.strike || V.still || V.watch || V.finalOut || V.escaping) return;
+  if (G.cutscene || G.uiOpen || V.strike || V.still || V.watch || V.finalOut || V.escaping || V.hanShown) return;
   V.dirT -= dt; if (V.dirT > 0) return;
   const opts = EVENTS.filter(e => e.id !== V.last && e.ok());
   for (let tr = 0; tr < 4 && opts.length; tr++) { const e = opts.splice(Math.floor(Math.random() * opts.length), 1)[0]; if (e.run() !== false) { V.last = e.id; break; } }
@@ -1731,13 +1761,14 @@ function lightsUpdate(dt) {
   else if (V.flick > 0) k = Math.random() < 0.45 ? 0.05 : 1;
   V.head = lerp(V.head, k, Math.min(1, dt * 25));
   const out = V.finalOut;
-  L.head.intensity = (IS_TOUCH ? 5 : 4.2) * V.head * (out ? 0.3 : 1) * (V.clutchScene ? 0.1 : V.view ? 0.25 : V.escaping ? 0.12 : 1);
+  L.head.intensity = (IS_TOUCH ? 5 : 4.2) * V.head * (out ? 0.3 : 1) * (V.clutchScene ? 0.1 : V.escaping ? 0.12 : 1);
   const lampOn = S.workLamp && V.black <= 0 && !out;
   const lf = V.flick > 0 && S.workLamp ? (Math.random() < 0.3 ? 0.2 : 1) : 1;
   L.work.intensity = lampOn ? 20 * lf : 0; L.workFill.intensity = lampOn ? 0.5 * lf : 0; M.ledPanel.emissiveIntensity = lampOn ? 1.6 * lf : 0.02;
-  L.win.intensity = 0.5; L.apw.intensity = V.escaping ? 0.3 : 0.3 + V.proc * 1.0; L.drum.intensity = V.escaping ? 0.04 : 0.12 + V.proc * 0.5 + (V.view ? 0.5 : 0);
+  L.win.intensity = 0.5; L.apw.intensity = V.escaping ? 0.3 : 0.3 + V.proc * 1.0; L.drum.intensity = V.escaping ? 0.04 : 0.12 + V.proc * 0.5 + (onLoft() ? 0.35 : 0);
   L.street.intensity = 26; L.moon.intensity = 0.25; L.hemi.intensity = out ? 0.3 : 0.04;
   if (O.lamps) O.lamps.forEach((l, i) => { l.material.opacity = 0.8 + Math.sin(G.time * 3 + i) * 0.05; });
+  if (O.pinGlint) O.pinGlint.material.opacity = 0.55 + Math.sin(G.time * 2.3) * 0.3;
   G.blackT = V.black > 0 ? 1 : 0;
 }
 function startAmbience() {
@@ -1761,72 +1792,84 @@ function soundUpdate(dt) {
 /* ---------------- interactions ---------------- */
 const floorOnly = () => !onLoft() && !V.finalOut, loftOnly = () => onLoft() && !V.finalOut;
 function registerInteractions() {
-  inter('book', O.book, { name: 'The keepers\' book', enabled: floorOnly, actions: () => [{ label: 'Read it', run: () => { flag('bookRead'); flag('brozRead'); openDoc('book'); } }] });
-  inter('clip', O.clip, { name: 'Clipboard', enabled: floorOnly, actions: () => [{ label: 'Read it', run: () => openDoc('sheet') }] });
-  inter('cal', O.cal, { name: 'Calendar plate photograph', enabled: floorOnly, actions: () => [{ label: 'Look at it', run: () => openDoc('cal') }] });
-  inter('card', O.card, { name: 'Restorers\' label', enabled: floorOnly, actions: () => [{ label: 'Read it', run: () => openDoc('card') }] });
-  inter('dial', O.dial, { name: 'Setting dial', enabled: floorOnly, actions: () => [{ label: 'Look closely', run: () => { flag('dialSeen'); openDoc('dialLook'); } }] });
-  inter('knob', O.knob, { name: 'Little crank (the hands)', enabled: floorOnly, actions: () => [{ label: 'Turn the hands', run: openHandsUI }] });
-  inter('count', O.count, { name: 'Count wheel', enabled: floorOnly, actions: () => [{ label: 'Turn the count wheel', run: openCountUI }] });
-  inter('fly', O.fly, { name: 'The fly', reach: 2.6, enabled: floorOnly, actions: () => [{ label: 'Set the vanes', run: openFlyUI }, look('The strike train\'s fly: two brass vanes on a spindle on top of the frame. They spin to slow her down while she strikes.')] });
+  scene.updateMatrixWorld(true);
+  inter('book', O.book, { name: 'The keepers\' book', enabled: floorOnly, actions: () => [{ label: 'Read it', run: () => { flag('bookRead'); openDoc('book'); } }] });
+  inter('clip', O.clip, { name: 'Restorers\' notes', enabled: floorOnly, actions: () => [{ label: 'Read it', run: () => { flag('clipRead'); openDoc('sheet'); } }] });
+  inter('crowbar', O.crowbar, { name: 'Crowbar', enabled: () => floorOnly() && !took('crowbar') && !S.crateOpen, actions: () => [{ label: 'Take it', run: () => { give('crowbar'); O.crowbar.visible = false; save(); sClick(POS.bench, 0.25, 1400); } }] });
+  inter('crate', O.crate, { name: () => S.crateOpen ? 'Crate 3, open' : 'Crate 3', reach: 2.2, enabled: floorOnly, actions: crateActions, note: () => (!S.crateOpen && took('crowbar')) ? loudNote() : '' });
+  inter('cal', O.cal, { name: 'Calendar plate photograph', enabled: floorOnly, actions: () => [look('A big photographic print of the calendar plate below the dial outside, taped up by the restorers: a name for every day of the year round its rim.')] });
+  inter('dial', O.dial, { name: 'Setting dial', enabled: floorOnly, actions: () => [look('A little copy of the great dial outside, for setting the hands. They stand at eleven, where the restorers stopped her. A little brass crank beside it turns them.')] });
+  inter('knob', O.knob, { name: 'Little brass crank (the hands)', enabled: floorOnly, actions: () => [{ label: 'Turn the hands on to the next hour', run: turnHands }, look('A little brass crank on a square arbor beside the setting dial. It turns the hands round. When they pass an hour, she strikes, if she can.')] });
+  inter('count', O.count, { name: 'Count wheel', enabled: floorOnly, actions: () => [look('The count wheel, a brass plate of old numerals on the back of the frame: it decides how many strokes she strikes. The restorers have chalked 12 beside it.')] });
+  inter('fly', O.fly, { name: 'The fly', reach: 2.6, enabled: floorOnly, actions: flyActions });
   inter('wind', O.wind, { name: () => S.coverOpen ? 'Winding square' : 'Iron cover', enabled: floorOnly, actions: windActions, note: () => S.coverOpen && took('crank') && S.wound < WIND_N ? loudNote() : '' });
   inter('clutch', O.clutch, { name: 'Apostles\' clutch', reach: 2.4, enabled: floorOnly, actions: clutchActions });
-  inter('cup', O.cup, { name: 'Iron cupboard', enabled: floorOnly, actions: cupActions });
+  inter('cup', O.cup, { name: 'Keepers\' cupboard', enabled: floorOnly, actions: () => [{ label: 'Open it', run: openCupboard }] });
   inter('door', O.door, { name: 'Stair door', enabled: floorOnly, actions: doorActions, note: () => loudNote() });
   inter('sidewin', O.sideWin, { name: 'Little window', enabled: floorOnly, actions: () => [look('Old diamond panes, thick and greenish. Through them, Old Town Square under snow, the lamps, the two black spires of Týn church across the roofs. Nobody about at this hour.')] });
+  inter('shaft', O.shaftHit, { name: 'Weight shaft', reach: 2.4, enabled: () => floorOnly() && !DRAG.cur, actions: shaftActions });
   inter('ladder', O.ladder, { name: () => onLoft() ? 'Ladder down' : 'Ladder to the loft', reach: 2.2, enabled: () => !V.finalOut && !V.escaping, actions: () => [onLoft() ? { label: 'Climb down', run: () => climbDown() } : { label: 'Climb up', run: climbUp }] });
   inter('loftEdge', O.loftEdgeHit, { name: 'Top of the ladder', reach: 2.2, enabled: loftOnly, actions: () => [{ label: 'Climb down', run: () => climbDown() }] });
-  inter('crank', O.crank, { name: 'Handwheel for the apostles', enabled: loftOnly, actions: () => [{ label: 'Turn the apostle wheel', run: openWheelView }] });
-  inter('housDoor', O.housDoorHit, { name: () => V.proc ? 'The apostles, going round' : 'Little door in the drum', reach: 2.2, enabled: loftOnly, actions: housDoorActions, note: () => V.proc ? (V.strike ? 'The windows are open.' : '') : '' });
+  inter('crank', O.crank, { name: 'Handwheel for the apostles', enabled: loftOnly, actions: () => [{ label: 'Turn the wheel · loud', run: turnWheel }], note: () => loudNote() });
+  inter('housDoor', O.housDoorHit, { name: () => V.proc ? 'The apostles, going round' : peterHere() ? 'St Peter, in the little door' : 'Little door in the drum', reach: 2.2, enabled: loftOnly, actions: housDoorActions, note: () => V.proc ? (V.strike ? 'The windows are open.' : '') : '' });
   inter('death', O.death, { name: 'Death\'s linkage', enabled: floorOnly, actions: () => [look('A wooden box on the wall with a lever and a wire through the stone. Outside, the wire works Death: the skeleton beside the dial who rings his little bell when she strikes.')] });
   inter('dialBack', O.dialBack, { name: 'Back of the great dial', enabled: floorOnly, actions: () => [look('The back of the great dial outside: a disc of old boards bound with iron, two metres across. The arbors from the clock come through its middle.')] });
-  inter('frame', O.frameHit, { name: 'The clock', enabled: floorOnly, actions: () => [took('pin') && !S.pinIn ? { label: 'Fit the pin into the apostles\' clutch', run: fitPin } : null, look('Six hundred years of iron and brass: three great wheels for the sun, the stars and the moon on the left, the going train in the middle, the strike train on the right. All of it still. The pendulum hook hangs empty.')] });
+  inter('frame', O.frameHit, { name: 'The clock', enabled: floorOnly, actions: () => [look('Six hundred years of iron and brass: three great wheels for the sun, the stars and the moon on the left, the going train in the middle, the strike train on the right. All of it still. The pendulum hook hangs empty.')] });
   inter('laptop', O.laptop, { name: 'Laptop', enabled: floorOnly, actions: () => [look('A restorer\'s laptop. Flat battery.')] });
-  inter('toolbox', O.toolbox, { name: 'Toolbox', enabled: floorOnly, actions: () => [look('Screwdrivers, labels, cable ties, a camera battery. Nothing for a lock.')] });
+  inter('toolbox', O.toolbox, { name: 'Toolbox', enabled: floorOnly, actions: () => [look('Screwdrivers, labels, cable ties, a camera battery.')] });
   inter('lamp', O.lamp, { name: 'Work lamp', enabled: floorOnly, actions: () => [look(S.workLamp ? 'A battery work lamp on a tripod, aimed at the back of the clock. The battery shows one bar.' : 'Dead. The battery\'s flat.')] });
+}
+function openCupboard() {
+  if (!S.cupOpen) { S.cupOpen = true; save(); sCreak(POS.cupboard, 1.0, 0.14, 70); tween(1.0, k => { O.cupDoor.rotation.y = k * 1.75; }); O.cupIn.visible = true; renderer.shadowMap.needsUpdate = true; }
+  after(S.cupOpen ? 0.2 : 1.0, () => openContainer('Inside the keepers\' cupboard', 'Shelves of dark wood, a smell of oil and cold iron. The keepers\' things, left as they were.', [
+    { name: 'Oil can', desc: 'Clock oil, nearly empty. Kroupa\'s initials scratched on it.' },
+    { name: 'Keeper\'s lantern', desc: 'An old candle lantern, the glass smoked brown. No candle.' },
+    { name: 'Rags', desc: 'Old rags, black with oil, folded with care.' }]));
 }
 
 /* ---------------- per frame ---------------- */
 function roomUpdate(dt) {
   G.flash = Math.max(0, (G.flash || 0) - dt * 2.2);
   if (!V.finalOut) tynUpdate(dt);
-  strikeUpdate(dt); stillUpdate(dt); lightsUpdate(dt); soundUpdate(dt);
+  strikeUpdate(dt); stillUpdate(dt); hanUpdate(); lightsUpdate(dt); soundUpdate(dt); bellSign();
   const t = G.time;
   // gears turn while she strikes; the fly spins
   if (V.gearSpin) { O.strike.forEach((g, i) => g.rotation.z += dt * (i % 2 ? -1 : 1) * (1.6 + i * 0.7) * (S.fly === 'wide' ? 0.45 : 1.6)); O.pins.rotation.z += dt * (S.fly === 'wide' ? 0.6 : 2.2); O.fly.rotation.y += dt * (S.fly === 'wide' ? 9 : 34); if (O.pulleys[1]) O.pulleys[1].rotation.x += dt; }
   // the stand-still: the lamp and everything wait on it
-  if (V.stillDue && G.time > V.stillDue && !S.ev.still && !V.still && !onLoft() && !G.uiOpen && !G.cutscene && !V.strike && !V.watch) { V.stillDue = 0; stillScene(); }
+  if (V.stillDue && G.time > V.stillDue && !S.ev.still && !V.still && !onLoft() && !G.uiOpen && !G.cutscene && !V.strike && !V.watch && !bellOn()) { V.stillDue = 0; stillScene(); }
+  // looking down the shaft for the first time: say what's down there
+  if (!S.flags.pinSeen && !onLoft() && !G.cutscene && G.pitch < -0.5 && Math.hypot(P.x - (SH.x0 + SH.x1) / 2, P.z - (SH.z0 + SH.z1) / 2) < 1.35) lookShaft();
   // snow outside and dust inside
   if (O.snow) O.snow.forEach(s => { s.position.y -= s.userData.v * dt; s.position.x += Math.sin(t * 0.6 + s.userData.ph) * 0.12 * dt; if (s.position.y < -8) s.position.y += 15; });
   if (O.dust) O.dust.forEach(d => { if (d.userData.life > 0) { d.userData.life -= dt; d.position.y -= d.userData.v * dt; d.material.opacity = clamp(d.userData.life, 0, 0.6); } else d.material.opacity = 0; });
-  if (G.panelOpen && V.view) { const n = document.querySelector('#panel .opanel-n'); if (n) { const t2 = loudNote(); if (n.textContent !== t2) n.textContent = t2; } }
-  // the camera in the wheel view stays put
-  if (V.view && V.view.kind === 'wheel') { P.x = HOUS.x; P.z = HOUS.z + HOUS.r + 0.36; G.eye = G.eyeT = LOFT.y + 0.6; }
-  // on the loft you stoop under the vault
-  if (onLoft() && !G.cutscene && !V.view) { G.eyeT = EYE_LOFT; }
   const pk = progCount() + ':' + Object.keys(S.flags).length; if (pk !== V.progKey) { V.progKey = pk; V.stuckT = 0; } else V.stuckT += dt;
   director(dt);
 }
 
 /* ---------------- state ---------------- */
 function defaults() {
-  return { flags: {}, inv: ['phone'], docs: [], heard: [], hints: 0, hintTiers: {}, wrong: 0, locks: {}, elapsed: 0, player: null,
-    gm: 0, cupOpen: false, boxOpen: false, pinIn: false, keyTaken: false, coverOpen: false, wound: 0, wheel: 6, count: 20, fly: 'narrow', hands: 660, onLoft: false, workLamp: true, ev: {} };
+  return { flags: {}, inv: ['phone'], docs: [], heard: [], hints: 0, hintTiers: {}, wrong: 0, locks: {}, elapsed: 0, player: null, props: {},
+    gm: 0, keyTaken: false, coverOpen: false, wound: 0, wheel: 10, crateOpen: false, crankTaken: false, lidAt: null, pinTaken: false, pinIn: false, fly: 'narrow', hands: 660, onLoft: false, workLamp: true, cupOpen: false, ev: {} };
 }
 function applyState() {
-  V.strike = null; V.proc = 0; V.view = null; V.still = null; V.watch = null; V.scare = false; V.escaping = false; V.finalOut = false; V.headOff = false; V.black = 0; V.flick = 0; V.prevM = null; V.wheelTurn = null; V.hanShown = false;
-  V.bellUntil = 0; V.stillDue = S.boxOpen && !S.ev.still ? G.time + 25 : 0;
-  G.frozen = false;
-  O.cupDoor.rotation.y = S.cupOpen ? 1.75 : 0; O.cupIn.visible = S.cupOpen;
-  O.crankItem.visible = !took('crank') && !S.flags.crankGone; O.boxItem.visible = !took('box') && !S.boxOpen;
-  if (took('crank')) O.crankItem.visible = false;
+  V.strike = null; V.proc = 0; V.still = null; V.watch = null; V.scare = false; V.escaping = false; V.finalOut = false; V.headOff = false; V.black = 0; V.flick = 0; V.prevM = null; V.wheelTurn = null; V.hold = null; V.handsT = false;
+  V.bellUntil = 0; V.stillDue = S.pinTaken && !S.ev.still ? G.time + 25 : 0;
+  G.frozen = false; BODY.on = true; if (DRAG.cur) dragEnd(true);
+  hideHim();
+  O.cupDoor.rotation.y = S.cupOpen ? 1.75 : 0; O.cupIn.visible = !!S.cupOpen;
+  O.crowbar.visible = !took('crowbar') && !S.crateOpen;
+  // the crate: where it was left, its lid on or off, the crank in it or not
+  const cp = (S.props && S.props.crate) || { x: CRATE.x, z: CRATE.z }; O.crate.position.set(cp.x, 0, cp.z); DRAG.defs.crate.sync();
+  if (S.crateOpen) lidOff(false); else { if (O.crateLid.parent !== O.crate) O.crate.add(O.crateLid); O.crateLid.position.set(0, CRATE.h, -CRATE.d / 2); O.crateLid.rotation.set(0, 0, 0); }
+  O.crateCrank.visible = !S.crankTaken;
   O.windCover.rotation.y = S.coverOpen ? -1.7 : 0; O.windCrank.visible = false;
-  O.pinIn.visible = S.pinIn; O.wheel.rotation.y = wheelRot(S.wheel); if (O.peterKey) O.peterKey.visible = !S.keyTaken;
-  setCountPlate(); setVanes(); handsTo(S.hands / 60);
-  O.weights[1].position.y = lerp(-4.2, -1.2, clamp(S.wound / WIND_N, 0, 1)); O.weights.forEach(placeCable);
+  O.pinIn.visible = S.pinIn; O.pinW.visible = !S.pinTaken; O.wheel.rotation.y = wheelRot(S.wheel); if (O.peterKey) O.peterKey.visible = !S.keyTaken;
+  setVanes(); handsTo(S.hands / 60);
+  O.weights[1].position.y = lerp(WEIGHT_Y[0], WEIGHT_Y[1], clamp(S.wound / WIND_N, 0, 1)); O.weights.forEach(placeCable);
   O.shutters.forEach(s => s.rotation.y = 0);
-  O.han.visible = false; if (O.han13) O.han13.visible = false; O.face.visible = false; O.hand.visible = false; O.myHand.visible = false; COL.han.on = false;
-  if (S.onLoft) { G.eye = G.eyeT = EYE_LOFT; if (P.z > -0.8) { P.x = LADDER.x + 0.3; P.z = -1.0; } } else { G.eye = G.eyeT = 1.62; }
+  if (O.han13) O.han13.visible = false; O.face.visible = false; O.hand.visible = false; O.myHand.visible = false;
+  loftBody(onLoft());
+  if (S.onLoft) { if (P.z > -0.8) { P.x = LADDER.x + 0.3; P.z = -1.0; } bodyPlace(P.x, LOFT.y, P.z, G.yaw); } else bodyPlace(P.x, 0, P.z, G.yaw);
   // a strike that was running when you left is over; the stand-still doesn't come back
   if (S.ev.still) { S.workLamp = false; }
   if (S.wound >= WIND_N && !S.ev.watch) after(25, watchmanScene);
@@ -1839,14 +1882,14 @@ function endFrame(keep) {
   try {
     const cam = camera, saved = { p: cam.position.clone(), q: cam.quaternion.clone(), fov: cam.fov };
     // the next morning, from the square: the dial, the scaffold, the apostles' left window (as the square sees it) open, and a face in it
-    const SK =  {};
-    
+    const SK = /*DEBUG*/ window.__efs || /*END*/ {};
+    /*DEBUG*/ if (SK.skip) return null; /*END*/
     if (!SK.dawn) { if (!T.squareDawn) T.squareDawn = tex(canv(2048, 820, (g, w, h) => paintSquare(g, w, h, true)));
     O.back.material.map = T.squareDawn; O.back.material.needsUpdate = true; } O.sky.material.color.set(0x6a88b8);
     O.shutters.forEach(s => s.rotation.y = s.userData.s * -1.9);
     O.wheel.rotation.y = wheelRot(7) - 0.26;
     const h = O.han; h.visible = !SK.han; h.scale.setScalar(1); h.position.set(APW.xs[1] - 0.05, APW.y0 + 0.5 - 1.66 - 0.11, RM.z0 + 0.3); h.rotation.y = Math.PI + 0.1; h.userData.neck.rotation.set(-0.12, 0.08, 0.2);
-    O.face.visible = false; O.hand.visible = false; O.myHand.visible = false; V.headOff = true; L.head.intensity = 0;
+    O.face.visible = false; O.hand.visible = false; O.myHand.visible = false; V.headOff = true; L.head.intensity = 0; if (V.bellEl) V.bellEl.classList.remove('on');
     L.work.intensity = 0; L.workFill.intensity = 0; L.street.intensity = 4; L.moon.color.set(0xd8e0f0); L.moon.intensity = 2.2; L.moon.position.set(14, 18, -28); L.hemi.color.set(0xa8b8d8); L.hemi.groundColor.set(0x4a4644); L.hemi.intensity = 0.75;
     L.apw.intensity = 2.2; L.apw.position.set(-0.45, 3.1, RM.z0 + 0.18); L.drum.intensity = 2.0; L.drum.position.set(APW.xs[1] + 0.05, APW.y0 + 0.62, RM.z0 + 0.02); L.drum.distance = 1.4;
     O.lamps.forEach(l => l.visible = false); O.snow.forEach(s => s.visible = false);
@@ -1893,10 +1936,13 @@ function buildRoom() {
   scene.fog = new THREE.FogExp2(0x040405, 0.035);
   camera.far = 140; camera.near = 0.02; camera.updateProjectionMatrix(); post.uniforms.far.value = camera.far; post.uniforms.near.value = camera.near;
   enableRealistic({ exposure: 1.1, ao: 0.85, aoRad: 0.25, bloom: 0.5, bloomThr: 1.3, vig: 0.58, grain: 0.03, sat: 0.92 });
+  bodyOn({});
   makeTextures(); paintThings(); makeMaterials();
-  buildShell(); buildClock(); buildOutside(); buildHim(); buildLights(); buildColliders();
+  buildShell(); buildClock(); buildOutside(); buildHim(); buildLights(); buildSolids();
   // the key on St Peter's keys
-  { const peter = O.aps[1]; O.peterKey = grp(0.075, 0.24, 0.135, peter); bev(0.008, 0.05, 0.004, M.iron, 0, -0.02, 0, O.peterKey, 0.001); const r = new THREE.Mesh(new THREE.TorusGeometry(0.01, 0.0025, 6, 10), M.iron); r.position.y = 0.01; O.peterKey.add(r); noRay(O.peterKey); }
+  { const peter = O.aps[1]; O.peterKey = grp(0.075, 0.24, 0.135, peter); bev(0.008, 0.05, 0.004, M.iron, 0, -0.02, 0, O.peterKey, 0.001); const r = new THREE.Mesh(new THREE.TorusGeometry(0.01, 0.0025, 6, 10), M.iron); r.position.y = 0.01; O.peterKey.add(r); noRay(O.peterKey);
+    // a glint on it, so it reads in the dark doorway
+    const gl = new THREE.Sprite(new THREE.SpriteMaterial({ map: T.glow, color: 0xfff0d0, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.6 })); gl.scale.setScalar(0.05); gl.position.set(0, -0.01, 0.01); layer1(gl); O.peterKey.add(gl); }
   // dust motes that fall from the loft
   O.dust = []; for (let i = 0; i < 24; i++) { const d = new THREE.Sprite(M.dustS.clone()); d.scale.setScalar(0.02); d.userData.life = 0; layer1(d); scene.add(d); O.dust.push(d); }
   scene.traverse(o => { if (o.isMesh) { o.receiveShadow = true; if (o.material && o.material.transparent) o.castShadow = false; } });
@@ -1905,10 +1951,9 @@ function buildRoom() {
 
 /* ---------------- the room module ---------------- */
 return {
-  id: 'orloj', title: 'The Blind Hour', saveKey: 'lethe.roomorloj.v1',
+  id: 'orloj', title: 'The Blind Hour', saveKey: 'lethe.roomorloj.v2',
   DOCS, ITEMS, HEARD, HINTS, openDoc,
   inspectItem(id, back) {
-    if (id === 'box' && !S.boxOpen) { openBox(); return; }
     if (id !== 'phone') return inspectItem(id, back);
     const dead = S.flags.vmPlayed;
     UI.show('item', `<button class="x">${back ? 'Back' : 'Close'} &middot; Esc</button><h2>${esc(ITEMS.phone.name)}</h2><p style="font-size:14px;line-height:1.65;margin:0 0 16px">${dead ? 'Dead. The battery gave out after the voicemail. Tomáš\'s message is in your notebook.' : ITEMS.phone.desc}</p>${dead ? '' : '<button class="btn primary" id="vmPlay">Play the voicemail</button>'}`, { closeOnE: true, onClose: back === 'notebook' ? () => { if (G.mode === 'play') openNotebook(); } : null });
@@ -1916,14 +1961,36 @@ return {
   },
   titleFx,
   penalty,
-  markSkip: ['start', 'rule', 'still'], markMerge: { pin: 'box' },
+  markSkip: ['start', 'rule', 'still', 'out'], markMerge: {},
   backText: 'Back in the works.',
-  keys: [['Move', 'W A S D'], ['Look', 'Mouse'], ['Interact', 'E or click'], ['Other action', 'R or right-click'], ['Run', 'Shift'], ['Notebook', 'Tab'], ['Hints', 'H']],
+  keys: [['Move', 'W A S D'], ['Look', 'Mouse'], ['Interact', 'E or click'], ['Other action', 'R or right-click'], ['Run', 'Shift'], ['Jump', 'Space'], ['Let go of the crate', 'E or Q'], ['Notebook', 'Tab'], ['Hints', 'H']],
   constrain(p, r) { constrainTo(p, r); },
-  resumed() { if (onLoft()) { G.eye = G.eyeT = EYE_LOFT; } },
-  actOverride(i) { if (V.still && V.still.t > 5 && !V.still.failed) { V.still.failed = true; O.han.visible = false; lungeScare('still'); after(3.2, endStill); return true; } return false; },
-  onPanelClose() { if (V.view) { const s = V.view.saved; V.view = null; G.frozen = false; P.x = s.x; P.z = s.z; G.yaw = s.yaw; G.pitch = s.pitch; G.eye = G.eyeT = s.eye; } },
-  touchExtras() { const x = []; if (took('phone') && !S.flags.vmPlayed && !G.cutscene) x.push({ label: 'Play the voicemail', run: playVoicemail }); if (onLoft() && !G.cutscene && !V.view && !V.escaping && !V.finalOut) x.push({ label: 'Climb down', run: () => climbDown() }); return x; },
+  stepDown() { if (G.cutscene || onLoft() || V.still) { if (V.still && V.still.t > 5 && !V.still.failed) { V.still.failed = true; O.han.visible = false; lungeScare('still'); after(3.2, endStill); } return; } bodyJump(); },
+  dropHeld() { if (DRAG.cur) dragEnd(); },
+  onDrag(d, on) { renderer.shadowMap.needsUpdate = true; if (!on) { S.props = S.props || {}; S.props.crate = { x: d.obj.position.x, z: d.obj.position.z }; save(); } },
+  onDragFell(d) { S.props = S.props || {}; S.props.crate = { x: d.obj.position.x, z: d.obj.position.z }; save(); },
+  onLand(v) { if (v > 1.5) sStep(0.3); },
+  savePlayer(p) { if (S.onLoft) p.y = LOFT.y; },
+  resumed() {
+    if (S.safe) { const s = S.safe; S.safe = null; P.x = s.x; P.z = s.z; bodyPlace(s.x, s.y, s.z, G.yaw); }
+    loftBody(onLoft());
+    if (onLoft() && BODY.y < LOFT.y - 0.1) { if (P.z > -0.8) { P.x = LADDER.x + 0.3; P.z = -1.0; } bodyPlace(P.x, LOFT.y, P.z, G.yaw); }
+    if (!onLoft() && BODY.y > 1.5) bodyPlace(P.x, 0, P.z, G.yaw);
+  },
+  actOverride(i) {
+    if (V.still && V.still.t > 5 && !V.still.failed) { V.still.failed = true; O.han.visible = false; lungeScare('still'); after(3.2, endStill); return true; }
+    if (DRAG.cur) { dragEnd(); return true; }
+    return false;
+  },
+  promptOverride() { if (DRAG.cur) return `<span class="nm">Dragging the crate</span><span class="act"><kbd>E</kbd>Let go</span>`; return ''; },
+  touchOverride() { if (DRAG.cur) return [{ label: 'Let go', run: () => dragEnd(), main: true }]; return null; },
+  touchExtras() {
+    const x = [];
+    if (took('phone') && !S.flags.vmPlayed && !G.cutscene) x.push({ label: 'Play the voicemail', run: playVoicemail });
+    if (!onLoft() && !G.cutscene && !DRAG.cur) x.push({ label: 'Jump', run: () => bodyJump() });
+    if (onLoft() && !G.cutscene && !V.escaping && !V.finalOut) x.push({ label: 'Climb down', run: () => climbDown() });
+    return x;
+  },
   update: roomUpdate,
   preRender() {
     if (V.envDue && (!G.cutscene || V.still)) { V.envDue = false; const hide = [O.face, O.hand, O.myHand, O.han]; const was = hide.map(o => o.visible); hide.forEach(o => o.visible = false); scene.environment = null; const rt = envFromScene(new THREE.Vector3(0, 1.7, 1.0)); scene.environment = rt.texture; if (V.envRT) V.envRT.dispose(); V.envRT = rt; hide.forEach((o, i) => o.visible = was[i]); }
@@ -1937,19 +2004,19 @@ return {
   defaults, applyState, startAmbience,
   spawn: { x: 1.4, z: 1.5, yaw: 0 },
   wake() {
-    P.x = 1.45; P.z = 1.55; G.yaw = 0.35; G.pitch = -0.12; G.eye = G.eyeT = 1.62;
+    loftBody(false); bodyPlace(1.45, 0, 1.55, 0.35); G.pitch = -0.12;
     G.cutscene = true; $('#fx').className = 'lids';
-    after(0.8, () => sayI('Inside the astronomical clock, Old Town Hall tower, Prague. 11:53 p.m. You fell asleep on the restorers\' bench.', 6000));
-    after(3.2, () => { G.cutscene = false; $('#fx').className = ''; flag('woke'); updatePrompt(true); toast(ctrlHint(), 7000); });
-    after(6.6, () => sayI('The clock is silent. For the first time in seventy years, nothing in here is ticking.', 5200));
-    after(10.5, () => { if (!S.flags.vmPlayed) { sayI('Your phone buzzed in your pocket while you slept. One voicemail.', 3000); after(2.8, playVoicemail); } });
+    after(0.6, () => sayI('11:45 p.m. You fell asleep on the restorers\' bench, inside Prague\'s astronomical clock. For the first time in seventy years, nothing in here is ticking.', 6200));
+    after(3.0, () => { G.cutscene = false; $('#fx').className = ''; flag('woke'); updatePrompt(true); toast(ctrlHint(), 7000); });
+    after(6.6, () => { if (!S.flags.vmPlayed) playVoicemail(); });
   },
-  debug: { O, L, V, T, M, COL, S: () => S, peal, startStrike, release, loud, heardNoise, lungeScare, climbUp, climbDown, openWheelView, turnWheel, takeKey, windOnce, openBox, fitPin, openCountUI, openFlyUI, openHandsUI, openCupLock, stillScene, watchmanScene, escape, finale, endFrame, handsTo, setCountPlate, setVanes, progCount, bellOn, clockMin },
+  debug: { O, L, V, T, M, COL, BODY, DRAG, S: () => S, peal, startStrike, release, loud, heardNoise, lungeScare, climbUp, climbDown, turnWheel, takeKey, lookDoor, prise, takeCrank, unlockCover, windOnce, reachPin, fitPin, setFly, turnHands, stillScene, watchmanScene, escape, finale, endFrame, handsTo, setVanes, progCount, bellOn, clockMin, standAndCount, hideHim, standSpot, apAtDoor, highNear, lidOff },
 };
 function playVoicemail() {
-  if (V.vm) return; V.vm = true;
-  say('Voicemail', '"Hi, it\'s Tomáš. We locked up at ten. The watchman has the key until six. I hope you\'re not still up there with your camera... Old Kroupa made us promise: nobody stays in the works while she is stopped. He was very serious. Anyway. Six o\'clock. Don\'t be late."', { clip: 'o_vm', fx: 'phone', volume: 0.9 }).then(() => {
+  if (V.vm) return; V.vm = true; const tok = V.vmTok = (V.vmTok || 0) + 1;
+  say('Voicemail', VM_PARTS[0][1], { clip: 'o_vm', fx: 'phone', volume: 0.9 }).then(() => {
     V.vm = false; heard('vm'); flag('vmPlayed'); after(0.6, () => sayI('The screen goes black. Dead.', 2600));
   });
+  VM_PARTS.slice(1).forEach(([t, txt]) => after(t, () => { if (V.vm && V.vmTok === tok) subtitle('Voicemail', txt, 0); }));
 }
 })();
