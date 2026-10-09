@@ -166,6 +166,14 @@ function decal(w, h, draw, x, y, z, ry, par = scene, px = 256, rx = 0) {
   const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), std({ map: t, transparent: true, depthWrite: false, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -2 }));
   m.position.set(x, y, z); m.rotation.set(rx, ry, 0); m.receiveShadow = true; m.userData.noRay = true; par.add(m); return m;
 }
+// the dug-over garden: nine ridges of earth running east-west (half cylinders squashed to half height)
+const GARDEN = { x0: 7.2 - 5.75, x1: 7.2 + 5.75, z0: 13.2, step: 0.8, n: 9, r: 0.22, sy: 0.5 };
+// how high the top of a garden ridge is at (x, z); 0 in the furrows and outside the garden
+function gardenY(x, z) {
+  if (x < GARDEN.x0 || x > GARDEN.x1) return 0;
+  const i = Math.round((z - GARDEN.z0) / GARDEN.step); if (i < 0 || i >= GARDEN.n) return 0;
+  const dz = z - (GARDEN.z0 + i * GARDEN.step); return Math.abs(dz) < GARDEN.r ? GARDEN.sy * Math.sqrt(GARDEN.r * GARDEN.r - dz * dz) : 0;
+}
 // the ground: flat in the yard and garden, then the bank down to the shingle and under the river
 function groundY(x, z) {
   let y = 0;

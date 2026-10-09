@@ -67,7 +67,30 @@ function pickUp(id) {
 }
 // the thing leaves your hands without being put down (it went into the stove, the boat, the basket...)
 function useUpHeld() { const id = HOLD.cur; if (!id) return; const d = HOLD.defs[id]; HOLD.cur = null; if (d.hand) d.hand.visible = false; S.inv = S.inv.filter(i => i !== id); S.held = null; renderInv(); updatePrompt(true); save(); }
-function onHold(id, on) { renderer.shadowMap.needsUpdate = true; if (!on) { S.inv = S.inv.filter(i => i !== id); if (S.held === id) S.held = null; renderInv(); } syncHands(); }
+function onHold(id, on) { renderer.shadowMap.needsUpdate = true; if (!on) { S.inv = S.inv.filter(i => i !== id); if (S.held === id) S.held = null; restOnGarden(id); renderInv(); } syncHands(); }
+// things are put down at ground level, but the garden's ridges of earth stand 11 cm proud of it:
+// an oar laid along a ridge vanished inside it. Lift whatever was put down until no ridge pokes through.
+function gardenLift(obj) {
+  obj.updateWorldMatrix(true, true);
+  const bb = new THREE.Box3().setFromObject(obj);
+  if (bb.max.x < GARDEN.x0 || bb.min.x > GARDEN.x1 || bb.max.z < GARDEN.z0 - GARDEN.r || bb.min.z > GARDEN.z0 + (GARDEN.n - 1) * GARDEN.step + GARDEN.r) return 0;
+  if (bb.min.y > GARDEN.sy * GARDEN.r + 0.02) return 0;
+  let lift = 0; const v = new THREE.Vector3(), a = new THREE.Vector3();
+  // sample each part through its whole body (the lines between its corners), not only at its corners:
+  // an oar's loom has vertices only at its two ends, and a ridge can rise between them
+  obj.traverse(m => {
+    if (!m.isMesh || !m.visible || !m.geometry || !m.geometry.attributes.position || m.userData.hit) return;
+    const pos = m.geometry.attributes.position, n = pos.count, stride = Math.max(1, Math.floor(n / 24)), pts = [];
+    for (let i = 0; i < n; i += stride) pts.push(v.fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld).clone());
+    for (let i = 0; i < pts.length; i++) for (let j = i; j < pts.length; j++) for (let k = 0; k <= 8; k++) { a.lerpVectors(pts[i], pts[j], k / 8); const d = gardenY(a.x, a.z) - a.y; if (d > lift) lift = d; }
+  });
+  return lift;
+}
+function restOnGarden(id) {
+  const d = HOLD.defs[id], p = S.props && S.props[id]; if (!d || !d.world || !d.world.visible || !p || HOLD.cur === id) return;
+  const up = gardenLift(d.world); if (up < 0.005) return;
+  d.world.position.y += up + 0.005; p.y += up + 0.005; renderer.shadowMap.needsUpdate = true;
+}
 function syncHands() {
   // the basket shows what's in it, in the world and in your hands
   const c = (S && S.basket) || {};
@@ -889,6 +912,8 @@ function applyState() {
   if (S.tarIn) { O.tar.position.set(MOUTH.x + 0.2, MOUTH.y0 + 0.01, -2.0); O.tar.rotation.set(0, 0, 0); }
   O.pot.visible = !S.basket.pot;
   placeLadderMesh();
+  // saves from before the garden fix can have an oar (or a log, the hook...) sunk inside a ridge: bring it up
+  for (const id in HOLD.defs) if (!(S.oarsUsed && S.oarsUsed[id])) restOnGarden(id);
   HOLD.cur = null; S.inv = S.inv.filter(i => !HOLD.defs[i]);
   HOLD.defs.basket.droppable = !f.ritual;
   if (S.held && HOLD.defs[S.held]) { const id = S.held; holdTake(id, true); S.inv.push(id); }

@@ -6,6 +6,7 @@ crate is placed under the barn oar; the chest is dragged for real. Scenarios:
   solve    a fresh game to the escape, no mistakes
   cellar   ask for the other oar, drag the chest off the hatch, go down, climb back up holding it
   old      the cellar scenario on a build without the fix (expects to be stuck in the cellar)
+  garden   an oar put down on the garden's ridges stays in sight and can be picked up again
   gate     the ritual refuses until the boat is afloat with both oars, then runs
   rescue   a save stuck after the ritual with the boat unready winds back and can carry the logs
   boarded  a save made during the ride resumes on the landing with the basket in your hands
@@ -173,6 +174,32 @@ def scen_gate(p):
     check(not errs, f'no script errors ({errs[:2]})')
     ctx.close()
 
+def scen_garden(p):
+    """put an oar down on the garden's ridges of earth (along one, across them) and in the yard: it must stay in sight
+    and in reach. Before the fix it was put at ground level and an oar laid along a ridge vanished inside it."""
+    save = dict(flags=dict(BASE_FLAGS, stoveLit=True, jacketGone=True, barnSeen=True, oar1Taken=True),
+                held='oar1', player=dict(x=5.0, y=0, z=16.4, yaw=-1.5708, pitch=0), cat='step')
+    ctx, pg, errs = open_room(p, save)
+    box = "() => { const w = T.D().HOLD.defs.oar1.world; w.updateWorldMatrix(true, true); const b = new (__lethe.THREE || THREE).Box3().setFromObject(w); return { minY: b.min.y, maxY: b.max.y, vis: w.visible, prop: T.S.props.oar1 }; }"
+    ok_three = E(pg, "() => !!__lethe.THREE")
+    def drop_and_check(label, x, z, yaw, want_min):
+        E(pg, f"() => {{ if (T.D().HOLD.cur !== 'oar1') {{ T.aimAt(T.D().HOLD.defs.oar1.world); T.doAct('oar'); }} T.place({x}, 0, {z}, {yaw}); T.G.pitch = -0.6; __lethe.ROOM.dropHeld(); T.step(0.3); }}")
+        b = E(pg, box) if ok_three else None
+        held = E(pg, "() => T.D().HOLD.cur")
+        check(held is None and (b is None or (b['vis'] and b['prop']['y'] >= want_min)), f'{label}: put down and in sight (lies {b and round(b["prop"]["y"], 3)} m up; {b})')
+        h = E(pg, "() => T.aimAt(T.D().HOLD.defs.oar1.world)"); r = E(pg, "() => T.doAct('oar')")
+        check(h == 'oar1' and r['ok'] and E(pg, "() => T.D().HOLD.cur") == 'oar1', f'{label}: picked up again ({h}, {r})')
+        return b
+    # the ridges stand 0.11 m proud of the ground. The one at z = 16.4 runs east-west; facing east, the oar lands lengthwise on its crest
+    drop_and_check('along a garden ridge', 5.0, 16.4, -1.5708, 0.1)
+    # facing the river, it lands across the ridges and rests on their crests
+    drop_and_check('across the garden ridges', 6.0, 15.85, 3.14159, 0.09)
+    # in the yard (flat ground) nothing changes: it lies on the ground
+    b = drop_and_check('in the yard', 9.0, 6.0, 3.14159, -0.02)
+    check(b is None or b['prop']['y'] < 0.01, f'in the yard it still lies on the ground, not lifted ({b})')
+    check(not errs, f'no script errors ({errs[:2]})')
+    ctx.close()
+
 def scen_rescue(p):
     """a game saved by the old build in the stuck state: ritual done, fire going, boat not ready"""
     save = dict(flags=dict(BASE_FLAGS, stoveLit=True, jacketGone=True, shoeFound=True, basketShoe=True, basketBread=True, basketPot=True, tarred=True, caulked=True,
@@ -322,7 +349,7 @@ def scen_solve(p):
     ctx.close()
 
 with sync_playwright() as p:
-    for name, fn in [('cellar', scen_cellar), ('gate', scen_gate), ('rescue', scen_rescue), ('boarded', scen_boarded), ('solve', scen_solve)]:
+    for name, fn in [('cellar', scen_cellar), ('garden', scen_garden), ('gate', scen_gate), ('rescue', scen_rescue), ('boarded', scen_boarded), ('solve', scen_solve)]:
         if WANT and name not in WANT and not (name == 'cellar' and 'old' in WANT): continue
         print(f'--- {name}'); t0 = time.time()
         try: fn(p, old=True) if (name == 'cellar' and 'old' in WANT) else fn(p)
