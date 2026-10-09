@@ -149,8 +149,7 @@ function makeTextures() {
     speckle(g, w, h, 3000, 0.15);
   }));
   // luminous paint: what the marks look like when they glow (emissive map)
-  T.glowNums = {};
-  for (let n = 1; n <= 4; n++) T.glowNums[n] = tex(canv(64, 64, (g, w, h) => { g.fillStyle = '#000'; g.fillRect(0, 0, w, h); g.fillStyle = '#fff'; g.font = `bold 44px ${FELL}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(n), w / 2, h / 2 + 3); g.filter = 'blur(1px)'; g.drawImage(g.canvas, 0, 0); }));
+  T.glowRing = tex(canv(64, 64, (g, w, h) => { g.fillStyle = '#000'; g.fillRect(0, 0, w, h); g.strokeStyle = '#fff'; g.lineWidth = 5; g.beginPath(); g.arc(32, 32, 24, 0, TAU); g.stroke(); for (let k = 0; k < 8; k++) { const a = k / 8 * TAU; g.fillStyle = '#fff'; g.beginPath(); g.arc(32 + Math.cos(a) * 29, 32 + Math.sin(a) * 29, 2.2, 0, TAU); g.fill(); } g.filter = 'blur(1px)'; g.drawImage(g.canvas, 0, 0); }));
   T.glowHand = tex(canv(128, 128, (g, w, h) => { g.fillStyle = '#000'; g.fillRect(0, 0, w, h); g.fillStyle = '#fff'; g.save(); g.translate(64, 76); g.beginPath(); g.ellipse(0, 10, 26, 30, 0, 0, TAU); g.fill(); [[-26, -18, -0.5, 30], [-12, -34, -0.15, 40], [4, -38, 0.05, 44], [18, -32, 0.22, 40], [30, -8, 0.8, 26]].forEach(([x, y, a, l]) => { g.save(); g.translate(x, y + 20); g.rotate(a); g.beginPath(); g.ellipse(0, -l / 2, 6.5, l / 2, 0, 0, TAU); g.fill(); g.restore(); }); g.restore(); }));
   T.childHand = tex(canv(128, 128, (g, w, h) => { g.fillStyle = '#000'; g.fillRect(0, 0, w, h); g.fillStyle = '#fff'; g.save(); g.translate(64, 76); g.scale(0.62, 0.62); g.beginPath(); g.ellipse(0, 10, 26, 30, 0, 0, TAU); g.fill(); [[-26, -18, -0.5, 28], [-12, -34, -0.15, 36], [4, -38, 0.05, 40], [18, -32, 0.22, 36], [30, -8, 0.8, 24]].forEach(([x, y, a, l]) => { g.save(); g.translate(x, y + 20); g.rotate(a); g.beginPath(); g.ellipse(0, -l / 2, 7, l / 2, 0, 0, TAU); g.fill(); g.restore(); }); g.restore(); }));
   T.flame = tex(canv(64, 128, (g, w, h) => { const gr = g.createRadialGradient(32, 92, 2, 32, 80, 60); gr.addColorStop(0, 'rgba(255,250,235,1)'); gr.addColorStop(0.25, 'rgba(255,214,140,0.95)'); gr.addColorStop(0.55, 'rgba(255,140,40,0.6)'); gr.addColorStop(1, 'rgba(255,90,10,0)'); g.fillStyle = gr; g.beginPath(); g.moveTo(32, 6); g.bezierCurveTo(52, 50, 50, 100, 32, 118); g.bezierCurveTo(14, 100, 12, 50, 32, 6); g.fill(); g.fillStyle = 'rgba(60,90,255,0.35)'; g.beginPath(); g.ellipse(32, 112, 7, 6, 0, 0, TAU); g.fill(); }));
@@ -411,7 +410,7 @@ function buildTable() {
   O.slateString = grp(0, 0, 0, O.slates); for (const x of [-0.06, 0.06]) { const r = mesh(new THREE.TorusGeometry(0.02, 0.0015, 4, 16), std({ color: 0xd8cfb4 }), x, 0.015, 0, O.slateString); r.scale.set(0.9, 1.1, 5.4); r.rotation.y = Math.PI / 2; }
   O.flap = grp(0, 0.016, 0, O.slates); O.flap.visible = false; const flp = mesh(new THREE.PlaneGeometry(0.235, 0.165), M.slate, 0, 0, 0, O.flap); flp.rotation.x = -Math.PI / 2; T.flapMirror = ctex(512, 360, () => {}); const fx = mesh(new THREE.PlaneGeometry(0.235, 0.165), std({ map: T.flapMirror, transparent: true, roughness: 0.9 }), 0, 0.0006, 0, O.flap); fx.rotation.x = -Math.PI / 2;
   // tambourine and bell
-  O.tamb = grp(0.22, TB.y + 0.004, 0.3, O.table); O.tamb.rotation.set(0.04, 0.3, 0); { const ring = new THREE.CylinderGeometry(0.1, 0.1, 0.045, 40, 1, true); mesh(ring, phys({ map: T.oak, roughness: 0.6, side: THREE.DoubleSide, clearcoat: 0.3 }), 0, 0.023, 0, O.tamb); const skin = mesh(new THREE.CircleGeometry(0.1, 40), std({ color: 0x8a7552, roughness: 0.85 }), 0, 0.045, 0, O.tamb); skin.rotation.x = -Math.PI / 2; for (let k = 0; k < 5; k++) { const a = k / 5 * TAU; for (const dy of [-0.004, 0.004]) cyl(0.012, 0.012, 0.002, M.brass, Math.cos(a) * 0.1, 0.023 + dy, Math.sin(a) * 0.1, O.tamb, 12).rotation.set(0, 0, Math.PI / 2); } const rb = tube([[0.09, 0.02, 0.03], [0.14, -0.005, 0.05], [0.2, -0.01, 0.02]], 0.004, std({ color: 0x7a1a2a }), O.tamb, 10, 4); }
+  O.tamb = grp(0.04, TB.y + 0.004, 0.42, O.table); O.tamb.rotation.set(0.04, 2.4, 0); { const ring = new THREE.CylinderGeometry(0.1, 0.1, 0.045, 40, 1, true); mesh(ring, phys({ map: T.oak, roughness: 0.6, side: THREE.DoubleSide, clearcoat: 0.3 }), 0, 0.023, 0, O.tamb); const skin = mesh(new THREE.CircleGeometry(0.1, 40), std({ color: 0x8a7552, roughness: 0.85 }), 0, 0.045, 0, O.tamb); skin.rotation.x = -Math.PI / 2; for (let k = 0; k < 5; k++) { const a = k / 5 * TAU; for (const dy of [-0.004, 0.004]) cyl(0.012, 0.012, 0.002, M.brass, Math.cos(a) * 0.1, 0.023 + dy, Math.sin(a) * 0.1, O.tamb, 12).rotation.set(0, 0, Math.PI / 2); } const rb = tube([[0.09, 0.02, 0.03], [0.14, -0.005, 0.05], [0.2, -0.01, 0.02]], 0.004, std({ color: 0x7a1a2a }), O.tamb, 10, 4); }
   O.bell = grp(-0.05, TB.y + 0.004, -0.38, O.table); lathe([[0.001, 0.065], [0.012, 0.065], [0.02, 0.05], [0.028, 0.02], [0.038, 0.002], [0.04, 0], [0.036, 0.0], [0.024, 0.02], [0.016, 0.05], [0.001, 0.058]], M.brass, 0, 0, 0, O.bell, 24); lathe([[0.001, 0], [0.008, 0], [0.01, 0.03], [0.014, 0.06], [0.001, 0.075]], M.ebony, 0, 0.065, 0, O.bell, 12);
   // the programme card and Madame's note (an envelope propped against the candlestick)
   T.prog = ctex(360, 512, () => {}); O.prog = grp(0.38, TB.y + 0.005, 0.22, O.table); O.prog.rotation.y = -0.5; const pc = mesh(new THREE.PlaneGeometry(0.1, 0.14), std({ map: T.prog, roughness: 0.85 }), 0, 0, 0, O.prog); pc.rotation.x = -Math.PI / 2;
@@ -452,6 +451,7 @@ function madameChair() {
 }
 
 /* ---------------- the spirit cabinet ---------------- */
+const MARKED = [1, 3, 5, 6];   // the roses painted round with luminous paint (1-3 left post top to bottom, 4-6 right)
 function buildCabinet() {
   const cz = (CAB.z0 + CAB.z1) / 2, wz = CAB.z1 - CAB.z0, dx = CAB.x1 - CAB.x0;
   O.cab = grp(CAB.x0, 0, cz);
@@ -472,10 +472,9 @@ function buildCabinet() {
   for (const [side, sz] of [[0, 1], [1, -1]]) for (let r = 0; r < 3; r++) {
     const g = roseGeo(); g.position.set(dx + 0.005, RY[r], sz * (wz / 2 - 0.06)); O.cab.add(g); O.roses.push(g); g.userData.base = g.position.x;
   }
-  // luminous marks, invisible until charged by strong light: numbers by four roses, a hand on the frieze
+  // luminous marks, invisible until charged by strong light: a ring round four of the roses, a hand on the frieze
   O.lum = [];
-  const ORDER = { 1: 5, 2: 1, 3: 6, 4: 3 };   // glowing number n sits by rose ORDER[n] (1-based)
-  for (const n in ORDER) { const rose = O.roses[ORDER[n] - 1]; const m = plane(0.07, 0.07, M.lum.clone(), dx + 0.041, rose.position.y + 0.075, rose.position.z, Math.PI / 2, O.cab); m.material.map = T.glowNums[n]; m.material.alphaMap = null; O.lum.push(m); layer1(m); }
+  for (const n of MARKED) { const rose = O.roses[n - 1]; const m = plane(0.11, 0.11, M.lum.clone(), dx + 0.012, rose.position.y, rose.position.z, Math.PI / 2, O.cab); m.material.map = T.glowRing; m.material.alphaMap = null; O.lum.push(m); layer1(m); }
   { const m = plane(0.22, 0.22, M.lum.clone(), dx + 0.07, 2.2, 0.0, Math.PI / 2, O.cab); m.material.map = T.glowHand; O.lum.push(m); layer1(m); }
   // curtain rod and velvet curtains, drawn back to each side
   cyl(0.012, 0.012, wz - 0.1, M.brass, dx - 0.07, 2.08, 0, O.cab, 10).rotation.x = Math.PI / 2;
@@ -692,7 +691,7 @@ const WONDERS = [
   { id: 'raps', n: 'I', name: 'The Spirit Raps', how: 'A brass pedal under Madame\'s chair works a wooden clapper screwed under the table. One rap for yes, two for no, and her feet never seem to move.' },
   { id: 'slate', n: 'II', name: 'The Slate Writing', how: 'The message is chalked in advance on a loose flap of slate. When the two slates are opened, the flap drops into the bottom one, writing side up.' },
   { id: 'hand', n: 'III', name: 'The Luminous Hand', how: 'Balmain\'s luminous paint. It soaks up strong light and glows in the dark for a while afterwards. She turns the gas up full while the sitters take their seats.' },
-  { id: 'voice', n: 'IV', name: 'The Voice of Little Lily', how: 'A phonograph behind the cabinet\'s false back. Madame recorded herself speaking slowly; played fast, her own voice comes out high and quick, like a child\'s.' },
+  { id: 'voice', n: 'IV', name: 'The Voice of Little Lily', how: 'A phonograph behind the cabinet\'s false back. Madame recorded herself speaking slowly; played fast, her own voice comes out high and quick, like a child\'s. When the spring runs down, it\'s her again.' },
   { id: 'photo', n: 'V', name: 'The Spirit Photograph', how: 'The "spirits" are glass plates exposed in advance, each with a face on it. Photograph the sitters on the same plate and the dead appear beside them.' },
   { id: 'tamb', n: 'VI', name: 'The Floating Tambourine', how: 'A telescoping rod, blacked so it can\'t be seen in the dark, with a hook on the end. She lifts the tambourine over the circle and shakes it.' },
 ];
@@ -700,13 +699,14 @@ const ITEMS = {
   clockKey: { name: 'Clock key', short: 'Clock key', desc: 'A little brass key on a black ribbon, for winding a mantel clock. It was hanging under the table, beside the clapper.' },
   flap: { name: 'Slate flap', short: 'Slate flap', doc: 'flap' },
   crank: { name: 'Brass crank', short: 'Crank', desc: 'A small brass winding crank with an ebony knob, the kind that fits the side of a clockwork machine. It was in the drawer under the mantel clock.' },
+  bureauKey: { name: 'Bureau key', short: 'Bureau key', desc: 'A small brass key on a black ribbon. It was in the box of glass plates, just where Madame told herself it would be.' },
   paper: { name: 'The London Argus', short: 'Newspaper', doc: 'argus' },
   rod: { name: 'Telescoping rod', short: 'Rod', desc: 'Four feet of blacked brass tube that slides out to nearly eight. One end has a fine hook, the other a scrap of red ribbon from the tambourine. The tip is thin enough to go into a keyhole.' },
   key: { name: 'Door key', short: 'Door key', desc: 'The key to the parlour door. It came in under the door on the newspaper, just like the burglar in the Argus.' },
 };
 const HEARD = {
   lily: { title: 'The phonograph, at FAST', text: 'A little girl: "Mamma? Mamma, it\'s Lily. I\'m here, Mamma. It isn\'t cold where I am. Tell the lady in grey that Arthur is here with me, and he isn\'t frightened any more. I have to go now. Goodnight, Mamma." Then a gabble of chatter, far too fast to follow.' },
-  madame: { title: 'The phonograph, at SLOW', text: 'Madame Kell\'s own voice, drawn out and sing-song, saying Lily\'s words. Then, briskly, to herself: "There. That will do for the Ashdown woman. Tuesday, the Colonel. Mother\'s plate for him. And the bureau word is Mother\'s name, if I forget again. God forgive me."' },
+  madame: { title: 'The phonograph, as the spring ran down', text: 'The child\'s voice dragged lower and slower until it was Madame Kell\'s own. Then, briskly, to herself: "There. That will do for the Ashdown woman. The bureau key is in the box with the plates, if I forget again. God forgive me."' },
   real1: { title: 'Behind you, when the phonograph stopped', text: 'A child\'s whisper: "That isn\'t me."' },
   real2: { title: 'While you read the blue book', text: 'Very close, a child\'s voice: "She never heard me."' },
   raps1: { title: 'The table, by itself', text: 'One rap. Yes. Nobody was near the pedal.' },
@@ -728,33 +728,28 @@ function platePage(k) {
 }
 const DOCS = {
   note: { title: 'Madame\'s note (envelope on the table)', style: 'kl', pages: [
-    `<p class="to">To my uninvited guest</p><p>You hid behind my curtain. I heard you breathing through the whole of the sitting.</p><p>Very well. You came to find out how it is done, so stay and find out. There were six wonders tonight. Work out every one of them and you will find your own way out.</p><p>I have turned down the gas and locked the door. The key is still in the lock, on my side of it.</p><p>Do not be frightened of the raps. It is only ever me.</p>${SIGN}`,
+    `<p class="to">To my uninvited guest</p><p>I heard you breathing behind my curtain all evening. You came to find out how it is done, so stay and find out. Work out my six wonders and you will find your own way out.</p><p>The door is locked. The key is still in it, on my side.</p>${SIGN}`,
   ], onRead: () => flag('readNote') },
   prog: { title: 'Programme of the sitting', style: 'kprog', pages: [
     `<p class="pk">Madame Ada Kell</p><p class="pk2">Clairvoyante &amp; Trance Medium</p><div class="rule"></div><p class="pd">A SITTING &middot; Friday, 3rd March 1893, at nine o'clock</p><p class="pi">Tonight the circle will be favoured with</p>
-     <ol class="pw"><li><b>The Spirit Raps.</b> The table answers the sitters' questions. One rap, Yes. Two raps, No.</li><li><b>The Slate Writing.</b> A message from the other side, written between two sealed slates.</li><li><b>The Luminous Hand.</b> A spirit hand appears upon the cabinet in the dark.</li><li><b>The Voice of Little Lily.</b> Madame's own dear daughter, who passed over in 1889, speaks from the cabinet.</li><li><b>The Spirit Photograph.</b> The departed appear upon the plate beside those they loved.</li><li><b>The Floating Tambourine.</b> It will pass over the heads of the circle in the dark.</li></ol>
-     <div class="rule"></div><p class="pf">Sitters are asked to keep their hands joined and on no account to break the circle. Two guineas.</p>`,
+     <ol class="pw"><li><b>The Spirit Raps.</b> The table answers.</li><li><b>The Slate Writing.</b> A message between two sealed slates.</li><li><b>The Luminous Hand.</b> A spirit hand upon the cabinet, in the dark.</li><li><b>The Voice of Little Lily.</b> Madame's dear daughter speaks from the cabinet.</li><li><b>The Spirit Photograph.</b> The departed upon the plate.</li><li><b>The Floating Tambourine.</b> It flies over the circle.</li></ol>
+     <div class="rule"></div><p class="pf">Two guineas.</p>`,
   ], onRead: () => flag('readProg') },
-  mcard: { title: 'Mourning card, on the mantelpiece', style: 'kmourn', pages: [
-    `<p class="m1">In Loving Memory of</p><p class="m2">LILY ADA KELL</p><p class="m3">the only child of Ada and the late Thomas Kell,<br>who fell asleep on the 9th of January 1889<br>at a quarter past four in the morning,<br>aged 7 years.</p><p class="m4">"Not lost, but gone before."</p>`,
-  ], onRead: () => flag('readCard') },
   flap: { title: 'The slate flap', style: 'kslate', pages: [
-    `<div class="chalk rev"><p>MAMMA STOPPED THE CLOCK</p><p>AT THE HOUR I FELL ASLEEP.</p><p>SET IT GOING AGAIN.</p><p class="lil">LILY</p></div><p class="under">The chalk runs backwards, right to left, every letter reversed.</p>`,
+    `<div class="chalk rev"><p>WIND MAMMA'S CLOCK.</p><p>SET IT GOING AGAIN.</p><p class="lil">LILY</p></div><p class="under">The chalk runs backwards, right to left, every letter reversed.</p>`,
   ] },
   mirror: { title: 'The slate flap, in the looking-glass', style: 'kslate', pages: [
-    `<div class="chalk"><p>MAMMA STOPPED THE CLOCK</p><p>AT THE HOUR I FELL ASLEEP.</p><p>SET IT GOING AGAIN.</p><p class="lil">LILY</p></div><p class="under">In the glass the writing comes out the right way round. (Madame wrote it backwards so she could check it in the mirror before the sitting.)</p>`,
+    `<div class="chalk"><p>WIND MAMMA'S CLOCK.</p><p>SET IT GOING AGAIN.</p><p class="lil">LILY</p></div><p class="under">In the glass the writing comes out the right way round.</p>`,
   ], onRead: () => flag('readMirror') },
   tin: { title: 'Tin on the bookcase', style: 'klabel', pages: [
-    `<p class="lb1">BALMAIN'S</p><p class="lb2">LUMINOUS PAINT</p><p class="lb3">By Royal Letters Patent</p><div class="rule"></div><p>Articles painted with this preparation, when exposed to strong daylight or gaslight, will afterwards <b>shine in the dark</b> with a soft light, the brightness fading by degrees. <b>They do not shine unless first exposed to light.</b></p><p class="pen2">Pencilled inside the lid: <i>gas up full while they take their seats, then down. Never forget.</i></p>`,
+    `<p class="lb1">BALMAIN'S</p><p class="lb2">LUMINOUS PAINT</p><div class="rule"></div><p>Shines in the dark, <b>after</b> strong light.</p><p class="pen2">Pencilled inside the lid: <i>gas up full, then off.</i></p>`,
   ], onRead: () => flag('readTin') },
   argus: { title: 'The London Argus, 3 March 1893', style: 'knews', pages: [
     `<div class="mast">THE LONDON ARGUS</div><div class="dateline">FRIDAY, MARCH 3, 1893 &middot; ONE PENNY &middot; WEATHER: RAIN, COLD</div>
-     <div class="cols"><div><h4>A BURGLAR'S TRICK</h4><p>At Marylebone Police Court yesterday, Henry Coote, 31, was charged with breaking into a house in Wimpole Street. The Court heard how he got past a locked door. Finding the key left in the lock on the far side, he slid a sheet of newspaper under the door, pushed the key out of the lock with a hatpin so that it fell upon the paper, and drew the paper back under the door with the key upon it. The magistrate observed that householders would do well to take their keys out of their doors at night.</p></div>
-     <div><h4>SPIRITUALISM IN BLOOMSBURY</h4><p>A correspondent writes that the sittings of Madame Kell in Pellam Street continue to draw large and fashionable crowds, at two guineas a head. The Society for Psychical Research is understood to be taking an interest.</p><h4>THE WEATHER</h4><p>Rain and a cold east wind will continue through the night.</p></div></div>`,
+     <div class="cols"><div><h4>A BURGLAR'S TRICK</h4><p>Henry Coote got past a locked door with the key still in it on the far side. He slid a newspaper under the door, pushed the key out with a hatpin so it fell on the paper, and drew the paper back with the key on it.</p></div>
+     <div><h4>THE WEATHER</h4><p>Rain and a cold east wind through the night.</p></div></div>`,
   ], onRead: () => flag('readArgus') },
   bluebook: { title: 'Madame\'s blue book (from the bureau)', style: 'kl kblue', pages: [
-    `<p class="to">Sitters: what they must hear</p><p><b>Mrs Ashdown.</b> Son Arthur, drowned in the Serpentine, June 1891, aged 11. Sailor collar. Called her "Mumsie". Always wears grey.</p><p><b>Col. Pryor.</b> Mother d. 1886, Bath. Has never seen a photograph of her. Use <u>Mother's plate</u>.</p><p><b>Miss Wren.</b> Lieut. Hart, killed at Suakin, 1885. Soldier plate.</p>`,
-    `<p class="to">The wonders, for my own memory</p><p><b>Raps:</b> the pedal. <b>Slates:</b> flap, chalked backwards so I can read it in the glass. <b>Hand:</b> the roses. Gas up full while they sit, then down. <b>Voice:</b> the cylinder at FAST. <b>Photograph:</b> the plates. <b>Tambourine:</b> the rod.</p><p><b>Door:</b> key left in the lock, my side. They never think of it.</p>`,
     `<p class="to">L.</p><p>Four years this January. Every Friday I call her, and every Friday I hear nothing but my own voice coming out of that horn.</p><p>If she were anywhere at all she would come. She would come for me.</p>`,
   ], onRead: () => { flag('readBlue'); } },
   plate_a: { title: 'Glass plate', style: 'photo', pages: () => [platePage('a')], onRead: () => plateSeen('a') },
@@ -767,55 +762,55 @@ const DOCS = {
 /* ---------------- hints ---------------- */
 const X = id => S.exposed.includes(id);
 const HINTS = [
-  { id: 'start', title: 'Where do I start?', when: s => s.flags.readNote && s.flags.readProg ? 'solved' : 'active', tiers: [
+  { id: 'start', title: 'Where do I start?', when: s => s.flags.readNote || s.flags.readProg ? 'solved' : 'active', tiers: [
     'There\'s an envelope propped against the candlestick on the table, and a printed card beside it.',
     'Read Madame\'s note, then the programme card.',
     'The programme lists six wonders. Each one is a trick. Work out how each is done and it leads you on.',
     'Read the note and the programme on the table. Your notebook keeps track of the wonders you\'ve worked out.' ] },
-  { id: 'raps', title: 'The Spirit Raps', when: s => !s.flags.readProg ? 'hidden' : X('raps') && s.flags.clockKey ? 'solved' : 'active', tiers: [
+  { id: 'raps', title: 'The Spirit Raps', when: s => !(s.flags.readProg || s.flags.readNote) ? 'hidden' : X('raps') && s.flags.clockKey ? 'solved' : 'active', tiers: [
     'The raps came from the table, and Madame\'s hands were held by the sitters either side of her.',
     'Look closely at Madame\'s own chair, and under the tablecloth.',
     'There\'s a pedal under the seat of her chair. Under the cloth is the clapper it works, and a little key.',
     'Look under the seat of Madame\'s chair and press the pedal. Then lift the tablecloth and take the clock key.' ] },
-  { id: 'slate', title: 'The Slate Writing', when: s => !s.flags.readProg ? 'hidden' : s.flags.readMirror ? 'solved' : 'active', tiers: [
+  { id: 'slate', title: 'The Slate Writing', when: s => !(s.flags.readProg || s.flags.readNote) ? 'hidden' : s.flags.readMirror ? 'solved' : 'active', tiers: [
     'The two slates tied with string are on the table.',
     'Open them. The message was written beforehand on something loose.',
     'The writing on the flap is backwards. What turns writing the right way round?',
     'Hold the slate flap up to the mirror over the fireplace to read it.' ] },
   { id: 'clock', title: 'The stopped clock', when: s => !(s.flags.readMirror || s.flags.clockKey) ? 'hidden' : (has('crank') || s.flags.crankFitted) ? 'solved' : 'active', tiers: [
-    'The slate says to set the clock going again, at the hour Lily fell asleep.',
-    'The mourning card on the mantelpiece gives the time.',
-    'You need the clock key from under the table to wind it and move the hands.',
-    'With the clock key, set the mantel clock to 4:15 (a quarter past four) and start it. Take what comes out of the drawer.' ] },
-  { id: 'hand', title: 'The Luminous Hand', when: s => !s.flags.readProg ? 'hidden' : X('hand') ? 'solved' : 'active', tiers: [
+    'The slate, read in the mirror, says to wind Mamma\'s clock.',
+    'The clock key hangs under the tablecloth, beside the clapper.',
+    'Take the key to the mantel clock and wind it until it starts.',
+    'With the clock key, wind the mantel clock four turns. Take the crank from the drawer that slides out.' ] },
+  { id: 'hand', title: 'The Luminous Hand', when: s => !(s.flags.readProg || s.flags.readNote) ? 'hidden' : X('hand') ? 'solved' : 'active', tiers: [
     'The hand appeared on the cabinet in the dark. Look at the tin on the bookcase.',
     'Luminous paint only glows after it has soaked up strong light.',
     'The gas tap is on the wall by the door. Turn the gas up full, wait a few seconds, then turn it off.',
     'Gas up full for a few seconds, then off, then look at the spirit cabinet.' ] },
   { id: 'roses', title: 'The carved roses', when: s => !X('hand') ? 'hidden' : s.flags.cabOpen ? 'solved' : 'active', tiers: [
-    'In the dark, numbers glowed beside four of the carved roses on the cabinet front.',
-    'The roses can be pressed.',
-    'Press the four marked roses in the order of their numbers, 1 to 4. You can charge the paint again if it fades.',
-    'Press: right pilaster middle, left top, right bottom, left bottom.' ] },
-  { id: 'voice', title: 'The Voice of Little Lily', when: s => !s.flags.readProg ? 'hidden' : X('voice') ? 'solved' : 'active', tiers: [
+    'In the dark, four of the carved roses on the cabinet front glowed with a ring of paint.',
+    'The roses can be pressed in.',
+    'Press each of the four glowing roses. Charge the paint again with the gas if it fades.',
+    'Press the top and bottom roses on the left post, and the middle and bottom ones on the right post.' ] },
+  { id: 'voice', title: 'The Voice of Little Lily', when: s => !(s.flags.readProg || s.flags.readNote) ? 'hidden' : X('voice') ? 'solved' : 'active', tiers: [
     'The voice came from the spirit cabinet. Something is hidden behind its back panel.',
     'Behind the false back is a phonograph. It needs a crank to wind it, and the crank is in the mantel clock.',
-    'Listen to it at a different speed. There\'s a pencil mark by FAST.',
-    'Fit the crank, move the speed lever to SLOW and play it. The last thing Madame says tells you the word for her bureau.' ] },
-  { id: 'photo', title: 'The Spirit Photograph', when: s => !s.flags.readProg ? 'hidden' : s.flags.plateMother ? 'solved' : 'active', tiers: [
+    'Fit the crank and play it. Listen right to the end.',
+    'Fit the crank, play the cylinder, and listen as the spring runs down. Madame says where her bureau key is.' ] },
+  { id: 'photo', title: 'The Spirit Photograph', when: s => !(s.flags.readProg || s.flags.readNote) ? 'hidden' : s.flags.plateMother || X('photo') ? 'solved' : 'active', tiers: [
     'The camera stands by the window. Her glass plates are in the box on the little table beside it.',
     'A glass negative shows nothing unless there\'s strong light behind it.',
-    'Turn the gas up full, then hold the plates up to the light. One of them is "Mother".',
-    'With the gas up full, look at the plate marked Mother. Her name is scratched in the corner.' ] },
-  { id: 'bureau', title: 'Madame\'s bureau', when: s => !s.flags.triedBureau ? 'hidden' : s.flags.bureauOpen ? 'solved' : 'active', tiers: [
-    'A letter lock: five letters.',
-    'Madame says on the phonograph recording what the word is.',
-    'It\'s her mother\'s name. Her mother is on one of the glass plates.',
-    'AGNES.' ] },
-  { id: 'tamb', title: 'The Floating Tambourine', when: s => !s.flags.readProg ? 'hidden' : X('tamb') ? 'solved' : 'active', tiers: [
+    'Turn the gas up full, then hold one of the plates up to the light.',
+    'With the gas up full, open the box of plates and hold a plate to the light.' ] },
+  { id: 'bureau', title: 'Madame\'s bureau', when: s => !(s.flags.triedBureau || s.heard.includes('madame')) ? 'hidden' : s.flags.bureauOpen ? 'solved' : 'active', tiers: [
+    'The bureau takes a small key.',
+    'Madame says on the phonograph where she keeps it.',
+    'It\'s in the box of glass plates, by the camera.',
+    'Take the bureau key from the box of plates by the camera and unlock the bureau.' ] },
+  { id: 'tamb', title: 'The Floating Tambourine', when: s => !(s.flags.readProg || s.flags.readNote) ? 'hidden' : X('tamb') ? 'solved' : 'active', tiers: [
     'The tambourine floated over the sitters in the dark. Something long lifted it.',
     'Madame keeps her apparatus locked in her bureau.',
-    'Open the bureau. Its lock takes a five-letter word.',
+    'Open the bureau with its key.',
     'Take the telescoping rod from the open bureau.' ] },
   { id: 'door', title: 'The locked door', when: s => !s.flags.triedDoor ? 'hidden' : s.flags.escaped ? 'solved' : 'active', tiers: [
     'Madame says the key is still in the lock, on her side.',
@@ -916,7 +911,7 @@ const heard = id => { if (!S.heard.includes(id)) { S.heard.push(id); save(); } }
 const look = (txt, ms = 5200) => ({ label: 'Look', run: () => subtitle('', `<i>${txt}</i>`, ms) });
 const behindPos = (d = 0.6) => new THREE.Vector3(P.x + Math.sin(G.yaw) * d, G.eye - 0.15, P.z + Math.cos(G.yaw) * d);
 const GAS = { off: 0, low: 0.35, full: 1 };
-const ROSE_ORDER = [5, 1, 6, 3];
+const WINDS = 4;
 const V = { gasK: 0.35, dip: 0, envDone: false, envGas: 'low', envT: 0, charge: 0, glow: 0, glowSeenT: 0, clockRun: false, tickT: 0, tickA: 0, phono: false, stuckT: 0, progKey: '', drapeT: 0, childHand: 0, rev: 0 };
 
 /* ---------------- the wonders ---------------- */
@@ -976,34 +971,14 @@ function drawHands() {
   const h = S.clock.h % 12, m = S.clock.m;
   O.hMin.rotation.z = -(m / 60) * TAU; O.hHour.rotation.z = -((h + m / 60) / 12) * TAU;
 }
-function openClockPanel() {
-  const draw = (msg = '') => {
-    const p = $('#clockp'); if (!p) return;
-    p.innerHTML = `<h3>Mantel clock</h3><p class="muted" style="font-size:12px;margin:0 0 8px">You fit the key, wind it, and open the glass to move the hands.</p>
-      <div class="grp"><span class="lbl">Hour</span><span class="clk"><button class="btn" data-h="-1">&minus;</button><b>${S.clock.h}</b><button class="btn" data-h="1">+</button></span></div>
-      <div class="grp"><span class="lbl">Minutes</span><span class="clk"><button class="btn" data-m="-5">&minus;</button><b>${String(S.clock.m).padStart(2, '0')}</b><button class="btn" data-m="5">+</button></span></div>
-      <div class="grp"><span class="lbl">The clock says</span><b class="clkread">${S.clock.h}:${String(S.clock.m).padStart(2, '0')}</b></div>
-      ${msg ? `<p style="font-size:12.5px;margin:10px 0 0;color:#e7dec6">${msg}</p>` : ''}
-      <div class="row" style="margin-top:12px"><button class="btn primary" id="cpGo">Start it</button><button class="btn" id="cpBack">Step back</button></div>`;
-    p.querySelectorAll('[data-h]').forEach(b => b.onclick = () => { S.clock.h = ((S.clock.h - 1 + +b.dataset.h + 12) % 12) + 1; sClick(POS.clock, 0.15, 3800); drawHands(); save(); draw(); });
-    p.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { S.clock.m = (S.clock.m + +b.dataset.m + 60) % 60; sClick(POS.clock, 0.12, 4200); drawHands(); save(); draw(); });
-    $('#cpGo').onclick = () => startClock(draw);
-    $('#cpBack').onclick = () => closePanel();
-  };
-  openPanel('<div id="clockp"></div>', () => draw());
-}
-function startClock(draw) {
-  if (G.time < (G.lockout || 0)) { draw('Give it a moment.'); return; }
-  if (S.clock.h === 4 && S.clock.m === 15) {
-    closePanel(true); flag('clockSet'); V.clockRun = true; S.inv = S.inv.filter(i => i !== 'clockKey'); renderInv(); resumeLook();
-    subtitle('', '<i>The pendulum catches. The clock ticks, whirrs, and strikes four.</i>', 4200);
-    for (let i = 0; i < 4; i++) after(0.8 + i * 1.1, () => chime(POS.clock, 0.5));
-    after(5.4, () => { sScrape(POS.clock, 0.4, 0.2); O.crankIn.visible = true; tween(0.5, k => { O.clockDrawer.position.z = 0.09 * k; }); subtitle('', '<i>On the last stroke a shallow drawer slides out of the base of the clock. Inside it: a small brass crank.</i>', 5200); });
-    return;
-  }
-  S.wrong++; save(); G.lockout = G.time + 3;
-  draw('It ticks a few times and stops. Wrong hour.');
-  after(1.2, () => { sKnock(POS.under, 0.8, 0, 0); after(0.5, () => sKnock(POS.under, 0.8, 0, 0)); });
+function windClock() {
+  S.wound = (S.wound || 0) + 1; save();
+  for (let i = 0; i < 3; i++) after(i * 0.12, () => sClick(POS.clock, 0.14, 3400 + i * 200));
+  if (S.wound < WINDS) { subtitle('', S.wound === 1 ? '<i>The key bites. You wind the spring a turn.</i>' : '<i>Another turn. It\'s getting tight.</i>', 2400); return; }
+  flag('clockSet'); V.clockRun = true; S.inv = S.inv.filter(i => i !== 'clockKey'); renderInv(); save();
+  subtitle('', '<i>The pendulum catches. The clock ticks, whirrs, and strikes four.</i>', 4200);
+  for (let i = 0; i < 4; i++) after(0.8 + i * 1.1, () => chime(POS.clock, 0.5));
+  after(5.4, () => { sScrape(POS.clock, 0.4, 0.2); O.crankIn.visible = true; tween(0.5, k => { O.clockDrawer.position.z = 0.09 * k; }); subtitle('', '<i>On the last stroke a shallow drawer slides out of the base of the clock. Inside it: a small brass crank.</i>', 5200); });
 }
 function takeCrank() { give('crank'); O.crankIn.visible = false; tween(0.4, k => { O.clockDrawer.position.z = 0.09 * (1 - k); }); }
 // struck bells: partials with their own decays. chime (clock), hand bell, church bell far off
@@ -1015,13 +990,12 @@ function churchBell(pos) { bell(pos, 0.06, 220, [[0.5, 0.6, 1.4], [1, 1, 1], [1.
 /* ---------------- III. the luminous paint, the roses ---------------- */
 function pressRose(n) {
   const r = O.roses[n - 1]; sClick(POS.cab, 0.35, 1800);
-  tween(0.12, k => { r.position.x = r.userData.base - 0.008 * k; }, () => tween(0.15, k => { r.position.x = r.userData.base - 0.008 * (1 - k); }));
+  if (!MARKED.includes(n)) { tween(0.1, k => { r.position.x = r.userData.base - 0.003 * k; }, () => tween(0.12, k => { r.position.x = r.userData.base - 0.003 * (1 - k); })); subtitle('', '<i>It gives a hair, and springs back. Not this one.</i>', 2400); return; }
+  if (S.roses.includes(n)) return;
   S.roses.push(n); save();
-  if (S.roses.length < 4) return;
-  const ok = S.roses.every((v, i) => v === ROSE_ORDER[i]); S.roses = []; save();
-  if (ok) { after(0.4, openCabinet); return; }
-  if (S.flags.glowSeen) { S.wrong++; save(); after(0.5, () => { subtitle('', '<i>The roses click back out. Nothing happens.</i>', 2600); sKnock(POS.under, 0.8, 0, 0); after(0.5, () => sKnock(POS.under, 0.8, 0, 0)); }); }
-  else after(0.5, () => subtitle('', '<i>Click, click, click, click. The roses spring back out. Nothing else happens.</i>', 2800));
+  tween(0.14, k => { r.position.x = r.userData.base - 0.012 * k; });
+  if (S.roses.length < MARKED.length) { subtitle('', `<i>The rose clicks in, and stays in. (${S.roses.length} of ${MARKED.length})</i>`, 2400); return; }
+  after(0.4, openCabinet);
 }
 function openCabinet() {
   flag('cabOpen'); sClick(POS.back, 0.5, 900); sCreak(POS.back, 1.6, 0.3, 110);
@@ -1035,25 +1009,21 @@ function fitCrank() {
   for (let i = 0; i < 8; i++) after(i * 0.16, () => sClick(POS.back, 0.12, 2400 + (i % 2) * 400));
   subtitle('', '<i>The crank fits the socket in the side. You wind the spring until it\'s tight.</i>', 3600);
 }
-function toggleSpeed() {
-  S.speed = S.speed === 'fast' ? 'slow' : 'fast'; save(); sClick(POS.back, 0.25, 1600);
-  O.lever.rotation.z = S.speed === 'fast' ? -0.5 : 0.5;
-  subtitle('', `<i>You push the speed lever over to ${S.speed.toUpperCase()}.${S.speed === 'fast' ? ' It sits by a pencilled "L."' : ''}</i>`, 3000);
-}
 async function playPhono() {
-  if (V.phono) return; V.phono = true; const fast = S.speed === 'fast', rate = fast ? 1.55 : 1.0, pos = POS.back.clone().add(new THREE.Vector3(0.2, 0.2, 0));
+  if (V.phono) return; V.phono = true; const pos = POS.back.clone().add(new THREE.Vector3(0.2, 0.2, 0));
   if (A.ready && A.loops.phono) setGain(A.loops.phono, 0.035, 0.1);
   let crackle = true; const crack = () => { if (!crackle) return; sClick(pos, rand(0.01, 0.05), rand(1800, 6000)); after(rand(0.03, 0.14), crack); }; crack();
-  const tone = fast ? { who: 'Little Lily', a: '"Mamma? Mamma, it\'s Lily. I\'m here, Mamma. It isn\'t cold where I am. Tell the lady in grey that Arthur is here with me, and he isn\'t frightened any more. I have to go now. Goodnight, Mamma."' }
-    : { who: 'The phonograph, slowed down', a: 'It\'s Madame Kell\'s own voice, drawn out and sing-song: "Mamma? Mamma, it\'s Lily. I\'m here, Mamma..."' };
   await wait(700);
-  await say(tone.who, tone.a, { clip: 's_lily', fx: 'phono', pos, speed: rate, volume: 1.2 });
-  if (fast) { heard('lily'); await say('The phonograph', '<i>[then a gabble of chatter, far too fast to follow]</i>', { clip: 's_memo', fx: 'phono', pos, speed: rate, volume: 1.1 }); }
-  else { await say('Madame Kell, to herself', '"There. That will do for the Ashdown woman. Tuesday, the Colonel. Mother\'s plate for him. And the bureau word is Mother\'s name, if I forget again. God forgive me."', { clip: 's_memo', fx: 'phono', pos, speed: rate, volume: 1.1 }); heard('madame'); }
+  await say('Little Lily', '"Mamma? Mamma, it\'s Lily. I\'m here, Mamma. It isn\'t cold where I am. Tell the lady in grey that Arthur is here with me, and he isn\'t frightened any more. I have to go now. Goodnight, Mamma."', { clip: 's_lily', fx: 'phono', pos, speed: 1.55, volume: 1.2 });
+  heard('lily');
+  // the spring runs down: the voice drags, lower and slower, until it isn't a child's at all
+  sTone([196, 174.6], 1.6, 0.03); subtitle('', '<i>The spring is running down. The voice drags lower and slower, until it isn\'t a child\'s voice at all. It\'s Madame Kell\'s.</i>', 5200);
+  await wait(2600);
+  await say('Madame Kell, to herself', '"There. That will do for the Ashdown woman. The bureau key is in the box with the plates, if I forget again. God forgive me."', { clip: 's_memo2', fx: 'phono', pos, speed: 1.0, volume: 1.1 });
+  heard('madame');
   crackle = false; if (A.ready && A.loops.phono) setGain(A.loops.phono, 0, 0.2);
   V.phono = false;
-  if (fast && !S.flags.heardFast) { flag('heardFast'); after(1.0, () => subtitle('', '<i>The needle lifts. The pencilled "L." by the speed lever is right beside FAST.</i>', 4200)); }
-  if (!fast && !X('voice')) {
+  if (!X('voice')) {
     expose('voice');
     after(4.0, () => { heard('real1'); playClip('s_real1', { fx: 'whisper', pos: behindPos(0.5), volume: 1.3, speed: 1.0 }); subtitle('', '<i>Right behind you, a child whispers: "That isn\'t me."</i>', 4200); G.fearT = 0.45; });
   }
@@ -1062,7 +1032,8 @@ async function playPhono() {
 /* ---------------- V. the plates ---------------- */
 function openPlates() {
   if (!S.flags.platesOpen) { flag('platesOpen'); sCreak(POS.plates, 0.5, 0.12, 300); tween(0.6, k => { O.plateLid.rotation.x = -1.9 * k; }); }
-  openContainer('Dry plates', 'Three glass negatives in paper sleeves, each with a name pencilled on it. Negatives only show their picture with a strong light behind them.', [
+  openContainer('Dry plates', 'Three glass negatives in paper sleeves, each with a name pencilled on it, and a small key on a black ribbon. Negatives only show their picture with a strong light behind them.', [
+    { name: 'A small brass key', desc: 'On a black ribbon. It looks like the key to a bureau.', take: 'bureauKey', onTake: () => flag('bureauKeyTaken') },
     { name: '"Grandfather"', desc: 'for Mrs Ashdown', read: 'plate_a', verb: 'Hold it to the light' },
     { name: '"Soldier"', desc: 'for Miss Wren', read: 'plate_b', verb: 'Hold it to the light' },
     { name: '"Mother"', desc: 'for Col. Pryor', read: 'plate_c', verb: 'Hold it to the light' },
@@ -1077,7 +1048,8 @@ function plateSeen(k) {
 /* ---------------- the bureau, VI. the rod ---------------- */
 function tryBureau() {
   flag('triedBureau');
-  openLock({ id: 'bureau', n: 5, letters: true, brass: true, answer: 'AGNES', title: 'Letter lock', sub: 'Five brass rings, each lettered A to Z, set into the fall-front of the bureau.', btn: 'Try the lid', pos: POS.bureau, onOpen: openBureau, failMsg: 'The lid won\'t move.' });
+  if (!has('bureauKey')) { sThunk(POS.bureau, 0.3, 160); subtitle('', '<i>Locked. There\'s a small brass keyhole in the fall-front.</i>', 3400); return; }
+  S.inv = S.inv.filter(i => i !== 'bureauKey'); renderInv(); save(); sClick(POS.bureau, 0.5, 1500); after(0.4, openBureau);
 }
 function openBureau() {
   flag('bureauOpen'); sCreak(POS.bureau, 0.9, 0.2, 180);
@@ -1121,7 +1093,7 @@ function pullPaper() {
 function midnight() { subtitle('', '<i>Somewhere out in the rain, a church clock strikes midnight.</i>', 5200); for (let i = 0; i < 12; i++) after(1.2 + i * 2.2, () => churchBell(POS.street.clone().add(new THREE.Vector3(8, 6, -12)))); }
 function hintWord() {
   const h = HINTS.find(x => x.id !== 'start' && x.when(S) === 'active');
-  return h ? { raps: 'CHAIR', slate: 'MIRROR', clock: 'FOUR', hand: 'LIGHT', roses: 'ROSES', voice: 'SLOW', photo: 'PLATES', bureau: 'MOTHER', tamb: 'BUREAU', door: 'PAPER' }[h.id] : null;
+  return h ? { raps: 'CHAIR', slate: 'MIRROR', clock: 'WIND', hand: 'LIGHT', roses: 'ROSES', voice: 'LISTEN', photo: 'PLATES', bureau: 'PLATES', tamb: 'BUREAU', door: 'PAPER' }[h.id] : null;
 }
 function spell() {
   if (inView(O.board, 1.0)) return false;
@@ -1164,27 +1136,24 @@ function registerInteractions() {
   inter('mchair', O.mchair, { name: 'Madame\'s chair', actions: () => S.flags.pedalFound ? [{ label: 'Press the pedal', run: pressPedal }, look('A tall carved chair, red velvet, with the medium\'s pedal hidden under the seat.')] : [{ label: 'Look under the seat', run: findPedal }, look('Madame\'s chair: tall, carved, red velvet. Her back was to the cabinet all night, and her hands were held by the sitters either side.')] });
   O.chairs.forEach((c, i) => inter('chair' + i, c, { name: 'Chair', actions: () => [look(['Mrs Ashdown\'s chair. A grey glove has been left on the seat.', 'Colonel Pryor\'s chair.', 'Miss Wren\'s chair. There\'s a damp handkerchief on the floor under it.', 'Your chair, the one they gave the gentleman from the Society.'][i])] }));
   inter('mirror', O.mirrorG, { name: 'Looking-glass', reach: 2.6, actions: () => has('flap') || S.flags.readMirror ? [{ label: 'Hold the slate flap up to it', run: () => openDoc('mirror') }, look('An old looking-glass in a gilt frame, freckled at the edges. The room hangs in it, a little darker than the real one.')] : [look('An old looking-glass in a gilt frame, freckled at the edges. The room hangs in it, a little darker than the real one.')] });
-  inter('mcard', O.mcard, { name: 'Mourning card', reach: 2.4, actions: () => [{ label: 'Read it', run: () => openDoc('mcard') }] }); hitbox('mcard', O.mcard, 0.03);
+  inter('mcard', O.mcard, { name: 'Mourning card', reach: 2.4, actions: () => [look('In loving memory of Lily Ada Kell, aged seven. "Not lost, but gone before."')] }); hitbox('mcard', O.mcard, 0.03);
   inter('clock', O.clock, { name: 'Mantel clock', reach: 2.4, actions: () => {
     if (S.flags.clockSet) return [look('Ticking again, for the first time in years, by the look of the dust.')];
     if (!has('clockKey')) return [look('A black slate clock. It has stopped at twenty to eight. There\'s a winding hole in the dial, but no key.')];
-    return [{ label: 'Wind it and set the hands', run: openClockPanel }];
-  } });
+    return [{ label: 'Wind it', run: windClock }];
+  }, note: () => has('clockKey') && !S.flags.clockSet && S.wound ? `Wound ${S.wound}/${WINDS}` : '' });
   inter('cdrawer', O.clockDrawer, { name: 'Drawer in the clock', reach: 2.4, enabled: () => S.flags.clockSet && O.crankIn.visible, actions: () => [{ label: 'Take the brass crank', run: takeCrank }] }); hitbox('cdrawer', O.clockDrawer, 0.03);
   inter('fire', O.irons, { name: 'Fireplace', actions: () => [look('The fire has been out for hours. Cold ash and a few dead coals.')] });
   inter('tap', O.tap, { name: () => `Gas tap (${S.gas === 'full' ? 'full on' : S.gas === 'low' ? 'turned low' : 'off'})`, actions: gasActions }); hitbox('tap', O.tap, 0.05);
   inter('books', O.books, { name: 'Bookcase', actions: () => [look('Home\'s "Incidents in My Life", a run of "Light", Mrs Hardinge Britten, a Bradshaw, a book of hymns. Every spiritualist in London on one shelf.')] });
   inter('tin', O.tin, { name: 'Tin of paint', actions: () => [{ label: 'Read the label', run: () => openDoc('tin') }] }); hitbox('tin', O.tin, 0.04);
   inter('cab', O.cab, { name: 'Spirit cabinet', actions: () => [look(S.flags.cabOpen ? 'The false back stands open. The phonograph sits in the hollow behind it.' : 'A tall black cabinet with velvet curtains, where the spirits "appear". Six carved roses run down the two front posts, three on each side.')] });
-  O.roses.forEach((r, i) => { inter('rose' + (i + 1), r, { name: 'Carved rose', reach: 2.2, actions: () => S.flags.cabOpen ? [look('A carved wooden rose. It moves in and out a little, like a button.')] : [{ label: 'Press it', run: () => pressRose(i + 1) }] }); hitbox('rose' + (i + 1), r, 0.02); });
-  inter('phono', O.phono, { name: () => `Phonograph (speed: ${S.speed.toUpperCase()})`, enabled: () => S.flags.cabOpen, reach: 2.2, actions: () => {
-    const a = [];
-    if (!S.flags.crankFitted) a.push(has('crank') ? { label: 'Fit the crank and wind it', run: fitCrank } : look('An Edison phonograph with a brown wax cylinder on it, its horn pointed out through the curtains. The winding crank is missing: there\'s an empty square socket in the side.'));
-    else a.push({ label: V.phono ? 'Listen' : 'Play the cylinder', run: () => playPhono() });
-    a.push({ label: `Move the speed lever to ${S.speed === 'fast' ? 'SLOW' : 'FAST'}`, run: toggleSpeed });
-    return a;
+  O.roses.forEach((r, i) => { inter('rose' + (i + 1), r, { name: () => S.roses.includes(i + 1) ? 'Carved rose (pressed in)' : 'Carved rose', reach: 2.2, actions: () => S.flags.cabOpen || S.roses.includes(i + 1) ? [look('A carved wooden rose. It moves in and out a little, like a button.')] : [{ label: 'Press it', run: () => pressRose(i + 1) }] }); hitbox('rose' + (i + 1), r, 0.02); });
+  inter('phono', O.phono, { name: 'Phonograph', enabled: () => S.flags.cabOpen, reach: 2.2, actions: () => {
+    if (!S.flags.crankFitted) return [has('crank') ? { label: 'Fit the crank and wind it', run: fitCrank } : look('An Edison phonograph with a brown wax cylinder on it, its horn pointed out through the curtains. The winding crank is missing: there\'s an empty square socket in the side.')];
+    return [{ label: V.phono ? 'Listen' : 'Play the cylinder', run: () => playPhono() }];
   } }); hitbox('phono', O.phono, 0.04);
-  inter('bureau', O.bureau, { name: 'Bureau', actions: () => S.flags.bureauOpen ? [look('Madame\'s bureau, open. Letters, bills, and her appointments for next week.')] : [{ label: 'Try the fall-front', run: tryBureau }, look('A mahogany bureau. The sloping lid is held shut by a brass letter lock with five rings.')] });
+  inter('bureau', O.bureau, { name: 'Bureau', actions: () => S.flags.bureauOpen ? [look('Madame\'s bureau, open. Letters, bills, and her appointments for next week.')] : [{ label: has('bureauKey') ? 'Unlock it' : 'Try the fall-front', run: tryBureau }, look('A mahogany bureau with a sloping fall-front and a small brass keyhole.')] });
   inter('bbook', O.blueBook, { name: 'Blue notebook', enabled: () => S.flags.bureauOpen, actions: () => [{ label: 'Read it', run: () => { openDoc('bluebook'); if (!S.ev.real2) { S.ev.real2 = true; save(); after(8, () => { heard('real2'); playClip('s_real2', { fx: 'whisper', pos: behindPos(0.45), volume: 1.2 }); subtitle('', '<i>Very close to you, a child\'s voice: "She never heard me."</i>', 4200); }); } } }] }); hitbox('bbook', O.blueBook, 0.04);
   inter('rod', O.rodIn, { name: 'Black rod', enabled: () => S.flags.bureauOpen && !has('rod'), actions: () => [{ label: 'Take it', run: takeRod }] }); hitbox('rod', O.rodIn, 0.03);
   inter('camera', O.cam, { name: 'Camera', actions: () => [look('A mahogany field camera on its tripod, aimed at the table and the door beyond it. The lens cap is off and the flash tray is loaded with magnesium powder, ready.')] });
@@ -1201,7 +1170,7 @@ function registerInteractions() {
 /* ---------------- state ---------------- */
 function defaults() {
   return { flags: {}, inv: [], docs: ['notes'], heard: [], hints: 0, hintTiers: {}, wrong: 0, locks: {}, elapsed: 0, player: null,
-    gas: 'low', exposed: [], clock: { h: 7, m: 40 }, speed: 'fast', roses: [], spelled: null, ev: {} };
+    gas: 'low', exposed: [], clock: { h: 7, m: 40 }, speed: 'fast', roses: [], wound: 0, spelled: null, ev: {} };
 }
 function applyState() {
   const f = S.flags;
@@ -1211,6 +1180,7 @@ function applyState() {
   if (f.slatesOpen) { O.slateHi.position.set(-0.05, 0.022, 0.2); O.slateHi.rotation.x = -Math.PI * 0.98; } else { O.slateHi.position.set(0, 0.022, 0); O.slateHi.rotation.x = 0; }
   drawHands(); V.clockRun = !!f.clockSet; O.crankIn.visible = !!f.clockSet && !has('crank') && !f.crankFitted; O.clockDrawer.position.z = O.crankIn.visible ? 0.09 : 0;
   O.backPanel.rotation.y = f.cabOpen ? 1.35 : 0;
+  O.roses.forEach((r, i) => { r.position.x = r.userData.base - (S.roses.includes(i + 1) || (f.cabOpen && MARKED.includes(i + 1)) ? 0.012 : 0); });
   O.crankOn.visible = !!f.crankFitted; O.lever.rotation.z = S.speed === 'fast' ? -0.5 : 0.5;
   O.plateLid.rotation.x = f.platesOpen ? -1.9 : 0;
   O.fall.rotation.x = f.bureauOpen ? Math.PI / 2 : -0.46; O.rodIn.visible = !has('rod');
@@ -1256,7 +1226,7 @@ function roomUpdate(dt) {
   O.lum.forEach(m => m.material.opacity = V.glow * 0.95); L.lum.intensity = V.glow * 0.35;
   if (V.glow > 0.3 && !S.flags.glowSeen && inView(O.lumEye, 0.9) && !G.uiOpen) {
     V.glowSeenT += dt;
-    if (V.glowSeenT > 0.5) { flag('glowSeen'); heard('glow'); expose('hand'); subtitle('', '<i>In the dark the cabinet comes alive: a pale green hand glows on the top of it, and small numbers shine beside four of the carved roses.</i>', 6400); }
+    if (V.glowSeenT > 0.5) { flag('glowSeen'); heard('glow'); expose('hand'); subtitle('', '<i>In the dark the cabinet comes alive: a pale green hand glows on the top of it, and a ring of paint shines round four of the carved roses.</i>', 6400); }
   }
   // in the dark, after you've seen the paint: a small hand on the tablecloth that nobody painted
   if (S.gas === 'off' && S.flags.glowSeen && V.gasK < 0.05 && !G.ending) {
@@ -1389,11 +1359,11 @@ function titleFx(cv, g, t) {
 
 /* ---------------- the room module ---------------- */
 return {
-  id: 'sitting', title: 'The Last Sitting', saveKey: 'lethe.roomsitting.v1',
-  DOCS, ITEMS, HEARD: Object.assign(HEARD, { glow: { title: 'Seen in the dark, on the spirit cabinet', text: 'A glowing hand on the top of the cabinet, and glowing numbers by four of the six carved roses: <b>1</b> by the right-hand middle rose, <b>2</b> by the left-hand top rose, <b>3</b> by the right-hand bottom rose, <b>4</b> by the left-hand bottom rose.' } }),
+  id: 'sitting', title: 'The Last Sitting', saveKey: 'lethe.roomsitting.v2',
+  DOCS, ITEMS, HEARD: Object.assign(HEARD, { glow: { title: 'Seen in the dark, on the spirit cabinet', text: 'A glowing hand on the top of the cabinet, and a ring of paint glowing round four of the six carved roses: the top and bottom ones on the left post, the middle and bottom ones on the right.' } }),
   HINTS, openDoc, inspectItem, titleFx,
   penalty() { G.lockout = G.time + 5; V.dip = 1.6; after(0.6, () => { sKnock(POS.under, 0.9, 0, 0); after(0.5, () => sKnock(POS.under, 0.9, 0, 0)); }); subtitle('', '<i>The gas gutters. Under the table, two raps. No.</i>', 3200); },
-  markSkip: ['start'], markMerge: { clock: 'slate', roses: 'hand', bureau: 'photo' },
+  markSkip: ['start'], markMerge: { clock: 'slate', roses: 'hand', bureau: 'voice' },
   backText: 'Back in the parlour.',
   keys: [['Move', 'W A S D'], ['Look', 'Mouse'], ['Interact', 'E or click'], ['Other action', 'R or right-click'], ['Run', 'Shift'], ['Crouch', 'C'], ['Notebook', 'Tab'], ['Hints', 'H']],
   toggleCrouch() { if (G.cutscene) return; G.crouch = !G.crouch; G.eyeT = G.crouch ? 0.85 : 1.62; },
@@ -1420,7 +1390,7 @@ return {
     after(2.4, () => { sClick(POS.door, 0.3, 700); sThunk(POS.door, 0.3, 160); });
     after(3.6, () => { G.cutscene = false; $('#fx').className = ''; flag('woke'); updatePrompt(true); subtitle('', '<i>Out on the landing, a key turns in the parlour door. Footsteps go away down the stairs. On the table, an envelope is propped against the candlestick.</i>', 6400); toast(ctrlHint(), 7000); });
   },
-  debug: { O, L, V, T, M, expose, setGas, openCabinet, openBureau, playPhono, endFrame, endSequence, pressRose, startClock, spell, midnight, ROSE_ORDER },
+  debug: { O, L, V, T, M, expose, setGas, openCabinet, openBureau, playPhono, endFrame, endSequence, pressRose, windClock, spell, midnight, MARKED },
 };
 
 })();

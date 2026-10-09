@@ -58,6 +58,10 @@ ROOMS = [
 
 TAIL = ['series.js', 'main.js']
 
+# Voice clips added to the older rooms after vo_all.json was frozen (kept apart so that
+# file, one long line, doesn't conflict between sessions): merged after vo_all.json.
+EXTRA_VO = ['vo_rework.json']
+
 def rd(name):
     return open(os.path.join(SRC, name), encoding='utf-8').read()
 
@@ -90,6 +94,12 @@ def assemble():
             clash = set(extra) & set(vo)
             assert not clash, f"VO clip ids already used: {sorted(clash)[:5]} (give the room its own prefix)"
             vo.update(extra)
+    for f in EXTRA_VO:
+        if not os.path.exists(os.path.join(SRC, f)): continue
+        extra = json.loads(rd(f))
+        clash = set(extra) & set(vo)
+        assert not clash, f"VO clip ids already used: {sorted(clash)[:5]}"
+        vo.update(extra)
     js += [rd(f) for f in TAIL]
     if css:
         i = head.rindex('</style>')
