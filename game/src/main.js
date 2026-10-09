@@ -173,7 +173,8 @@ boot();
 /*DEBUG*/
 // test handle for headless runs (dev build only; build.py prod and site strip this block)
 window.__lethe = {
-  G, P, ROOMS, scene, camera, render, update, UI, INTER, probe, act, results, enterMystery, reloadInto, finishRoom, envFromScene, hostState, A, PZ, openPause,
+  G, P, ROOMS, scene, camera, render, update, UI, INTER, probe, act, results, enterMystery, reloadInto, finishRoom, envFromScene, hostState, A, PZ,
+  THREE, collide, colliders, isShown, BODY, DRAG, HOLD, bodySupport, bodyResolve, bodyPlace, touchActions, updatePrompt, openHints, openPause,
   get S() { return S; }, set S(v) { S = v; },
   get ROOM() { return ROOM; },
   get renderer() { return renderer; },

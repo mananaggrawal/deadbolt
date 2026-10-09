@@ -615,7 +615,7 @@ function registerInteractions() {
   hb('pot', O.pot, 0.05);
   O.curtainHit = hit(0.1, 1.8, 1.86, KUT_X, FY + 1.0, -3.24);
   inter('curtain', O.curtainHit, { name: 'The curtain', actions: () => [A_('Look behind it', () => { sayI('Behind the chintz curtain: the kitchen corner, in front of the oven mouth. A shelf of crocks and plates, a tub of water, a little table under the window.', 6000); })] });
-  inter('chest', O.chest, { name: () => chestOnTrap() ? 'The chest, over the cellar hatch' : 'Her chest', reach: 2.0, actions: () => DRAG.cur ? [] : [A_('Drag the chest', () => { dragStart('chest'); if (!S.ev.toldDrag) { S.ev.toldDrag = true; toast(`Walk to drag it. ${G.touch ? 'Put down' : '<kbd>Q</kbd> or <kbd>E</kbd>'} lets go.`, 4500); } }), look(chestOnTrap() ? 'Her dowry chest, dragged across the floor and stood on the cellar hatch. There are scrape marks in the boards all the way from the wall.' : 'Her dowry chest, painted with roses and banded with iron. Locked. The key went with her.')] });
+  inter('chest', O.chest, { name: () => chestOnTrap() ? 'The chest, over the cellar hatch' : 'Her chest', reach: 2.0, actions: () => DRAG.cur ? [] : [A_('Drag the chest', () => { dragStart('chest'); if (!S.ev.toldDrag) { S.ev.toldDrag = true; toast(`Walk to drag it. ${G.touch ? 'Tap <b>Let go</b> when it\'s in place' : '<kbd>Q</kbd> or <kbd>E</kbd> lets go'}.`, 4500); } }), look(chestOnTrap() ? 'Her dowry chest, dragged across the floor and stood on the cellar hatch. There are scrape marks in the boards all the way from the wall.' : 'Her dowry chest, painted with roses and banded with iron. Locked. The key went with her.')] });
   O.trapHit = hit(0.85, 0.25, 0.85, (TRAP.x0 + TRAP.x1) / 2, FY + 0.05, (TRAP.z0 + TRAP.z1) / 2);
   inter('trap', O.trapHit, { name: 'The cellar hatch', reach: 2.2, enabled: () => !chestOnTrap() || true, actions: trapActions });
   O.winHits = [];
@@ -648,7 +648,7 @@ function registerInteractions() {
   } });
   hb('oar1', O.oar1, 0.04);
   inter('pegs2', O.pegHit, { name: 'Two pegs on the wall', actions: () => { if (!S.flags.pegsSeen) flag('pegsSeen'); return [look('Two wooden pegs where an oar hung. Grandfather kept the pair here, one up on the beams, one on the pegs. The pegs are empty. The dust on them has been wiped clean, recently, by a small hand.')]; } });
-  inter('crate', O.crate, { name: 'A crate', actions: () => DRAG.cur ? [] : [A_('Drag the crate', () => { dragStart('crate'); if (!S.ev.toldDrag) { S.ev.toldDrag = true; toast(`Walk to drag it. ${G.touch ? 'Put down' : '<kbd>Q</kbd> or <kbd>E</kbd>'} lets go.`, 4500); } })] });
+  inter('crate', O.crate, { name: 'A crate', actions: () => DRAG.cur ? [] : [A_('Drag the crate', () => { dragStart('crate'); if (!S.ev.toldDrag) { S.ev.toldDrag = true; toast(`Walk to drag it. ${G.touch ? 'Tap <b>Let go</b> when it\'s in place' : '<kbd>Q</kbd> or <kbd>E</kbd> lets go'}.`, 4500); } })] });
   inter('ladder', O.ladder, { name: () => S.ladderAt ? 'The ladder, against the gable' : 'A ladder', reach: 2.3, enabled: () => HOLD.cur !== 'ladder', actions: () => {
     if (S.ladderAt) return [A_('Climb the ladder', () => climbGable(true)), A_('Take the ladder down', () => { S.ladderAt = null; pickUp('ladder'); })];
     return [A_('Pick up the ladder', () => pickUp('ladder'))];
@@ -952,7 +952,8 @@ function buildRoom() {
 /* ---------------- the room module ---------------- */
 return {
   id: 'ded', title: 'Dedushka', saveKey: 'lethe.roomded.v1',
-  DOCS, ITEMS: Object.assign({}, ITEMS, Object.fromEntries(Object.entries(HOLD_NAMES).map(([k, v]) => [k, { name: v, short: HOLD_SHORT[k], desc: 'In your hands. ' + (G.touch ? 'Put down' : 'Q') + ' puts it down.' }]))), HEARD, HINTS, openDoc, inspectItem,
+  // getters, not values: touch mode is only known once the page boots, after this object is made
+  DOCS, ITEMS: (() => { const all = Object.defineProperties({}, Object.getOwnPropertyDescriptors(ITEMS)); for (const [k, v] of Object.entries(HOLD_NAMES)) all[k] = { name: v, short: HOLD_SHORT[k], get desc() { return 'In your hands. ' + (G.touch ? 'The Put down button' : 'Q') + ' puts it down.'; } }; return all; })(), HEARD, HINTS, openDoc, inspectItem,
   titleFx,
   penalty() { G.lockout = G.time + 3; },
   markSkip: ['start', 'out'], markMerge: {},

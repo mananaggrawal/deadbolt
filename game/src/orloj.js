@@ -1499,7 +1499,7 @@ function fitPin() {
   after(2.9, () => { sStinger(1.0); G.flash = 0.25; G.shake = 1.2; G.fearT = 1; sBreath(camera.position.clone().add(new THREE.Vector3(0, -0.3, -0.4)), 1, 0.5, true); });
   after(3.05, () => { G.flash = 0; });
   after(3.6, () => { tween(0.25, k => { O.myHand.position.y = lerp(-0.11, -0.34, k); O.hand.position.y = lerp(-0.125, -0.4, k); }, () => { O.myHand.visible = false; O.hand.visible = false; O.hand.scale.setScalar(1); O.myPin.visible = true; }); });
-  after(4.0, () => { S.pinIn = true; save(); tween(0.7, k => { P.x = lerp(POS.clutch.x, saved.x, k); P.z = lerp(POS.clutch.z + 0.62, saved.z, k); G.eye = G.eyeT = lerp(2.4, saved.eye, k); G.pitch = lerp(-0.62, saved.pitch, k); }, () => { G.cutscene = false; V.clutchScene = false; updatePrompt(true); sayI('A hand. Out of the gears, grey and cold, round your fingers. You tore yours away. The pin is in: the apostles are coupled to the strike.', 7000); }); });
+  after(4.0, () => { S.pinIn = true; save(); tween(0.7, k => { P.x = lerp(POS.clutch.x, saved.x, k); P.z = lerp(POS.clutch.z + 0.62, saved.z, k); G.eye = G.eyeT = lerp(2.4, saved.eye, k); G.pitch = lerp(-0.62, saved.pitch, k); }, () => { G.cutscene = false; V.clutchScene = false; updatePrompt(true); sayI('A hand. Out of the gears, grey and cold, round your fingers. You tear yours away. The pin is in: the apostles are coupled to the strike.', 7000); }); });
 }
 
 /* ---------------- the count wheel, the fly, the hands ---------------- */

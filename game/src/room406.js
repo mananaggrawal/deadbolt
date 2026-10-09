@@ -295,7 +295,7 @@ function buildRoom() {
   O.log = box(0.2, 0.025, 0.27, toon(0xffffff, T.logCover), 0.03, 0.772, -0.24, desk); O.log.rotation.y = 0.12;
   O.recorder = grp(0.05, 0.76, 0.28, desk); box(0.09, 0.03, 0.15, M.black, 0, 0.015, 0, O.recorder); box(0.07, 0.004, 0.06, M.metal, 0, 0.032, -0.03, O.recorder); box(0.05, 0.006, 0.03, M.grey, 0, 0.032, 0.04, O.recorder);
   O.ashtray = cyl(0.06, 0.05, 0.025, toon(0x7a8a86), -0.12, 0.772, 0.47, desk);
-  for (let i = 0; i < 6; i++) { const b = cyl(0.004, 0.004, 0.03, M.cream, -0.12 + rand(-0.03, 0.03), 0.79, 0.47 + rand(-0.03, 0.03), desk, 5); b.rotation.z = Math.PI / 2; b.rotation.y = rand(0, 3); noRay(b); }
+  for (let i = 0; i < 7; i++) { const b = cyl(0.004, 0.004, 0.03, M.cream, -0.12 + rand(-0.03, 0.03), 0.79, 0.47 + rand(-0.03, 0.03), desk, 5); b.rotation.z = Math.PI / 2; b.rotation.y = rand(0, 3); noRay(b); }
   O.mug = cyl(0.04, 0.036, 0.09, M.mug, 0.16, 0.805, -0.47, desk);
   O.coil = mesh(new THREE.TorusGeometry(0.08, 0.012, 6, 22), M.black, -0.12, 0.772, 0.0, desk); O.coil.rotation.x = Math.PI / 2;
   O.meter = grp(-0.1, 0.76, 0.18, desk); box(0.16, 0.09, 0.12, M.grey, 0, 0.045, 0, O.meter); box(0.005, 0.05, 0.08, M.cream, 0.082, 0.05, 0, O.meter);
@@ -813,7 +813,7 @@ const ITEMS = {
   tapeF: { name: 'VHS tape: FRI 10/28', short: 'Tape Fri', desc: 'Handwritten label: FRI 10/28. The shell is cracked at one corner.' },
   tapeS: { name: 'VHS tape: SAT 10/29', short: 'Tape Sat', desc: 'Handwritten label: SAT 10/29. Underneath, pressed so hard the pen tore the paper: DON\'T.' },
   screwdriver: { name: 'Flat screwdriver', short: 'Screwdriver', desc: 'A heavy engineer\'s screwdriver. There are flecks of cream paint caught in the notch of the blade.' },
-  flashlight: { name: 'Flashlight', short: 'Flashlight', desc: 'Rubber-cased, heavy, fresh batteries. Press F to switch it on or off.' },
+  flashlight: { name: 'Flashlight', short: 'Flashlight', get desc() { return `Rubber-cased, heavy, fresh batteries. ${G.touch ? 'Tap Flashlight, top right, to switch' : 'Press F to switch'} it on or off.`; } },
   page: { name: 'Torn logbook page', short: 'Torn page', doc: 'page' },
   watch: { name: 'Wristwatch', short: 'Watch', desc: 'A man\'s watch on a cracked leather strap. The crystal is broken and the hands have stopped at 3:17. Engraved on the back: <i>E.V. &mdash; so you\'re never late home. I.</i>' },
   polaroid: { name: 'Polaroid', short: 'Polaroid', doc: 'polaroid' },
@@ -877,8 +877,8 @@ const DOCS = {
       `<p><span class="d">PROPERTY OF WKVR-TV</span>Transmitter log, Pinecrest Ridge<br>Night engineer: E. Varga<br>If found, return to the station.</p><p style="color:#5a2020">Most of the old pages have been cut out with a razor. The new entries start near the back.</p>`,
       `<p><span class="d">Wed 26 Oct '83 &mdash; night one</span>Checked into the Pinecrest and asked for 406 by number. The clerk looked at me a long time before he handed over the key.</p><p>Guests say the set in this room picks up a station after midnight. Nobody else on the lodge aerial gets it. Only 406. I know which station.</p><p>It comes in on our old number, and only in the dark &mdash; every light in the room off, like it doesn't want to be seen doing it.</p><p>The picture on the set is this room, from high up in the corner. Empty. The clock in the picture runs three minutes ahead of mine. I sat on the bed for an hour and watched myself not be in it.</p>`,
       `<p><span class="d">Thu 27 Oct &mdash; night two</span>Tested the three minutes. Stood a water glass on top of the set at 2:40 by my watch. The picture on the set had the glass there at 2:37.</p><p>It isn't fast. It's early.</p><p>Knocking from the bathroom again, a different count from last night. I'm taping all of it. Every cassette gets its date, same as the log. Bill always said a log is only as good as its order.</p>`,
-      `<p><span class="d">Fri 28 Oct &mdash; night three</span>I lost time tonight.</p><p>At 14 past 3 the picture on the set showed the desk chair standing under the vent. I laughed at it. At 17 past I was standing on that chair with the screwdriver in my hand and the first screw half out. I don't remember crossing the room.</p><p>Locked the screwdriver in the tool case and set the dials to the knocking &mdash; one night to a dial, first night to last. I'd have to sit through every tape to open it again. Good.</p><p>Nailed the bathroom shut. Put a hasp on the door.</p>`,
-      `<p><span class="d">Sat 29 Oct &mdash; night four</span>I understand it now.</p><p>It isn't showing me the future. It's showing the room after &mdash; after whoever is in it has gone. Every guest in 406 left at 17 past 3, and the picture simply got there first. That's why I'm never in it.</p><p>But it can't take you while your eyes are on it. It has waited three nights for me to look away.</p><p>I'm not going to look away.</p><p>Tonight's tape is up where only it can see. If it wants something to look at, it can look at that.</p>`,
+      `<p><span class="d">Fri 28 Oct &mdash; night three</span>I lost time tonight.</p><p>At 14 past 3 the picture on the set showed the desk chair standing under the vent. I laughed at it. At 17 past I was standing on that chair with the screwdriver in my hand and the first screw half out. I don't remember crossing the room.</p><p>Locked the screwdriver in the tool case.</p><p>Nailed the bathroom shut. Put a hasp on the door.</p>`,
+      `<p><span class="d">Sat 29 Oct &mdash; night four</span>I understand it now.</p><p>It isn't showing me the future. It's showing the room after &mdash; after whoever is in it has gone. Every guest in 406 left at 17 past 3, and the picture simply got there first. That's why I'm never in it.</p><p>But it can't take you while your eyes are on it. It has waited three nights for me to look away.</p><p>I'm not going to look away.</p><p>Tonight's tape is up where only it can see. If it wants something to look at, it can look at that.</p><p>Reset the tool case dials to the knocking &mdash; one night to a dial, first night to last. I'd have to sit through every tape to open it again. Good.</p>`,
       `<p style="color:#5a2020">The last page has been torn out. A ragged strip is left along the binding.</p>`,
     ],
   },
@@ -916,7 +916,7 @@ const anyTape = s => ['tapeW', 'tapeT', 'tapeF', 'tapeS'].some(t => s.inv.includ
 const HINTS = [
   { id: 'start', title: 'Where do I start?', when: s => s.flags.readLog ? 'solved' : 'active', tiers: [
     'Everything you need is in this room. Walk the walls and look at anything that highlights under the dot.',
-    'Someone was living in here before you woke up. Their notes are on the desk under the window.',
+    'Someone was living in here before you woke up. Their notes are on the desk by the window.',
     'Read the green logbook on the desk. It explains the television and the locks.',
     'Go to the desk on the window wall and press E on the green logbook. Read every page.'] },
   { id: 'phone', title: 'The blinking red light on the phone', when: s => s.flags.heardMsgs ? 'solved' : 'active', tiers: [
@@ -928,7 +928,7 @@ const HINTS = [
     'The key isn\'t anywhere near the wardrobe. Someone knows exactly where he always hides his keys.',
     'Listen to the phone messages again. What does Irene tell him not to do?',
     'His shoes are under the bed, hidden behind the bed skirt. You\'ll have to get down low.',
-    'Press C to crouch, face the side of the bed that looks into the room, and use the bed skirt. The key is in the left shoe.'] },
+    'Crouch (C), face the side of the bed that looks into the room, and use the bed skirt. The key is in the left shoe.'] },
   { id: 'pad', title: 'The blank notepad', when: s => s.flags.rubbed ? 'solved' : s.flags.sawPad ? 'active' : 'hidden', tiers: [
     'A blank page isn\'t always blank. Something was written on the sheet above it.',
     'You need something to bring the indentations out.',
@@ -943,10 +943,10 @@ const HINTS = [
     'Eli\'s logbook says exactly when the station comes in. Read the first night again.',
     '"Our old number," and only in the dark. Whose number? Who is "our"?',
     'The logbook belonged to WKVR. The TV listings on top of the VCR give WKVR\'s channel. Every light in the room has to be off.',
-    'Switch off the bedside lamp and the ceiling light (the switch is by the door), then turn the TV to channel 13.'] },
+    'Switch off the bedside lamp, make sure the ceiling light is off too (its switch is by the door), then turn the TV to channel 13.'] },
   { id: 'top', title: 'What the TV shows', when: s => s.inv.includes('tapeS') ? 'solved' : (s.flags.sawFeed || s.flags.sawInsc) ? 'active' : 'hidden', tiers: [
     'What\'s on the TV is the room seen from the vent in the corner. What can it see that you can\'t?',
-    'Eli put his last tape "where only it can see." Look at the high surfaces on the TV.',
+    'Eli put his last tape "where only it can see." Look at the high surfaces in the picture on the TV.',
     'There\'s something on top of the wardrobe. You\'ll need to be taller.',
     'Drag the desk chair (R) over to the wardrobe, climb onto it (E), and take the tape from the top.'] },
   { id: 'tapes', title: 'Watching the tapes', when: s => Object.keys(s.tapesSeen).length ? 'solved' : anyTape(s) ? 'active' : 'hidden', tiers: [
@@ -955,7 +955,7 @@ const HINTS = [
     'Put a tape in the VCR, press Play, and set the TV to channel 3.',
     'Use the set, pick a tape, press Play, and turn the channel to 3. The lights can stay on.'] },
   { id: 'case', title: 'The aluminium tool case', when: s => s.flags.caseOpen ? 'solved' : s.flags.sawCase ? 'active' : 'hidden', tiers: [
-    'Eli describes setting this lock in the logbook, on the night he lost time.',
+    'Eli describes setting this lock in the logbook, in his last entry.',
     '"One night to a dial, first night to last." Each tape has something you can count, and you need all four tapes.',
     'Count the knocks from the bathroom on each tape. Put the tapes in date order, Wednesday the 26th first.',
     'Wednesday 2 knocks, Thursday 5, Friday 1, Saturday 8. The code is 2-5-1-8.'] },
@@ -1056,7 +1056,7 @@ function pose(obj, from, to, dur = 0.6, done) { const f = Object.assign({}, from
 /* ---------------- actions ---------------- */
 function toggleLamp() { S.lamp = !S.lamp; sClick(O.lamp.getWorldPosition(new THREE.Vector3()), 0.5, 1800); save(); onTVChange(); }
 function toggleCeil() { S.ceil = !S.ceil; sClick(O.switch.position, 0.6, 1500); O.switchLever.position.y = S.ceil ? 0.02 : -0.005; save(); onTVChange(); }
-function toggleBlinds() { S.blinds = !S.blinds; sScrape(POS.window, 0.5, 0.15); const a0 = O.slats[0].rotation.z, a1 = S.blinds ? 0.2 : 1.35; tween(0.5, k => O.slats.forEach(s => s.rotation.z = lerp(a0, a1, k))); save(); }
+function toggleBlinds() { S.blinds = !S.blinds; sScrape(POS.window, 0.5, 0.15); const a0 = O.slats[0].rotation.z, a1 = S.blinds ? 0.2 : 1.1; tween(0.5, k => O.slats.forEach(s => s.rotation.z = lerp(a0, a1, k))); save(); }
 function takePainting() {
   S.painting = true; save(); sScrape(O.painting.position, 0.4, 0.2);
   const r0 = O.painting.rotation.z;
@@ -1102,7 +1102,7 @@ function caseLock() {
 function caseContents() {
   openContainer('Tool case', 'Foam cut-outs shaped for tools. Most of them are empty.', [
     { name: 'Flat screwdriver', desc: 'Heavy, with flecks of cream paint in the notch of the blade.', take: 'screwdriver', onTake: () => { O.caseIn.children[0].visible = false; } },
-    { name: 'Flashlight', desc: 'Rubber-cased. It works.', take: 'flashlight', onTake: () => { O.caseIn.children[1].visible = false; toast(G.touch ? 'Tap <b>Torch</b>, top right, to switch the flashlight on or off.' : 'Press <kbd>F</kbd> to switch the flashlight on or off.'); } }]);
+    { name: 'Flashlight', desc: 'Rubber-cased. It works.', take: 'flashlight', onTake: () => { O.caseIn.children[1].visible = false; toast(G.touch ? 'Tap <b>Flashlight</b>, top right, to switch it on or off.' : 'Press <kbd>F</kbd> to switch the flashlight on or off.'); } }]);
 }
 function padlock() {
   flag('sawPadlock');
@@ -1265,7 +1265,7 @@ function registerInteractions() {
   inter('door', O.door, { name: 'Door to the hall', enabled: () => !S.flags.doorOpen, actions: () => [{ label: 'Try the padlock', run: padlock }, { label: 'Look through the peephole', run: peephole }] });
   O.lock.traverse(o => o.userData.iid = 'door');
   inter('firemap', O.firemap, { name: 'Fire evacuation plan', enabled: () => !S.flags.doorOpen, actions: () => [{ label: 'Read', run: () => openDoc('firemap') }] });
-  inter('bath', O.bath, { name: 'Bathroom door', note: () => 'Nailed shut with three boards.', actions: () => [{ label: 'Knock', run: knockBack }, { label: 'Pull at the boards', run: () => { sCreak(POS.bath, 0.6, 0.3, 130); subtitle('', '<i>The nails don\'t give. You get the feeling someone on the other side is leaning against the door, very gently.</i>', 5000); } }] });
+  inter('bath', O.bath, { name: 'Bathroom door', note: () => S.boards ? 'Nailed shut. Some of the boards are hanging loose.' : 'Nailed shut with three boards.', actions: () => [{ label: 'Knock', run: knockBack }, { label: 'Pull at the boards', run: () => { sCreak(POS.bath, 0.6, 0.3, 130); subtitle('', '<i>The nails don\'t give. You get the feeling someone on the other side is leaning against the door, very gently.</i>', 5000); } }] });
   inter('calendar', O.calendar, { name: 'Wall calendar', actions: () => [{ label: 'Read', run: () => openDoc('calendar') }] });
   inter('switch', O.switch, { name: 'Light switch', actions: () => [{ label: S.ceil ? 'Ceiling light off' : 'Ceiling light on', run: toggleCeil }] });
   inter('vent', O.ventZone, { name: 'Air vent', reach: 2.8, note: () => nearVent() ? (!S.flags.ventOpen && !has('screwdriver') ? 'Four screws, painted over.' : '') : 'High in the corner. Out of reach.',
@@ -1317,7 +1317,7 @@ const EVENTS = [
   { id: 'above', w: 1.4, ok: () => true, run: () => { const x0 = rand(-2, 0), z0 = rand(-2, 2); for (let i = 0; i < 6; i++) after(i * 0.62, () => sKnock(new THREE.Vector3(x0 + i * 0.5, 3.3, z0), 0.4, 0, 1)); } },
   { id: 'flicker', w: 2, ok: () => S.lamp || S.ceil, run: () => { G.flickerT = 1.6; } },
   { id: 'chair', w: 1.4, ok: () => !G.carrying && !G.onChair && chairNearDesk(), unseen: () => O.chair, run: () => { const c = S.chair; c.x += (CHAIR_VENT.x - c.x) * 0.07; c.z += (CHAIR_VENT.z - c.z) * 0.07; c.r += 0.3; placeChairMesh(); save(); } },
-  { id: 'tv', w: 1.6, ok: () => !S.tv.on && S.flags.readLog && !S.flags.sawFeed && G.play > 300, unseen: () => O.tv, run: () => { S.tv.on = true; S.tv.ch = 13; SET.chShown = G.time; sThunk(POS.tv, 0.5, 90); save(); } },
+  { id: 'tv', w: 1.6, ok: () => !S.tv.on && S.flags.readLog && !S.flags.sawFeed && G.play > 300, unseen: () => O.tv, run: () => { S.tv.on = true; S.tv.ch = 13; SET.chShown = G.time; sThunk(POS.tv, 0.5, 90); save(); onTVChange(); } },
   { id: 'ring', w: 1.1, ok: () => !PH.ringing && UI.kind !== 'phone' && G.play > 150, run: () => ringPhone(5, breathCall) },
   { id: 'breath', w: 1.3, ok: () => S.flags.sawFeed, run: () => { sBreath(behindPos(0.7), 2, 0.75, true); G.fear = Math.max(G.fear, 0.4); } },
   { id: 'painting', w: 1, ok: () => !S.painting && !S.flags.crooked, unseen: () => O.painting, run: () => { S.flags.crooked = true; O.painting.rotation.z = 0.12; save(); } },
@@ -1344,7 +1344,7 @@ function director(dt) {
   else { ev.run(); DIR.t = rand(38, 75) * (1 - 0.35 * progress()); }
 }
 function on317() {
-  if (G.cutscene || G.ending) return;
+  if (G.cutscene || G.ending || VCR.playing) return;   // never knock over a tape: its knocks are the case code
   if (!S.flags.first317) {
     flag('first317'); G.powerCut = 7; sStinger(0.7); G.fear = 1;
     after(1.4, () => sBell(POS.phone, 1.2));
@@ -1391,7 +1391,7 @@ function roomUpdate(dt) {
   SET.osdT -= dt; if (SET.osdT <= 0) { SET.osdT = 0.2; drawOSD(); if (!VCR.playing && !S.vcr) drawVCR(); }
   setGain(A.loops.tv, mode === 1 ? 0.12 : mode === 2 ? 0.04 : mode === 3 ? 0.035 : 0, 0.05);
   // message lamp
-  if (!S.flags.heardMsgs) { blinkT += dt; O.msgLamp.visible = Math.floor(blinkT * 1.6) % 2 === 0; }
+  if (!S.flags.heardMsgs) { blinkT += dt; O.msgLamp.visible = Math.floor(blinkT * 1.6) % 2 === 0; } else O.msgLamp.visible = false;
   // neon + tower
   neonT += dt; const nf = Math.random() < 0.03 ? 0.2 : 1; L.neon.intensity = 0.7 * nf; O.towerLight.visible = Math.floor(neonT * 0.8) % 2 === 0;
   // lightning
@@ -1490,6 +1490,6 @@ const ROOM406 = {
     after(3.7, () => { G.cutscene = false; $('#fx').className = ''; flag('woke'); updatePrompt(true); toast(ctrlHint(), 7000); });
   },
   titleFx: null,
-  touchExtras: () => has('flashlight') ? [{ label: G.flashOn ? 'Torch off' : 'Torch', run: () => ROOM406.toggleFlash() }] : [],
+  touchExtras: () => has('flashlight') ? [{ label: G.flashOn ? 'Flashlight off' : 'Flashlight', run: () => ROOM406.toggleFlash() }] : [],
 };
 
