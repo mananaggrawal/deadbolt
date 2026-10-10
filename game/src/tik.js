@@ -1660,7 +1660,10 @@ function hunterUpdate(dt) {
   // sound: wingbeats close by; the tik-tik, inverted
   h.phase = (h.phase || 0) + dt * h.flap; if (Math.floor(h.phase) !== h.lastBeat) { h.lastBeat = Math.floor(h.phase); if (dP < 18 && h.spread > 0.4 && O.mn.visible) sWing(h.pos, clamp(0.55 - dP * 0.025, 0.05, 0.55)); }
   if (S.flags.manaKnown && !V.bi && !(V.sg && V.sg.phase !== 'run') && !S.flags.dawn && h.state !== 'off') {
-    h.tikT -= dt; if (h.tikT <= 0) { h.tikT = rand(2.6, 5.2) * (h.state === 'alert' || h.state === 'dive' ? 99 : 1); const dir = h.pos.clone().sub(head).setY(0).normalize(); const vol = lerp(0.03, 0.55, clamp((h.dist2D - 6) / 30, 0, 1)); sTik(vol, head.clone().addScaledVector(dir, 4).setY(head.y + 1), lerp(0.85, 0.25, vol / 0.55)); }
+    // she goes quiet while she comes for you, and calls again soon after (the gap is never longer than a normal one)
+    if (h.state === 'alert' || h.state === 'dive' || V.catching) h.tikT = Math.max(h.tikT, 1.6);
+    else h.tikT = Math.min(h.tikT, 5.2) - dt;
+    if (h.tikT <= 0) { h.tikT = rand(2.6, 5.2); const dir = h.pos.clone().sub(head).setY(0).normalize(); const vol = lerp(0.03, 0.55, clamp((h.dist2D - 6) / 30, 0, 1)); sTik(vol, head.clone().addScaledVector(dir, 4).setY(head.y + 1), lerp(0.85, 0.25, vol / 0.55)); }
   }
   // her red glow up close
   L.her.position.copy(h.pos).add(new THREE.Vector3(0, 0.6, 0)); L.her.intensity = O.mn.visible ? clamp(1 - dP / 7, 0, 1) * 0.9 : 0;
@@ -1704,6 +1707,7 @@ function respawn() {
   if (V.visitor && !S.flags.peeked) { flag('peeked'); visitorLeaves(true); }
   if (V.sg && !S.flags.dawn) siegeRestart();
   else if (V.h.state !== 'scripted') { hSet('away', 26); V.h.pos.set(rand(-30, 30), 16, rand(-40, -30)); }
+  V.h.tikT = 3.6;   // her call again, loud and far off, once Lorna has spoken
   G.cutscene = false; V.black = 0.8; G.blackT = 0;
   updatePrompt(true);
   after(0.9, () => { if (!V.sg) line('back', LORNA, 'You came back. I thought she had you.', { pos: POS.lorna }); });
@@ -2082,7 +2086,7 @@ function roomUpdate(dt) {
   // the scenes that start themselves
   const f = S.flags;
   if (f.lit && !f.visitor && !V.catching) { V.litT = (V.litT || 0) + dt; if (V.litT > 14 || (inBedroom() && V.litT > 4)) startVisitor(); }
-  if (f.manaKnown && !f.hunted && outdoors() && !V.visitor) { flag('hunted'); if (V.h.state !== 'away') { hSet('away', 30); } toast('Listen. <b>Tik-tik... tik-tik.</b> Loud, and far off over the fields. When it goes faint, she\'s right above you.', 7500); }
+  if (f.manaKnown && !f.hunted && outdoors() && !V.visitor) { flag('hunted'); if (V.h.state !== 'away') { hSet('away', 30); } V.h.tikT = Math.min(V.h.tikT, 0.8); toast('Listen. <b>Tik-tik... tik-tik.</b> Loud, and far off over the fields. When it goes faint, she\'s right above you.', 7500); }
   if (f.key && !f.gateSeen && outdoors() && P.z > 2.5 && !V.sg && !V.bi && !V.catching && ['away', 'circle'].includes(V.h.state) && !covered()) startGate();
   if (S.bowl.salt && f.manaKnown && !f.breakin && insideHouse() && !V.sg && !V.gate && !V.catching && BODY.y > FLOOR - 0.1 && P.z < 2.6) startBreakin();
   // the legs: seen from close by, in the light
@@ -2122,7 +2126,7 @@ function applyState() {
   const f = S.flags;
   Object.assign(V, { visitor: null, gate: null, bi: null, sg: null, peek: null, floorPeek: null, hide: null, catching: null, pouring: false, dawnFall: null, dawnK: 0, legShake: 0, black: 0, lornaLook: 0, litT: 0 });
   if (!V.h) V.h = { state: 'off', pos: new THREE.Vector3(40, 16, -40), vel: new THREE.Vector3(), t: 0, dur: 0, meter: 0, ang: 0, tikT: 3, flap: 1.4, spread: 1, reach: 0, yaw: 0, pitch: 0, dist2D: 40 };
-  hSet(f.manaKnown ? 'away' : 'off', 20); V.h.pos.set(40, 16, -40);
+  hSet(f.manaKnown ? 'away' : 'off', 20); V.h.pos.set(40, 16, -40); V.h.vel.set(0, 0, 0); V.h.meter = 0; V.h.tikT = 3;
   // what's been taken
   O.matches.visible = !took('matches') && !f.lit;
   O.lampWorld.visible = !f.lit;
