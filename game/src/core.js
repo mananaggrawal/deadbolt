@@ -451,7 +451,9 @@ function probe() {
   }
   return null;
 }
-function actionsOf(d) { const a = d.actions ? d.actions() : []; return a.filter(Boolean); }
+// one key per action, in the order they're offered, so no two actions ever show the same letter
+const ACT_KEYS = ['E', 'R', 'T', 'Y', 'U'];
+function actionsOf(d) { const a = d.actions ? d.actions() : []; return a.filter(Boolean).slice(0, ACT_KEYS.length); }
 function act(i) {
   if (G.mode !== 'play' || G.uiOpen || G.cutscene) return;
   if (G.carrying) { ROOM.dropCarried && ROOM.dropCarried(); return; }
@@ -470,7 +472,7 @@ function updatePrompt(force) {
       const d = G.hover, acts = actionsOf(d), nm = typeof d.name === 'function' ? d.name() : d.name;
       const note = d.note ? d.note() : '';
       key = d.id + '|' + nm + '|' + acts.map(a => a.label).join('|') + '|' + note;
-      html = `<span class="nm">${esc(nm)}</span>` + acts.map((a, i) => `<span class="act"><kbd>${i === 0 ? 'E' : 'R'}</kbd>${esc(a.label)}</span>`).join('') + (note ? `<span class="note">${esc(note)}</span>` : '');
+      html = `<span class="nm">${esc(nm)}</span>` + acts.map((a, i) => `<span class="act"><kbd>${ACT_KEYS[i]}</kbd>${esc(a.label)}</span>`).join('') + (note ? `<span class="note">${esc(note)}</span>` : '');
     } else if (G.onChair) { key = 'chair'; html = `<span class="act"><kbd>Space</kbd>Step down</span>`; }
   }
   if (force || key !== G.promptKey) { G.promptKey = key; el.innerHTML = html; }
@@ -617,8 +619,8 @@ addEventListener('keydown', e => {
   keys[e.code] = true;
   if (e.repeat || G.cutscene) return;
   if (G.panelOpen) return;
-  if (e.code === 'KeyE') act(0);
-  else if (e.code === 'KeyR') act(1);
+  const ai = ACT_KEYS.indexOf(e.code.replace(/^Key/, ''));
+  if (ai >= 0 && e.code.startsWith('Key')) act(ai);
   else if (e.code === 'KeyC' || e.code === 'ControlLeft') ROOM.toggleCrouch && ROOM.toggleCrouch();
   else if (e.code === 'KeyF') ROOM.toggleFlash && ROOM.toggleFlash();
   else if (e.code === 'Space') { e.preventDefault(); ROOM.stepDown && ROOM.stepDown(); }
@@ -672,7 +674,7 @@ function closePanel(silent, byEsc) {
 
 function openPause() {
   if (G.mode !== 'play' || UI.kind) return;
-  const K = ROOM.keys || [['Move', 'W A S D'], ['Look', 'Mouse'], ['Interact', 'E or click'], ['Other action', 'R or right-click'], ['Run', 'Shift'], ['Crouch', 'C'], ['Notebook', 'Tab'], ['Hints', 'H']];
+  const K = ROOM.keys || [['Move', 'W A S D'], ['Look', 'Mouse'], ['Interact', 'E or click'], ['Other actions', 'R T or right-click'], ['Run', 'Shift'], ['Crouch', 'C'], ['Notebook', 'Tab'], ['Hints', 'H']];
   UI.show('pause', `
     <h2>Paused</h2><p class="sub">Mystery #${ROOM.n || 1} &middot; ${esc(fmtTime(S.elapsed))} in the room &middot; ${S.hints} hint${S.hints === 1 ? '' : 's'} taken</p>
     <div class="row"><button class="btn primary" id="pRes" autofocus>Resume</button><button class="btn" id="pHint">Hints</button><button class="btn" id="pNb">Notebook</button></div>

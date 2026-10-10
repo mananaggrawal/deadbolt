@@ -2262,7 +2262,7 @@ return {
   penalty() { G.lockout = G.time + 4; V.dipT = 1.2; },
   markSkip: ['start', 'she'], markMerge: {},
   backText: 'Back in the lift.',
-  keys: [['Move', 'W A S D'], ['Look', 'Mouse'], ['Interact', 'E or click'], ['Other action', 'R or right-click'], ['Run', 'Shift'], ['Notebook', 'Tab'], ['Hints', 'H']],
+  keys: [['Move', 'W A S D'], ['Look', 'Mouse'], ['Interact', 'E or click'], ['Other actions', 'R T or right-click'], ['Run', 'Shift'], ['Notebook', 'Tab'], ['Hints', 'H']],
   constrain(p, r) { constrainTo(p, r); },
   actOverride(i) { if (nearFront() && i === 0 && G.hover && G.hover.id === 'front') return false; return false; },
   promptOverride() { return ''; },

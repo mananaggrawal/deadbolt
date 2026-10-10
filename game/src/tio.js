@@ -1886,7 +1886,7 @@ return {
   penalty() { G.lockout = G.time + 3; },
   markSkip: ['start', 'tio', 'lamp', 'out'], markMerge: {},
   backText: 'Back in the mine. Your lamp is burning.',
-  keys: [['Move', 'W A S D'], ['Look', 'Mouse'], ['Interact, strike the flint', 'E or click'], ['Other action', 'R or right-click'], ['Run (briefly)', 'Shift'], ['Jump', 'Space'], ['Crouch, crawl', 'C'], ['Put down', 'Q'], ['Put your lamp out', 'F'], ['Notebook', 'Tab'], ['Hints', 'H']],
+  keys: [['Move', 'W A S D'], ['Look', 'Mouse'], ['Interact, strike the flint', 'E or click'], ['Other actions', 'R T or right-click'], ['Run (briefly)', 'Shift'], ['Jump', 'Space'], ['Crouch, crawl', 'C'], ['Put down', 'Q'], ['Put your lamp out', 'F'], ['Notebook', 'Tab'], ['Hints', 'H']],
   toggleCrouch() { if (V.ladder) return; bodyCrouch(); },
   stepDown() { if (V.ladder) return; bodyJump(); },
   toggleFlash() { if (G.cutscene || V.catching) return; if (lampLit()) { if (!S.flags.tioKnown) { toast('You\'re not putting it out. Not down here.', 2500); return; } lampOut('valve', true); sayI('You close the water valve and the flame dies. Dark.', 2500); } else strike(); },

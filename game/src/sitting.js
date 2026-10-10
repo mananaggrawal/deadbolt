@@ -1365,7 +1365,7 @@ return {
   penalty() { G.lockout = G.time + 5; V.dip = 1.6; after(0.6, () => { sKnock(POS.under, 0.9, 0, 0); after(0.5, () => sKnock(POS.under, 0.9, 0, 0)); }); subtitle('', '<i>The gas gutters. Under the table, two raps. No.</i>', 3200); },
   markSkip: ['start'], markMerge: { clock: 'slate', roses: 'hand', bureau: 'voice' },
   backText: 'Back in the parlour.',
-  keys: [['Move', 'W A S D'], ['Look', 'Mouse'], ['Interact', 'E or click'], ['Other action', 'R or right-click'], ['Run', 'Shift'], ['Crouch', 'C'], ['Notebook', 'Tab'], ['Hints', 'H']],
+  keys: [['Move', 'W A S D'], ['Look', 'Mouse'], ['Interact', 'E or click'], ['Other actions', 'R T or right-click'], ['Run', 'Shift'], ['Crouch', 'C'], ['Notebook', 'Tab'], ['Hints', 'H']],
   toggleCrouch() { if (G.cutscene) return; G.crouch = !G.crouch; G.eyeT = G.crouch ? 0.85 : 1.62; },
   update: roomUpdate,
   preRender() {

@@ -1005,7 +1005,7 @@ return {
   penalty() { G.lockout = G.time + 3; },
   markSkip: ['start', 'out'], markMerge: {},
   backText: 'Back in Babushka\'s house.',
-  keys: [['Move', 'W A S D'], ['Look', 'Mouse'], ['Interact', 'E or click'], ['Other action', 'R or right-click'], ['Run', 'Shift'], ['Jump', 'Space'], ['Crouch', 'C'], ['Put down, let go', 'Q'], ['Torch on and off', 'F'], ['Notebook', 'Tab'], ['Hints', 'H']],
+  keys: [['Move', 'W A S D'], ['Look', 'Mouse'], ['Interact', 'E or click'], ['Other actions', 'R T or right-click'], ['Run', 'Shift'], ['Jump', 'Space'], ['Crouch', 'C'], ['Put down, let go', 'Q'], ['Torch on and off', 'F'], ['Notebook', 'Tab'], ['Hints', 'H']],
   toggleCrouch() { if (V.climb || V.ride) return; bodyCrouch(); },
   stepDown() { if (V.climb || V.ride) return; bodyJump(); },
   toggleFlash() { toggleTorch(); },

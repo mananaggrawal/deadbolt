@@ -2020,7 +2020,7 @@ return {
   penalty() { G.lockout = G.time + 5; V.dipT = 1.6; after(0.5, () => roofSteps(4, 1, -1)); sayI('The lights stutter. On the roof, right over your head, footsteps.', 3600); },
   markSkip: ['start'], markMerge: {},
   backText: 'Back in the saloon. The train is still climbing.',
-  keys: [['Move', 'W A S D'], ['Look', 'Mouse'], ['Interact', 'E or click'], ['Other action', 'R or right-click'], ['Run', 'Shift'], ['Crouch', 'C'], ['Notebook', 'Tab'], ['Hints', 'H']],
+  keys: [['Move', 'W A S D'], ['Look', 'Mouse'], ['Interact', 'E or click'], ['Other actions', 'R T or right-click'], ['Run', 'Shift'], ['Crouch', 'C'], ['Notebook', 'Tab'], ['Hints', 'H']],
   toggleCrouch() { if (G.cutscene) return; G.crouch = !G.crouch; G.eyeT = G.crouch ? 0.9 : 1.62; },
   constrain(p) { p.x = clamp(p.x, -HW + 0.24, HW - 0.24); p.z = clamp(p.z, ZF + 0.24, ZR - 0.24); },
   actOverride(i) { if (V.pullReady) { if (i === 0) pullSlip(); return true; } return false; },

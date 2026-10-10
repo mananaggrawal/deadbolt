@@ -97,7 +97,7 @@ function touchActions() {
   const ov = ROOM.touchOverride && ROOM.touchOverride(); if (ov) return ov;
   if (G.carrying) return [{ label: 'Set it down', run: () => act(0) }];
   const out = [];
-  if (G.hover) actionsOf(G.hover).slice(0, 2).forEach((a, i) => out.push({ label: a.label, run: () => act(i), main: i === 0 }));
+  if (G.hover) actionsOf(G.hover).forEach((a, i) => out.push({ label: a.label, run: () => act(i), main: i === 0 }));
   if (G.onChair) out.push({ label: 'Step down', run: () => ROOM.stepDown && ROOM.stepDown() });
   return out;
 }
@@ -107,7 +107,10 @@ function touchRefresh() {
   const acts = touchActions(), key = acts.map(a => a.label).join('|');
   if (key !== TOUCH.key) {
     TOUCH.key = key; const box = $('#tcActs'); box.innerHTML = '';
-    acts.forEach((a, i) => { const b = document.createElement('button'); b.className = 'tcb act' + (i === 0 ? ' main' : ''); b.textContent = a.label; b.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); const cur = touchActions()[i]; if (cur) { cur.run(); updatePrompt(true); } }); box.appendChild(b); });
+    // three or more: the main button at the bottom, the others side by side above it, so the stack stays low
+    const many = acts.length > 2, row = many ? document.createElement('div') : null; box.classList.toggle('many', many);
+    acts.forEach((a, i) => { const b = document.createElement('button'); b.className = 'tcb act' + (i === 0 ? ' main' : ''); b.textContent = a.label; b.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); const cur = touchActions()[i]; if (cur) { cur.run(); updatePrompt(true); } }); (row && i > 0 ? row : box).appendChild(b); });
+    if (row) { row.className = 'tc-row'; box.appendChild(row); }
   }
   const ex = [];
   if (G.mode === 'play' && !G.uiOpen && !G.cutscene) {

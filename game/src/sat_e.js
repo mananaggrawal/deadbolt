@@ -1208,7 +1208,7 @@ return {
   penalty() { G.lockout = G.time + 4; },
   markSkip: ['goal', 'out'], markMerge: { pool: 'knife', kit: 'bell' },
   backText: 'Back in Station Méduse.',
-  keys: [['Move', 'W A S D'], ['Look', 'Mouse'], ['Interact', 'E or click'], ['Other action', 'R or right-click'], ['Run', 'Shift'], ['Crouch, swim down', 'C'], ['Swim up', 'Space'], ['Lamp on and off', 'F'], ['Put down', 'Q'], ['Notebook', 'Tab'], ['Hints', 'H']],
+  keys: [['Move', 'W A S D'], ['Look', 'Mouse'], ['Interact', 'E or click'], ['Other actions', 'R T or right-click'], ['Run', 'Shift'], ['Crouch, swim down', 'C'], ['Swim up', 'Space'], ['Lamp on and off', 'F'], ['Put down', 'Q'], ['Notebook', 'Tab'], ['Hints', 'H']],
   get toggleCrouch() { return V.mode === 'station' ? () => { if (!V.climb) bodyCrouch(); } : undefined; },   /* no Crouch button in the water or the bell */
   stepDown() { if (V.climb || V.mode !== 'station') return; bodyJump(); },
   toggleFlash() { toggleLamp(); },

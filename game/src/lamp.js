@@ -1263,7 +1263,7 @@ return {
   DOCS, ITEMS, HEARD, HINTS, openDoc, inspectItem, penalty, constrain, titleFx, dropCarried,
   markSkip: ['start', 'tube', 'boat'], markMerge: {},
   backText: 'Back on watch.',
-  keys: [['Move', 'W A S D'], ['Look', 'Mouse'], ['Interact', 'E or click'], ['Other action', 'R or right-click'], ['Run', 'Shift'], ['Crouch', 'C'], ['Notebook', 'Tab'], ['Hints', 'H']],
+  keys: [['Move', 'W A S D'], ['Look', 'Mouse'], ['Interact', 'E or click'], ['Other actions', 'R T or right-click'], ['Run', 'Shift'], ['Crouch', 'C'], ['Notebook', 'Tab'], ['Hints', 'H']],
   toggleCrouch() { if (G.cutscene || G.scope || G.carrying) return; G.crouch = !G.crouch; G.eyeT = G.crouch ? 0.8 : EYE; },
   stepDown() { if (G.scope) exitScope(); },
   actOverride(i) { if (G.scope) { exitScope(); return true; } return false; },

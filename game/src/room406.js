@@ -1609,7 +1609,7 @@ const ROOM406 = {
   invHidden: id => id === S.vcr,
   invNote: id => S.vcr === id ? ' <span class="muted">(in the VCR)</span>' : '',
   backText: 'Back in Room 406.',
-  keys: [['Move', 'W A S D'], ['Look', 'Mouse'], ['Interact', 'E or click'], ['Other action', 'R or right-click'], ['Run', 'Shift'], ['Crouch', 'C'], ['Flashlight', 'F'], ['Step down', 'Space'], ['Notebook', 'Tab'], ['Hints', 'H']],
+  keys: [['Move', 'W A S D'], ['Look', 'Mouse'], ['Interact', 'E or click'], ['Other actions', 'R T or right-click'], ['Run', 'Shift'], ['Crouch', 'C'], ['Flashlight', 'F'], ['Step down', 'Space'], ['Notebook', 'Tab'], ['Hints', 'H']],
   wake() {
     P.x = ROOM.spawn.x; P.z = ROOM.spawn.z; G.yaw = ROOM.spawn.yaw; G.pitch = 0.6; G.eye = 0.9; G.eyeT = 0.9;
     G.cutscene = true; $('#fx').className = 'lids';

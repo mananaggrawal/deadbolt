@@ -2216,7 +2216,7 @@ return {
   penalty() { G.lockout = G.time + 3; },
   markSkip: ['start', 'visitor', 'hunt', 'gate', 'hide', 'out'], markMerge: {},
   backText: 'Back in the house.',
-  keys: [['Move', 'W A S D'], ['Look', 'Mouse'], ['Interact', 'E or click'], ['Other action', 'R or right-click'], ['Run', 'Shift'], ['Jump, climb up', 'Space'], ['Crouch, crawl', 'C'], ['Put down', 'Q'], ['Lamp up or down', 'F'], ['Notebook', 'Tab'], ['Hints', 'H']],
+  keys: [['Move', 'W A S D'], ['Look', 'Mouse'], ['Interact', 'E or click'], ['Other actions', 'R T or right-click'], ['Run', 'Shift'], ['Jump, climb up', 'Space'], ['Crouch, crawl', 'C'], ['Put down', 'Q'], ['Lamp up or down', 'F'], ['Notebook', 'Tab'], ['Hints', 'H']],
   toggleCrouch() { if (V.hide || V.peek || V.floorPeek) return; bodyCrouch(); },
   stepDown() { if (V.hide || V.peek || V.floorPeek) return; bodyJump(); },
   toggleFlash: toggleLamp,
